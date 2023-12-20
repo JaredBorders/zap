@@ -1,17 +1,17 @@
-# foundry-scaffold
+# Zap
 
 [![Github Actions][gha-badge]][gha] 
 [![Foundry][foundry-badge]][foundry] 
 [![License: GPL-3.0][license-badge]][license]
 
-[gha]: https://github.com/Kwenta/foundry-scaffold/actions
-[gha-badge]: https://github.com/Kwenta/foundry-scaffold/actions/workflows/test.yml/badge.svg
+[gha]: https://github.com/JaredBorders/Zap/actions
+[gha-badge]: https://github.com/JaredBorders/Zap/actions/workflows/test.yml/badge.svg
 [foundry]: https://getfoundry.sh/
 [foundry-badge]: https://img.shields.io/badge/Built%20with-Foundry-FFDB1C.svg
 [license]: https://opensource.org/license/GPL-3.0/
 [license-badge]: https://img.shields.io/badge/GitHub-GPL--3.0-informational
 
-Template foundry project created by Kwenta
+
 
 ## Getting Started
 
@@ -30,7 +30,10 @@ Template foundry project created by Kwenta
 
 ```
 src/
-└── Counter.sol
+├── Zap.sol
+└── interfaces
+    ├── IERC20.sol
+    └── ISpotMarketProxy.sol
 ```
 
 ## Tests
@@ -50,10 +53,9 @@ npm run test
 ```
 
 4. Run specific test
-    > `OPTIMISM_GOERLI_RPC_URL` can be replaced with `OPTIMISM_RPC_URL` if a mainnet fork is desired
 
 ```
-forge test --fork-url $(grep OPTIMISM_GOERLI_RPC_URL .env | cut -d '=' -f2) --match-test TEST_NAME -vvv
+forge test --fork-url $(grep BASE_RPC_URL .env | cut -d '=' -f2) --match-test TEST_NAME -vvv
 ```
 
 ## Deployment Addresses
