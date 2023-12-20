@@ -1,8 +1,8 @@
 {
-  "name": "foundry-scaffold",
+  "name": "Zap",
   "version": "1.0.0",
   "license": "GPL-3.0-or-later",
-  "homepage": "https://github.com/Kwenta/foundry-scaffold#readme",
+  "homepage": "https://github.com/JaredBorders/Zap#readme",
   "scripts": {
     "compile": "forge build",
     "test": "forge test --fork-url $(grep BASE_RPC_URL .env | cut -d '=' -f2) --etherscan-api-key $(grep BASESCAN_API_KEY .env | cut -d '=' -f2) --gas-report -vvv",
@@ -15,10 +15,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/Kwenta/foundry-scaffold"
+    "url": "https://github.com/JaredBorders/Zap"
   },
   "bugs": {
-    "url": "https://github.com/Kwenta/foundry-scaffold/issues"
+    "url": "https://github.com/JaredBorders/Zap/issues"
   },
   "devDependencies": {},
   "dependencies": {}
