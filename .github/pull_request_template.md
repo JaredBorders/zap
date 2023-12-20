@@ -29,7 +29,7 @@ Follow the below format for PR request descriptions:
 * etc...
 
 ## Related issue(s)
-Closes [Issue](https://github.com/Kwenta/repo/issues/{ID})
+Closes [Issue](https://github.com/JaredBorders/repo/issues/{ID})
 
 ## Motivation and Context
 Squashing bugs, adding features, etc...
