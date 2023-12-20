@@ -1,0 +1,33 @@
+name: test
+
+on: [push]
+
+env:
+    FOUNDRY_PROFILE: ci
+
+jobs:
+    check:
+        strategy:
+            fail-fast: true
+
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+              with:
+                  submodules: recursive
+
+            - name: Install Foundry
+              uses: foundry-rs/foundry-toolchain@v1
+              with:
+                  version: nightly
+
+            - name: Build Project
+              run: |
+                  forge --version
+                  forge build --sizes
+              id: build
+
+            - name: Test Project
+              run: |
+                forge test --fork-url ${{ secrets.OPTIMISM_GOERLI_RPC_URL }} --etherscan-api-key ${{ secrets.ETHERSCAN_API_KEY }} -vvv
+              id: test

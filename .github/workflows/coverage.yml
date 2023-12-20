@@ -1,0 +1,34 @@
+name: coverage
+
+on: [push]
+
+env:
+    FOUNDRY_PROFILE: ci
+
+jobs:
+    check:
+        strategy:
+            fail-fast: true
+
+        runs-on: ubuntu-latest
+        steps:
+            - uses: actions/checkout@v3
+              with:
+                  submodules: recursive
+
+            - name: Install Foundry
+              uses: foundry-rs/foundry-toolchain@v1
+              with:
+                  version: nightly
+
+            - name: Report Coverage
+              run: |
+                forge coverage --fork-url ${{ secrets.OPTIMISM_GOERLI_RPC_URL }} --report lcov
+
+            - name: Upload Coverage Report
+              uses: codecov/codecov-action@v3
+              with:
+                  files: ./lcov.info
+                  name: codecov-unit
+                  fail_ci_if_error: true
+                  verbose: true
