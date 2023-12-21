@@ -10,22 +10,11 @@ import {OptimismParameters} from
     "script/utils/parameters/OptimismParameters.sol";
 import {Script} from "lib/forge-std/src/Script.sol";
 import {Zap} from "src/Zap.sol";
-
-contract Z is Zap {
-    constructor(address _usdc, address _susd, address _spotMarketProxy)
-        Zap(_usdc, _susd, _spotMarketProxy)
-    {}
-
-    function withdrawUSDC(address _to) external override {
-        USDC.transfer(_to, USDC.balanceOf(address(this)));
-    }
-
-    function withdrawSUSD(address _to) external override {
-        SUSD.transfer(_to, SUSD.balanceOf(address(this)));
-    }
-}
+import {ZapExposed} from "test/utils/exposed/ZapExposed.sol";
 
 /// @title Zap deployment script
+/// @notice ZapExposed is deployed (not Zap) and
+/// ZapExposed is unsafe and not meant for production
 /// @author JaredBorders (jaredborders@pm.me)
 contract Setup is Script {
     function deploySystem(
@@ -33,7 +22,7 @@ contract Setup is Script {
         address _susd,
         address _spotMarketProxy
     ) public returns (address zapAddress) {
-        zapAddress = address(new Z(_usdc, _susd, _spotMarketProxy));
+        zapAddress = address(new ZapExposed(_usdc, _susd, _spotMarketProxy));
     }
 }
 
