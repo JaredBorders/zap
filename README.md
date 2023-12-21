@@ -11,7 +11,10 @@
 [license]: https://opensource.org/license/GPL-3.0/
 [license-badge]: https://img.shields.io/badge/GitHub-GPL--3.0-informational
 
-
+/// @custom:todo grammar check and follow OZ standard for hooks
+/// @custom:todo fix imports
+/// @custom:todo replace asserts with custom errors
+/// @custom:todo local tests via mocking
 
 ## Getting Started
 
