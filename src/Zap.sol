@@ -3,13 +3,22 @@ pragma solidity 0.8.20;
 
 import {IERC20} from "./interfaces/IERC20.sol";
 import {ISpotMarketProxy} from "./interfaces/ISpotMarketProxy.sol";
+import {ZapEvents} from "./ZapEvents.sol";
 
 /// @title Zap contract for wrapping/unwrapping $USDC into $sUSD
 /// @author JaredBorders (jaredborders@pm.me)
-abstract contract Zap {
+abstract contract Zap is ZapEvents {
+    /*//////////////////////////////////////////////////////////////
+                               CONSTANTS
+    //////////////////////////////////////////////////////////////*/
+
     /// @notice keccak256 hash of expected name of $sUSDC synth
     bytes32 internal constant HASHED_USDC_NAME =
         keccak256(abi.encodePacked("Synthetic USD Coin Spot Market"));
+
+    /*//////////////////////////////////////////////////////////////
+                               IMMUTABLES
+    //////////////////////////////////////////////////////////////*/
 
     /// @notice $USDC token contract address
     IERC20 internal immutable USDC;
@@ -19,6 +28,10 @@ abstract contract Zap {
 
     /// @notice Synthetix v3 Spot Market Proxy contract address
     ISpotMarketProxy internal immutable SPOT_MARKET_PROXY;
+
+    /*//////////////////////////////////////////////////////////////
+                            DATA STRUCTURES
+    //////////////////////////////////////////////////////////////*/
 
     /// @notice ZapDetails struct defines the details
     /// of the $USDC <-> $sUSD exchange
@@ -35,6 +48,10 @@ abstract contract Zap {
         address referrer;
     }
 
+    /*//////////////////////////////////////////////////////////////
+                              CONSTRUCTOR
+    //////////////////////////////////////////////////////////////*/
+
     /// @notice Zap constructor
     /// @dev will revert if any of the addresses are zero
     /// @param _usdc $USDC token contract address
@@ -50,19 +67,30 @@ abstract contract Zap {
         SPOT_MARKET_PROXY = ISpotMarketProxy(_spotMarketProxy);
     }
 
-    /// @notice withdraws $USDC from the Zap contract
-    /// @param _to address to withdraw $USDC to
-    function withdrawUSDC(address _to) external virtual {}
+    /*//////////////////////////////////////////////////////////////
+                                 HOOKS
+    //////////////////////////////////////////////////////////////*/
 
-    /// @notice withdraws $sUSD from the Zap contract
-    /// @param _to address to withdraw $sUSD to
-    function withdrawSUSD(address _to) external virtual {}
+    /// @notice hook called immediately prior to executing a zap
+    /// @dev only implement if needed
+    function _preZap() internal virtual {}
+
+    /// @notice hook called immediately after executing a zap
+    /// @dev only implement if needed
+    function _postZap() internal virtual {}
+
+    /*//////////////////////////////////////////////////////////////
+                                ZAPPING
+    //////////////////////////////////////////////////////////////*/
 
     /// @notice must approve the Zap contract to spend $USDC
     /// @dev assumes zero fees when wrapping/unwrapping/selling/buying
     /// @param _details ZapDetails struct defines the _details of the $USDC <-> $sUSD exchange
     function zap(ZapDetails calldata _details) external {
+        _preZap();
+
         // verify sUSDCMarketId
+        /// @custom:todo refactor
         _verifySynthMarketId(_details.sUSDCMarketId, HASHED_USDC_NAME);
 
         // define $sUSDC synth contract
@@ -84,6 +112,8 @@ abstract contract Zap {
                 _details.referrer
             );
         }
+
+        _postZap();
     }
 
     function _zapIn(
@@ -117,6 +147,8 @@ abstract contract Zap {
             minUsdAmount: _amount,
             referrer: _referrer
         });
+
+        emit ZappedIn(_amount);
     }
 
     function _zapOut(
@@ -147,6 +179,8 @@ abstract contract Zap {
             unwrapAmount: _amount,
             minAmountReceived: _amount
         });
+
+        emit ZappedOut(_amount);
     }
 
     function _verifySynthMarketId(uint128 _synthMarketId, bytes32 _hash)
