@@ -8,15 +8,20 @@ import {
     BaseParameters,
     Setup
 } from "script/Deploy.s.sol";
+import {ZapEvents} from "./../../src/ZapEvents.sol";
+import {Constants} from "./Constants.sol";
 import {MockSpotMarketProxy} from "test/utils/mocks/MockSpotMarketProxy.sol";
 import {MockUSDC} from "test/utils/mocks/MockUSDC.sol";
 import {MockSUSD} from "test/utils/mocks/MockSUSD.sol";
 import {Test} from "lib/forge-std/src/Test.sol";
 
-contract Bootstrap is Test {
+contract Bootstrap is Test, ZapEvents, Constants {
     using console2 for *;
 
     Zap internal zap;
+
+    /// @custom:todo make dynamic depending on fork
+    uint128 internal sUSDCMarketId = 1;
 
     function initializeLocal() internal {
         BootstrapLocal bootstrap = new BootstrapLocal();
