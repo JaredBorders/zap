@@ -26,27 +26,14 @@ abstract contract Zap is ZapEvents {
     /// @notice $sUSD token contract address
     IERC20 internal immutable SUSD;
 
+    /// @notice sUSDC token contract address
+    IERC20 internal immutable SUSDC;
+
+    /// @notice Synthetix v3 Spot Market ID for $sUSDC
+    uint128 internal immutable SUSDC_SPOT_MARKET_ID;
+
     /// @notice Synthetix v3 Spot Market Proxy contract address
     ISpotMarketProxy internal immutable SPOT_MARKET_PROXY;
-
-    /*//////////////////////////////////////////////////////////////
-                            DATA STRUCTURES
-    //////////////////////////////////////////////////////////////*/
-
-    /// @notice ZapDetails struct defines the details
-    /// of the $USDC <-> $sUSD exchange
-    struct ZapDetails {
-        /// @notice sUSDCMarketId is the marketId of the $sUSDC synth
-        /// @dev incorrect $sUSDC marketId will result in revert
-        uint128 sUSDCMarketId;
-        /// @notice amount is the amount of $USDC to wrap/unwrap
-        int256 amount;
-        /// @notice referrer is the address used to collect
-        /// unspecified allocation of fees
-        /// @dev the exchange defined in zap will not result
-        /// in any fees so this is not used
-        address referrer;
-    }
 
     /*//////////////////////////////////////////////////////////////
                               CONSTRUCTOR
@@ -54,10 +41,17 @@ abstract contract Zap is ZapEvents {
 
     /// @notice Zap constructor
     /// @dev will revert if any of the addresses are zero
+    /// @dev will revert if the Synthetix v3 Spot Market ID for $sUSDC is incorrect
     /// @param _usdc $USDC token contract address
     /// @param _susd $sUSD token contract address
     /// @param _spotMarketProxy Synthetix v3 Spot Market Proxy contract address
-    constructor(address _usdc, address _susd, address _spotMarketProxy) {
+    /// @param _sUSDCId Synthetix v3 Spot Market ID for $sUSDC
+    constructor(
+        address _usdc,
+        address _susd,
+        address _spotMarketProxy,
+        uint128 _sUSDCId
+    ) {
         assert(_usdc != address(0));
         assert(_susd != address(0));
         assert(_spotMarketProxy != address(0));
@@ -65,6 +59,14 @@ abstract contract Zap is ZapEvents {
         USDC = IERC20(_usdc);
         SUSD = IERC20(_susd);
         SPOT_MARKET_PROXY = ISpotMarketProxy(_spotMarketProxy);
+
+        assert(
+            keccak256(abi.encodePacked(SPOT_MARKET_PROXY.name(_sUSDCId)))
+                == HASHED_USDC_NAME
+        );
+
+        SUSDC_SPOT_MARKET_ID = _sUSDCId;
+        SUSDC = IERC20(SPOT_MARKET_PROXY.getSynth(_sUSDCId));
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -83,45 +85,24 @@ abstract contract Zap is ZapEvents {
                                 ZAPPING
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice must approve the Zap contract to spend $USDC
+    /// @notice zap wraps/unwraps $USDC into $sUSD
+    /// @dev must approve the Zap contract to spend $USDC
     /// @dev assumes zero fees when wrapping/unwrapping/selling/buying
-    /// @param _details ZapDetails struct defines the _details of the $USDC <-> $sUSD exchange
-    function zap(ZapDetails calldata _details) external {
+    /// @param _amount is the amount of $USDC to wrap/unwrap
+    /// @param _referrer optional address of the referrer, for Synthetix fee share
+    function zap(int256 _amount, address _referrer) external {
         _preZap();
 
-        // verify sUSDCMarketId
-        /// @custom:todo refactor
-        _verifySynthMarketId(_details.sUSDCMarketId, HASHED_USDC_NAME);
-
-        // define $sUSDC synth contract
-        IERC20 sUSDC =
-            IERC20(SPOT_MARKET_PROXY.getSynth(_details.sUSDCMarketId));
-
-        if (_details.amount > 0) {
-            _zapIn(
-                sUSDC,
-                _details.sUSDCMarketId,
-                uint256(_details.amount),
-                _details.referrer
-            );
+        if (_amount > 0) {
+            _zapIn(uint256(_amount), _referrer);
         } else {
-            _zapOut(
-                sUSDC,
-                _details.sUSDCMarketId,
-                uint256(-_details.amount),
-                _details.referrer
-            );
+            _zapOut(uint256(-_amount), _referrer);
         }
 
         _postZap();
     }
 
-    function _zapIn(
-        IERC20 _sUSDC,
-        uint128 _sUSDCMarketId,
-        uint256 _amount,
-        address _referrer
-    ) internal {
+    function _zapIn(uint256 _amount, address _referrer) internal {
         // transfer $USDC to the Zap contract
         assert(USDC.transferFrom(msg.sender, address(this), _amount));
 
@@ -131,18 +112,18 @@ abstract contract Zap is ZapEvents {
         // wrap $USDC into $sUSDC
         /// @dev call will result in $sUSDC minted/transferred to the Zap contract
         SPOT_MARKET_PROXY.wrap({
-            marketId: _sUSDCMarketId,
+            marketId: SUSDC_SPOT_MARKET_ID,
             wrapAmount: _amount,
             minAmountReceived: _amount
         });
 
         // allocate $sUSDC allowance to the Spot Market Proxy
-        assert(_sUSDC.approve(address(SPOT_MARKET_PROXY), _amount));
+        assert(SUSDC.approve(address(SPOT_MARKET_PROXY), _amount));
 
         // sell $sUSDC for $sUSD
         /// @dev call will result in $sUSD minted/transferred to the Zap contract
         SPOT_MARKET_PROXY.sell({
-            marketId: _sUSDCMarketId,
+            marketId: SUSDC_SPOT_MARKET_ID,
             synthAmount: _amount,
             minUsdAmount: _amount,
             referrer: _referrer
@@ -151,43 +132,30 @@ abstract contract Zap is ZapEvents {
         emit ZappedIn(_amount);
     }
 
-    function _zapOut(
-        IERC20 _sUSDC,
-        uint128 _sUSDCMarketId,
-        uint256 _amount,
-        address _referrer
-    ) internal {
+    function _zapOut(uint256 _amount, address _referrer) internal {
         // allocate $sUSD allowance to the Spot Market Proxy
         assert(SUSD.approve(address(SPOT_MARKET_PROXY), _amount));
 
         // buy $sUSDC with $sUSD
         /// @dev call will result in $sUSDC minted/transferred to the Zap contract
         SPOT_MARKET_PROXY.buy({
-            marketId: _sUSDCMarketId,
+            marketId: SUSDC_SPOT_MARKET_ID,
             usdAmount: _amount,
             minAmountReceived: _amount,
             referrer: _referrer
         });
 
         // allocate $sUSDC allowance to the Spot Market Proxy
-        assert(_sUSDC.approve(address(SPOT_MARKET_PROXY), _amount));
+        assert(SUSDC.approve(address(SPOT_MARKET_PROXY), _amount));
 
         // unwrap $sUSDC into $USDC
         /// @dev call will result in $USDC minted/transferred to the Zap contract
         SPOT_MARKET_PROXY.unwrap({
-            marketId: _sUSDCMarketId,
+            marketId: SUSDC_SPOT_MARKET_ID,
             unwrapAmount: _amount,
             minAmountReceived: _amount
         });
 
         emit ZappedOut(_amount);
-    }
-
-    function _verifySynthMarketId(uint128 _synthMarketId, bytes32 _hash)
-        internal
-        view
-    {
-        string memory retName = SPOT_MARKET_PROXY.name(_synthMarketId);
-        assert(keccak256(abi.encodePacked(retName)) == _hash);
     }
 }
