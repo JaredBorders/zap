@@ -12,4 +12,7 @@ contract BaseGoerliParameters {
     // https://usecannon.com/packages/synthetix/3.3.5/84531-andromeda
     address public constant USD_PROXY =
         0xa89163A087fe38022690C313b5D4BBF12574637f;
+
+    // https://usecannon.com/packages/synthetix-spot-market/3.3.5/84531-andromeda
+    uint128 public constant SUSDC_SPOT_MARKET_ID = 1;
 }

@@ -20,9 +20,11 @@ contract Setup is Script {
     function deploySystem(
         address _usdc,
         address _susd,
-        address _spotMarketProxy
+        address _spotMarketProxy,
+        uint128 _sUSDCId
     ) public returns (address zapAddress) {
-        zapAddress = address(new ZapExposed(_usdc, _susd, _spotMarketProxy));
+        zapAddress =
+            address(new ZapExposed(_usdc, _susd, _spotMarketProxy, _sUSDCId));
     }
 }
 
@@ -34,7 +36,9 @@ contract DeployBase is Setup, BaseParameters {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(privateKey);
 
-        Setup.deploySystem(USDC, USD_PROXY, SPOT_MARKET_PROXY);
+        Setup.deploySystem(
+            USDC, USD_PROXY, SPOT_MARKET_PROXY, SUSDC_SPOT_MARKET_ID
+        );
 
         vm.stopBroadcast();
     }
@@ -48,7 +52,9 @@ contract DeployBaseGoerli is Setup, BaseGoerliParameters {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(privateKey);
 
-        Setup.deploySystem(USDC, USD_PROXY, SPOT_MARKET_PROXY);
+        Setup.deploySystem(
+            USDC, USD_PROXY, SPOT_MARKET_PROXY, SUSDC_SPOT_MARKET_ID
+        );
 
         vm.stopBroadcast();
     }
@@ -62,7 +68,9 @@ contract DeployOptimism is Setup, OptimismParameters {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(privateKey);
 
-        Setup.deploySystem(USDC, USD_PROXY, SPOT_MARKET_PROXY);
+        Setup.deploySystem(
+            USDC, USD_PROXY, SPOT_MARKET_PROXY, SUSDC_SPOT_MARKET_ID
+        );
 
         vm.stopBroadcast();
     }
@@ -77,7 +85,9 @@ contract DeployOptimismGoerli is Setup, OptimismGoerliParameters {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(privateKey);
 
-        Setup.deploySystem(USDC, USD_PROXY, SPOT_MARKET_PROXY);
+        Setup.deploySystem(
+            USDC, USD_PROXY, SPOT_MARKET_PROXY, SUSDC_SPOT_MARKET_ID
+        );
 
         vm.stopBroadcast();
     }

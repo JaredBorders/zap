@@ -7,4 +7,6 @@ contract OptimismGoerliParameters {
     address public constant SPOT_MARKET_PROXY = address(0);
 
     address public constant USD_PROXY = address(0);
+
+    uint128 public constant SUSDC_SPOT_MARKET_ID = type(uint128).max;
 }
