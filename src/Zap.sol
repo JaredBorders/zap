@@ -153,7 +153,7 @@ abstract contract Zap is ZapEvents {
         SPOT_MARKET_PROXY.unwrap({
             marketId: SUSDC_SPOT_MARKET_ID,
             unwrapAmount: _amount,
-            minAmountReceived: _amount
+            minAmountReceived: _amount / 1e12
         });
 
         emit ZappedOut(_amount);
