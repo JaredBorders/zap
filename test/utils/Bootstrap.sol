@@ -13,15 +13,13 @@ import {Constants} from "./Constants.sol";
 import {MockSpotMarketProxy} from "test/utils/mocks/MockSpotMarketProxy.sol";
 import {MockUSDC} from "test/utils/mocks/MockUSDC.sol";
 import {MockSUSD} from "test/utils/mocks/MockSUSD.sol";
+import {SynthetixV3Errors} from "./errors/SynthetixV3Errors.sol";
 import {Test} from "lib/forge-std/src/Test.sol";
 
-contract Bootstrap is Test, ZapEvents, Constants {
+contract Bootstrap is Test, ZapEvents, SynthetixV3Errors, Constants {
     using console2 for *;
 
     Zap internal zap;
-
-    /// @custom:todo make dynamic depending on fork
-    uint128 internal sUSDCMarketId = 1;
 
     function initializeLocal() internal {
         BootstrapLocal bootstrap = new BootstrapLocal();
@@ -45,24 +43,29 @@ contract Bootstrap is Test, ZapEvents, Constants {
     }
 }
 
-contract BootstrapLocal is Setup {
+contract BootstrapLocal is Setup, Constants {
     function init() public returns (address zapAddress) {
         zapAddress = Setup.deploySystem(
             address(new MockUSDC()),
             address(new MockSUSD()),
-            address(new MockSpotMarketProxy())
+            address(new MockSpotMarketProxy()),
+            LOCAL_SUSDC_SPOT_MARKET_ID
         );
     }
 }
 
 contract BootstrapBase is Setup, BaseParameters {
     function init() public returns (address zapAddress) {
-        zapAddress = Setup.deploySystem(USDC, USD_PROXY, SPOT_MARKET_PROXY);
+        zapAddress = Setup.deploySystem(
+            USDC, USD_PROXY, SPOT_MARKET_PROXY, SUSDC_SPOT_MARKET_ID
+        );
     }
 }
 
 contract BootstrapBaseGoerli is Setup, BaseGoerliParameters {
     function init() public returns (address zapAddress) {
-        zapAddress = Setup.deploySystem(USDC, USD_PROXY, SPOT_MARKET_PROXY);
+        zapAddress = Setup.deploySystem(
+            USDC, USD_PROXY, SPOT_MARKET_PROXY, SUSDC_SPOT_MARKET_ID
+        );
     }
 }
