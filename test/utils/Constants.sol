@@ -8,8 +8,7 @@ contract Constants {
     address public constant ACTOR = address(0xAC7AC7AC7);
     address public constant BAD_ACTOR = address(0xBACBACBAC);
     address public constant REFERRER = address(0xFEEEEEEEE);
-    uint256 public constant UINT_ONE_HUNDRED = 100;
-    int256 public constant INT_ONE_HUNDRED = 100;
-    int256 public constant INT_NEGATIVE_ONE_HUNDRED = -100;
+    uint256 public constant UINT_AMOUNT = 1000;
+    int256 public constant INT_AMOUNT = 1000;
     uint128 public constant LOCAL_SUSDC_SPOT_MARKET_ID = 1;
 }

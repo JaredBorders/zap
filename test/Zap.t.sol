@@ -4,6 +4,7 @@ pragma solidity 0.8.20;
 import {Bootstrap} from "test/utils/Bootstrap.sol";
 import {IERC20} from "../src/interfaces/IERC20.sol";
 import {ZapExposed} from "test/utils/exposed/ZapExposed.sol";
+import {ISpotMarketProxy} from "./../src/interfaces/ISpotMarketProxy.sol";
 
 contract ZapTest is Bootstrap {
     IERC20 internal SUSD;
@@ -16,8 +17,8 @@ contract ZapTest is Bootstrap {
         SUSD = IERC20(ZapExposed(address(zap)).expose_SUSD());
         USDC = IERC20(ZapExposed(address(zap)).expose_USDC());
 
-        deal(address(SUSD), ACTOR, UINT_ONE_HUNDRED);
-        deal(address(USDC), ACTOR, UINT_ONE_HUNDRED);
+        deal(address(SUSD), ACTOR, UINT_AMOUNT);
+        deal(address(USDC), ACTOR, UINT_AMOUNT);
     }
 
     function test_deploy() public view {
@@ -73,11 +74,11 @@ contract ZapIn is ZapTest {
     function test_zap_in() public {
         vm.startPrank(ACTOR);
 
-        USDC.approve(address(zap), UINT_ONE_HUNDRED);
+        USDC.approve(address(zap), UINT_AMOUNT);
 
-        zap.zap(INT_ONE_HUNDRED, REFERRER);
+        zap.zap(INT_AMOUNT, REFERRER);
 
-        assertEq(SUSD.balanceOf(address(zap)), UINT_ONE_HUNDRED);
+        assertEq(SUSD.balanceOf(address(zap)), UINT_AMOUNT);
 
         vm.stopPrank();
     }
@@ -104,29 +105,38 @@ contract ZapIn is ZapTest {
     function test_zap_in_event() public {
         vm.startPrank(ACTOR);
 
-        USDC.approve(address(zap), UINT_ONE_HUNDRED);
+        USDC.approve(address(zap), UINT_AMOUNT);
 
         vm.expectEmit(true, true, true, false);
-        emit ZappedIn(UINT_ONE_HUNDRED);
+        emit ZappedIn(UINT_AMOUNT);
 
-        zap.zap(INT_ONE_HUNDRED, REFERRER);
+        zap.zap(INT_AMOUNT, REFERRER);
 
         vm.stopPrank();
     }
 }
 
 contract ZapOut is ZapTest {
-    // function test_zap_out() public {
-    //     vm.startPrank(ACTOR);
+    function test_zap_out() public {
+        // $USDC has 6 decimals
+        // $sUSD has 18 decimals
+        // thus, 1e12 $sUSD = 1 $USDC
 
-    //     SUSD.transfer(address(zap), UINT_ONE_HUNDRED);
+        uint256 sUSDAmount = 1e12;
+        uint256 usdcAmount = 1;
 
-    //     zap.zap(INT_NEGATIVE_ONE_HUNDRED, REFERRER);
+        deal(address(SUSD), ACTOR, sUSDAmount);
 
-    //     assertEq(USDC.balanceOf(address(zap)), UINT_ONE_HUNDRED);
+        vm.startPrank(ACTOR);
 
-    //     vm.stopPrank();
-    // }
+        SUSD.transfer(address(zap), sUSDAmount);
+
+        zap.zap(-1e12, REFERRER);
+
+        assertEq(USDC.balanceOf(address(zap)), usdcAmount);
+
+        vm.stopPrank();
+    }
 
     function test_zap_out_zero() public {
         vm.startPrank(ACTOR);
@@ -138,3 +148,7 @@ contract ZapOut is ZapTest {
         vm.stopPrank();
     }
 }
+
+contract Wrap is ZapTest {}
+
+contract Unwrap is ZapTest {}
