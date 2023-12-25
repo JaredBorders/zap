@@ -10,6 +10,13 @@ contract ZapTest is Bootstrap {
     IERC20 internal SUSD;
     IERC20 internal USDC;
 
+    // 1_000 $USDC == 1_000_000_000_000_000 $sUSDC/$sUSD
+    // or
+    // 1 $USDC == 1_000_000_000_000 $sUSDC/$sUSD
+    // or
+    // 1 $sUSDC == 1e12 $USDC/$sUSD
+    uint256 converted_UINT_AMOUNT = UINT_AMOUNT * 1e12;
+
     function setUp() public {
         vm.rollFork(BASE_BLOCK_NUMBER);
         initializeBase();
@@ -17,8 +24,8 @@ contract ZapTest is Bootstrap {
         SUSD = IERC20(ZapExposed(address(zap)).expose_SUSD());
         USDC = IERC20(ZapExposed(address(zap)).expose_USDC());
 
-        deal(address(SUSD), ACTOR, UINT_AMOUNT);
-        deal(address(USDC), ACTOR, UINT_AMOUNT);
+        deal(address(SUSD), ACTOR, INITIAL_MINT);
+        deal(address(USDC), ACTOR, INITIAL_MINT);
     }
 
     function test_deploy() public view {
@@ -83,12 +90,9 @@ contract ZapIn is ZapTest {
         vm.stopPrank();
     }
 
-    /// @dev test assumes the wrapper cap is always < 2^255 - 1 (max int128)
     function test_zap_in_exceeds_cap() public {
-        // convert to uint256 for deal/approval
+        /// @dev test assumes the wrapper cap is always < 2^255 - 1 (max int128)
         uint256 cap = type(uint128).max;
-
-        deal(address(USDC), ACTOR, cap);
 
         vm.startPrank(ACTOR);
 
@@ -119,13 +123,11 @@ contract ZapIn is ZapTest {
 contract ZapOut is ZapTest {
     function test_zap_out() public {
         // $USDC has 6 decimals
-        // $sUSD has 18 decimals
+        // $sUSD and $sUSDC have 18 decimals
         // thus, 1e12 $sUSD = 1 $USDC
 
         uint256 sUSDAmount = 1e12;
         uint256 usdcAmount = 1;
-
-        deal(address(SUSD), ACTOR, sUSDAmount);
 
         vm.startPrank(ACTOR);
 
@@ -149,6 +151,133 @@ contract ZapOut is ZapTest {
     }
 }
 
-contract Wrap is ZapTest {}
+contract Wrap is ZapTest {
+    /**
+     * example:
+     *
+     * 1 $USDC -- Synthetix Spot Market: Wrap --> 1e12 $sUSDC
+     *                                                |
+     *                                                |
+     *                                    Synthetix Spot Market: Sell
+     *                                                |
+     *                                                |
+     *                                                v
+     *                                            1e12 $sUSD
+     *
+     */
+    function test_synthetix_wrap() public {
+        // $USDC has 6 decimals
+        // $sUSD and $sUSDC have 18 decimals
+        // thus, 1e12 $sUSD = 1 $USDC
 
-contract Unwrap is ZapTest {}
+        vm.startPrank(ACTOR);
+
+        ISpotMarketProxy spotMarketProxy = ISpotMarketProxy(
+            ZapExposed(address(zap)).expose_SPOT_MARKET_PROXY()
+        );
+        uint128 sUSDCId = ZapExposed(address(zap)).expose_SUSDC_SPOT_MARKET_ID();
+        IERC20 sUSDC = IERC20(ZapExposed(address(zap)).expose_SUSDC());
+
+        USDC.approve(address(spotMarketProxy), type(uint256).max);
+
+        uint256 preSUSDCBalance = sUSDC.balanceOf(ACTOR);
+
+        assertEq(preSUSDCBalance, 0);
+
+        spotMarketProxy.wrap({
+            marketId: sUSDCId,
+            wrapAmount: UINT_AMOUNT,
+            minAmountReceived: UINT_AMOUNT
+        });
+
+        uint256 postSUSDCBalance = sUSDC.balanceOf(ACTOR);
+
+        assertEq(postSUSDCBalance - preSUSDCBalance, converted_UINT_AMOUNT);
+
+        sUSDC.approve(address(spotMarketProxy), type(uint256).max);
+
+        preSUSDCBalance = sUSDC.balanceOf(ACTOR);
+        uint256 preSUSDBalance = SUSD.balanceOf(ACTOR);
+
+        spotMarketProxy.sell({
+            marketId: sUSDCId,
+            synthAmount: converted_UINT_AMOUNT,
+            minUsdAmount: converted_UINT_AMOUNT,
+            referrer: REFERRER
+        });
+
+        postSUSDCBalance = sUSDC.balanceOf(ACTOR);
+        uint256 postSUSDBalance = SUSD.balanceOf(ACTOR);
+
+        assertEq(postSUSDCBalance, 0);
+        assertEq(postSUSDBalance - preSUSDBalance, converted_UINT_AMOUNT);
+
+        vm.stopPrank();
+    }
+}
+
+contract Unwrap is ZapTest {
+    /**
+     * example:
+     *
+     * 1 $USDC <-- Synthetix Spot Market: Wrap -- 1e12 $sUSDC
+     *                                                ^
+     *                                                |
+     *                                                |
+     *                                    Synthetix Spot Market: Sell
+     *                                                |
+     *                                                |
+     *                                            1e12 $sUSD
+     *
+     */
+    function test_synthetix_unwrap() public {
+        // $USDC has 6 decimals
+        // $sUSD and $sUSDC have 18 decimals
+        // thus, 1e12 $sUSD = 1 $USDC
+
+        vm.startPrank(ACTOR);
+
+        ISpotMarketProxy spotMarketProxy = ISpotMarketProxy(
+            ZapExposed(address(zap)).expose_SPOT_MARKET_PROXY()
+        );
+        uint128 sUSDCId = ZapExposed(address(zap)).expose_SUSDC_SPOT_MARKET_ID();
+        IERC20 sUSDC = IERC20(ZapExposed(address(zap)).expose_SUSDC());
+
+        SUSD.approve(address(spotMarketProxy), type(uint256).max);
+
+        uint256 preSUSDCBalance = sUSDC.balanceOf(ACTOR);
+
+        assertEq(preSUSDCBalance, 0);
+
+        spotMarketProxy.buy({
+            marketId: sUSDCId,
+            usdAmount: converted_UINT_AMOUNT,
+            minAmountReceived: converted_UINT_AMOUNT,
+            referrer: REFERRER
+        });
+
+        uint256 postSUSDCBalance = sUSDC.balanceOf(ACTOR);
+
+        assertEq(postSUSDCBalance - preSUSDCBalance, converted_UINT_AMOUNT);
+
+        sUSDC.approve(address(spotMarketProxy), type(uint256).max);
+
+        preSUSDCBalance = sUSDC.balanceOf(ACTOR);
+
+        uint256 preUSDCBalance = USDC.balanceOf(ACTOR);
+
+        spotMarketProxy.unwrap({
+            marketId: sUSDCId,
+            unwrapAmount: converted_UINT_AMOUNT,
+            minAmountReceived: UINT_AMOUNT
+        });
+
+        postSUSDCBalance = sUSDC.balanceOf(ACTOR);
+
+        assertEq(postSUSDCBalance, 0);
+
+        uint256 postUSDCBalance = USDC.balanceOf(ACTOR);
+
+        assertEq(postUSDCBalance - preUSDCBalance, UINT_AMOUNT);
+    }
+}
