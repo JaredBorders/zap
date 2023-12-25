@@ -33,6 +33,10 @@ contract ZapExposed is Zap, ZapExposedEvents {
         return address(SPOT_MARKET_PROXY);
     }
 
+    function expose_DECIMALS_FACTOR() public view returns (uint256) {
+        return DECIMALS_FACTOR;
+    }
+
     constructor(
         address _usdc,
         address _susd,

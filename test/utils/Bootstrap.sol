@@ -49,7 +49,7 @@ contract BootstrapLocal is Setup, Constants {
             address(new MockUSDC()),
             address(new MockSUSD()),
             address(new MockSpotMarketProxy()),
-            LOCAL_SUSDC_SPOT_MARKET_ID
+            type(uint128).max
         );
     }
 }

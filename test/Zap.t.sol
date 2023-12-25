@@ -4,18 +4,33 @@ pragma solidity 0.8.20;
 import {Bootstrap} from "test/utils/Bootstrap.sol";
 import {IERC20} from "../src/interfaces/IERC20.sol";
 import {ZapExposed} from "test/utils/exposed/ZapExposed.sol";
-import {ISpotMarketProxy} from "./../src/interfaces/ISpotMarketProxy.sol";
 
+/**
+ * @custom:example-wrap-and-unwrap
+ *
+ * 1 $USDC <-- Synthetix Spot Market: Wrap --> 1e12 $sUSDC
+ *                                                ^
+ *                                                |
+ *                                                |
+ *                                    Synthetix Spot Market: Sell
+ *                                                |
+ *                                                |
+ *                                                v
+ *                                            1e12 $sUSD
+ *
+ *
+ * @dev
+ *
+ * IF $USDC has 6 decimals
+ * AND $sUSD and $sUSDC have 18 decimals
+ * THEN 1e12 $sUSD/$sUSDC = 1 $USDC
+ * AND in the context of this system, the DECIMAL_FACTOR would be: 10^(18-6) == 1e12
+ */
 contract ZapTest is Bootstrap {
     IERC20 internal SUSD;
     IERC20 internal USDC;
 
-    // 1_000 $USDC == 1_000_000_000_000_000 $sUSDC/$sUSD
-    // or
-    // 1 $USDC == 1_000_000_000_000 $sUSDC/$sUSD
-    // or
-    // 1 $sUSDC == 1e12 $USDC/$sUSD
-    uint256 converted_UINT_AMOUNT = UINT_AMOUNT * 1e12;
+    uint256 internal DECIMAL_FACTOR;
 
     function setUp() public {
         vm.rollFork(BASE_BLOCK_NUMBER);
@@ -26,10 +41,28 @@ contract ZapTest is Bootstrap {
 
         deal(address(SUSD), ACTOR, INITIAL_MINT);
         deal(address(USDC), ACTOR, INITIAL_MINT);
+
+        vm.startPrank(ACTOR);
+
+        USDC.approve(address(zap), type(uint256).max);
+        SUSD.approve(address(zap), type(uint256).max);
+
+        vm.stopPrank();
+
+        DECIMAL_FACTOR = ZapExposed(address(zap)).expose_DECIMALS_FACTOR();
+    }
+}
+
+contract Deployment is ZapTest {
+    function test_zap_address() public view {
+        assert(address(zap) != address(0));
     }
 
-    function test_deploy() public view {
-        assert(address(zap) != address(0));
+    function test_hashed_usdc_name() public {
+        assertEq(
+            ZapExposed(address(zap)).expose_HASHED_USDC_NAME(),
+            keccak256(abi.encodePacked("Synthetic USD Coin Spot Market"))
+        );
     }
 
     function test_usdc_zero_address() public {
@@ -65,6 +98,10 @@ contract ZapTest is Bootstrap {
         });
     }
 
+    function test_usdc_decimals_factor() public view {
+        assert(ZapExposed(address(zap)).expose_DECIMALS_FACTOR() != 0);
+    }
+
     function test_sUSDCId_invalid() public {
         vm.expectRevert();
 
@@ -75,35 +112,29 @@ contract ZapTest is Bootstrap {
             _sUSDCId: type(uint128).max
         });
     }
+
+    function test_sUSDC_address() public view {
+        assert(ZapExposed(address(zap)).expose_SUSDC() != address(0));
+    }
 }
 
 contract ZapIn is ZapTest {
     function test_zap_in() public {
-        // $USDC has 6 decimals
-        // $sUSD and $sUSDC have 18 decimals
-        // thus, 1e12 $sUSD/$sUSDC = 1 $USDC
-
         vm.startPrank(ACTOR);
-
-        USDC.approve(address(zap), UINT_AMOUNT);
 
         zap.zap(INT_AMOUNT, REFERRER);
 
-        assertEq(SUSD.balanceOf(address(zap)), UINT_AMOUNT * 1e12);
+        assertEq(SUSD.balanceOf(address(zap)), UINT_AMOUNT * DECIMAL_FACTOR);
 
         vm.stopPrank();
     }
 
     function test_zap_in_exceeds_cap() public {
-        /// @dev test assumes the wrapper cap is always < 2^255 - 1 (max int128)
-        uint256 cap = type(uint128).max;
-
         vm.startPrank(ACTOR);
-
-        USDC.approve(address(zap), cap);
 
         try zap.zap(type(int128).max, REFERRER) {}
         catch (bytes memory reason) {
+            // assumes type(int128).max always exceeds cap
             assertEq(bytes4(reason), WrapperExceedsMaxAmount.selector);
         }
 
@@ -113,10 +144,8 @@ contract ZapIn is ZapTest {
     function test_zap_in_event() public {
         vm.startPrank(ACTOR);
 
-        USDC.approve(address(zap), UINT_AMOUNT);
-
         vm.expectEmit(true, true, true, true);
-        emit ZappedIn(UINT_AMOUNT * 1e12);
+        emit ZappedIn(UINT_AMOUNT * DECIMAL_FACTOR);
 
         zap.zap(INT_AMOUNT, REFERRER);
 
@@ -126,20 +155,13 @@ contract ZapIn is ZapTest {
 
 contract ZapOut is ZapTest {
     function test_zap_out() public {
-        // $USDC has 6 decimals
-        // $sUSD and $sUSDC have 18 decimals
-        // thus, 1e12 $sUSD/$sUSDC = 1 $USDC
-
-        uint256 sUSDAmount = 1e12;
-        uint256 usdcAmount = 1;
-
         vm.startPrank(ACTOR);
 
-        SUSD.transfer(address(zap), sUSDAmount);
+        SUSD.transfer(address(zap), UINT_AMOUNT * DECIMAL_FACTOR);
 
-        zap.zap(-1e12, REFERRER);
+        zap.zap(-INT_AMOUNT * int256(DECIMAL_FACTOR), REFERRER);
 
-        assertEq(USDC.balanceOf(address(zap)), usdcAmount);
+        assertEq(USDC.balanceOf(address(zap)), UINT_AMOUNT);
 
         vm.stopPrank();
     }
@@ -147,7 +169,7 @@ contract ZapOut is ZapTest {
     function test_zap_out_zero() public {
         vm.startPrank(ACTOR);
 
-        vm.expectRevert(); // fails at buy()
+        vm.expectRevert();
 
         zap.zap(0, REFERRER);
 
@@ -155,152 +177,15 @@ contract ZapOut is ZapTest {
     }
 
     function test_zap_out_event() public {
-        // $USDC has 6 decimals
-        // $sUSD and $sUSDC have 18 decimals
-        // thus, 1e12 $sUSD/$sUSDC = 1 $USDC
-
-        uint256 sUSDAmount = 1e12;
-
         vm.startPrank(ACTOR);
 
-        SUSD.transfer(address(zap), sUSDAmount);
+        SUSD.transfer(address(zap), UINT_AMOUNT * DECIMAL_FACTOR);
 
         vm.expectEmit(true, true, true, true);
-        emit ZappedOut(1);
+        emit ZappedOut(UINT_AMOUNT);
 
-        zap.zap(-1e12, REFERRER);
-
-        vm.stopPrank();
-    }
-}
-
-contract Wrap is ZapTest {
-    /**
-     * example:
-     *
-     * 1 $USDC -- Synthetix Spot Market: Wrap --> 1e12 $sUSDC
-     *                                                |
-     *                                                |
-     *                                    Synthetix Spot Market: Sell
-     *                                                |
-     *                                                |
-     *                                                v
-     *                                            1e12 $sUSD
-     *
-     */
-    function test_synthetix_wrap() public {
-        // $USDC has 6 decimals
-        // $sUSD and $sUSDC have 18 decimals
-        // thus, 1e12 $sUSD/$sUSDC = 1 $USDC
-
-        vm.startPrank(ACTOR);
-
-        ISpotMarketProxy spotMarketProxy = ISpotMarketProxy(
-            ZapExposed(address(zap)).expose_SPOT_MARKET_PROXY()
-        );
-        uint128 sUSDCId = ZapExposed(address(zap)).expose_SUSDC_SPOT_MARKET_ID();
-        IERC20 sUSDC = IERC20(ZapExposed(address(zap)).expose_SUSDC());
-
-        USDC.approve(address(spotMarketProxy), type(uint256).max);
-
-        uint256 preSUSDCBalance = sUSDC.balanceOf(ACTOR);
-
-        assertEq(preSUSDCBalance, 0);
-
-        spotMarketProxy.wrap({
-            marketId: sUSDCId,
-            wrapAmount: UINT_AMOUNT,
-            minAmountReceived: UINT_AMOUNT
-        });
-
-        uint256 postSUSDCBalance = sUSDC.balanceOf(ACTOR);
-
-        assertEq(postSUSDCBalance - preSUSDCBalance, converted_UINT_AMOUNT);
-
-        sUSDC.approve(address(spotMarketProxy), type(uint256).max);
-
-        preSUSDCBalance = sUSDC.balanceOf(ACTOR);
-        uint256 preSUSDBalance = SUSD.balanceOf(ACTOR);
-
-        spotMarketProxy.sell({
-            marketId: sUSDCId,
-            synthAmount: converted_UINT_AMOUNT,
-            minUsdAmount: converted_UINT_AMOUNT,
-            referrer: REFERRER
-        });
-
-        postSUSDCBalance = sUSDC.balanceOf(ACTOR);
-        uint256 postSUSDBalance = SUSD.balanceOf(ACTOR);
-
-        assertEq(postSUSDCBalance, 0);
-        assertEq(postSUSDBalance - preSUSDBalance, converted_UINT_AMOUNT);
+        zap.zap(-INT_AMOUNT * int256(DECIMAL_FACTOR), REFERRER);
 
         vm.stopPrank();
-    }
-}
-
-contract Unwrap is ZapTest {
-    /**
-     * example:
-     *
-     * 1 $USDC <-- Synthetix Spot Market: Wrap -- 1e12 $sUSDC
-     *                                                ^
-     *                                                |
-     *                                                |
-     *                                    Synthetix Spot Market: Sell
-     *                                                |
-     *                                                |
-     *                                            1e12 $sUSD
-     *
-     */
-    function test_synthetix_unwrap() public {
-        // $USDC has 6 decimals
-        // $sUSD and $sUSDC have 18 decimals
-        // thus, 1e12 $sUSD/$sUSDC = 1 $USDC
-
-        vm.startPrank(ACTOR);
-
-        ISpotMarketProxy spotMarketProxy = ISpotMarketProxy(
-            ZapExposed(address(zap)).expose_SPOT_MARKET_PROXY()
-        );
-        uint128 sUSDCId = ZapExposed(address(zap)).expose_SUSDC_SPOT_MARKET_ID();
-        IERC20 sUSDC = IERC20(ZapExposed(address(zap)).expose_SUSDC());
-
-        SUSD.approve(address(spotMarketProxy), type(uint256).max);
-
-        uint256 preSUSDCBalance = sUSDC.balanceOf(ACTOR);
-
-        assertEq(preSUSDCBalance, 0);
-
-        spotMarketProxy.buy({
-            marketId: sUSDCId,
-            usdAmount: converted_UINT_AMOUNT,
-            minAmountReceived: converted_UINT_AMOUNT,
-            referrer: REFERRER
-        });
-
-        uint256 postSUSDCBalance = sUSDC.balanceOf(ACTOR);
-
-        assertEq(postSUSDCBalance - preSUSDCBalance, converted_UINT_AMOUNT);
-
-        sUSDC.approve(address(spotMarketProxy), type(uint256).max);
-
-        preSUSDCBalance = sUSDC.balanceOf(ACTOR);
-
-        uint256 preUSDCBalance = USDC.balanceOf(ACTOR);
-
-        spotMarketProxy.unwrap({
-            marketId: sUSDCId,
-            unwrapAmount: converted_UINT_AMOUNT,
-            minAmountReceived: UINT_AMOUNT
-        });
-
-        postSUSDCBalance = sUSDC.balanceOf(ACTOR);
-
-        assertEq(postSUSDCBalance, 0);
-
-        uint256 postUSDCBalance = USDC.balanceOf(ACTOR);
-
-        assertEq(postUSDCBalance - preUSDCBalance, UINT_AMOUNT);
     }
 }
