@@ -79,13 +79,17 @@ contract ZapTest is Bootstrap {
 
 contract ZapIn is ZapTest {
     function test_zap_in() public {
+        // $USDC has 6 decimals
+        // $sUSD and $sUSDC have 18 decimals
+        // thus, 1e12 $sUSD/$sUSDC = 1 $USDC
+
         vm.startPrank(ACTOR);
 
         USDC.approve(address(zap), UINT_AMOUNT);
 
         zap.zap(INT_AMOUNT, REFERRER);
 
-        assertEq(SUSD.balanceOf(address(zap)), UINT_AMOUNT);
+        assertEq(SUSD.balanceOf(address(zap)), UINT_AMOUNT * 1e12);
 
         vm.stopPrank();
     }
@@ -111,8 +115,8 @@ contract ZapIn is ZapTest {
 
         USDC.approve(address(zap), UINT_AMOUNT);
 
-        vm.expectEmit(true, true, true, false);
-        emit ZappedIn(UINT_AMOUNT);
+        vm.expectEmit(true, true, true, true);
+        emit ZappedIn(UINT_AMOUNT * 1e12);
 
         zap.zap(INT_AMOUNT, REFERRER);
 
@@ -124,7 +128,7 @@ contract ZapOut is ZapTest {
     function test_zap_out() public {
         // $USDC has 6 decimals
         // $sUSD and $sUSDC have 18 decimals
-        // thus, 1e12 $sUSD = 1 $USDC
+        // thus, 1e12 $sUSD/$sUSDC = 1 $USDC
 
         uint256 sUSDAmount = 1e12;
         uint256 usdcAmount = 1;
@@ -149,6 +153,25 @@ contract ZapOut is ZapTest {
 
         vm.stopPrank();
     }
+
+    function test_zap_out_event() public {
+        // $USDC has 6 decimals
+        // $sUSD and $sUSDC have 18 decimals
+        // thus, 1e12 $sUSD/$sUSDC = 1 $USDC
+
+        uint256 sUSDAmount = 1e12;
+
+        vm.startPrank(ACTOR);
+
+        SUSD.transfer(address(zap), sUSDAmount);
+
+        vm.expectEmit(true, true, true, true);
+        emit ZappedOut(1);
+
+        zap.zap(-1e12, REFERRER);
+
+        vm.stopPrank();
+    }
 }
 
 contract Wrap is ZapTest {
@@ -168,7 +191,7 @@ contract Wrap is ZapTest {
     function test_synthetix_wrap() public {
         // $USDC has 6 decimals
         // $sUSD and $sUSDC have 18 decimals
-        // thus, 1e12 $sUSD = 1 $USDC
+        // thus, 1e12 $sUSD/$sUSDC = 1 $USDC
 
         vm.startPrank(ACTOR);
 
@@ -233,7 +256,7 @@ contract Unwrap is ZapTest {
     function test_synthetix_unwrap() public {
         // $USDC has 6 decimals
         // $sUSD and $sUSDC have 18 decimals
-        // thus, 1e12 $sUSD = 1 $USDC
+        // thus, 1e12 $sUSD/$sUSDC = 1 $USDC
 
         vm.startPrank(ACTOR);
 
