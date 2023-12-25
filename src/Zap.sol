@@ -6,6 +6,7 @@ import {ISpotMarketProxy} from "./interfaces/ISpotMarketProxy.sol";
 import {ZapEvents} from "./ZapEvents.sol";
 
 /// @title Zap contract for wrapping/unwrapping $USDC into $sUSD
+/// via Synthetix v3 Andromeda Spot Market
 /// @author JaredBorders (jaredborders@pm.me)
 abstract contract Zap is ZapEvents {
     /*//////////////////////////////////////////////////////////////
@@ -13,8 +14,10 @@ abstract contract Zap is ZapEvents {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice keccak256 hash of expected name of $sUSDC synth
+    /// @dev pre-computed to save gas during deployment:
+    /// keccak256(abi.encodePacked("Synthetic USD Coin Spot Market"))
     bytes32 internal constant HASHED_USDC_NAME =
-        keccak256(abi.encodePacked("Synthetic USD Coin Spot Market"));
+        0xdb59c31a60f6ecfcb2e666ed077a3791b5c753b5a5e8dc5120f29367b94bbb22;
 
     /*//////////////////////////////////////////////////////////////
                                IMMUTABLES
@@ -23,10 +26,10 @@ abstract contract Zap is ZapEvents {
     /// @notice $USDC token contract address
     IERC20 internal immutable USDC;
 
-    /// @notice $sUSD token contract address
+    /// @notice $sUSD token/synth contract address
     IERC20 internal immutable SUSD;
 
-    /// @notice sUSDC token contract address
+    /// @notice $sUSDC token/synth contract address
     IERC20 internal immutable SUSDC;
 
     /// @notice Synthetix v3 Spot Market ID for $sUSDC
@@ -35,8 +38,8 @@ abstract contract Zap is ZapEvents {
     /// @notice Synthetix v3 Spot Market Proxy contract address
     ISpotMarketProxy internal immutable SPOT_MARKET_PROXY;
 
-    /// @notice $USDC token decimals
-    uint8 internal immutable USDC_DECIMALS;
+    /// @notice used to adjust $USDC decimals
+    uint256 internal immutable DECIMALS_FACTOR;
 
     /*//////////////////////////////////////////////////////////////
                               CONSTRUCTOR
@@ -63,7 +66,7 @@ abstract contract Zap is ZapEvents {
         SUSD = IERC20(_susd);
         SPOT_MARKET_PROXY = ISpotMarketProxy(_spotMarketProxy);
 
-        USDC_DECIMALS = IERC20(_usdc).decimals();
+        DECIMALS_FACTOR = 10 ** (18 - IERC20(_usdc).decimals());
 
         assert(
             keccak256(abi.encodePacked(SPOT_MARKET_PROXY.name(_sUSDCId)))
@@ -123,7 +126,7 @@ abstract contract Zap is ZapEvents {
         /// @custom:example if $USDC has 6 decimals,
         /// and $sUSD and $sUSDC have 18 decimals,
         /// then, 1e12 $sUSD/$sUSDC = 1 $USDC
-        uint256 adjustedAmount = _amount * 10 ** (18 - USDC_DECIMALS);
+        uint256 adjustedAmount = _amount * DECIMALS_FACTOR;
 
         // wrap $USDC into $sUSDC
         /// @dev call will result in $sUSDC minted/transferred to the Zap contract
@@ -168,14 +171,14 @@ abstract contract Zap is ZapEvents {
         /// @custom:example if $USDC has 6 decimals, and $sUSDC has greater than 6 decimals,
         /// then it is possible that the amount of $sUSDC to unwrap is less than 1 $USDC;
         /// this contract will prevent such cases
-        assert(_amount >= 10 ** (18 - USDC_DECIMALS));
+        assert(_amount >= DECIMALS_FACTOR);
 
         /// @notice $USDC might use non-standard decimals
         /// @dev adjustedAmount is the amount of $USDC expected to receive from unwrapping
         /// @custom:example if $USDC has 6 decimals,
         /// and $sUSD and $sUSDC have 18 decimals,
         /// then, 1e12 $sUSD/$sUSDC = 1 $USDC
-        uint256 adjustedAmount = _amount / 10 ** (18 - USDC_DECIMALS);
+        uint256 adjustedAmount = _amount / DECIMALS_FACTOR;
 
         // unwrap $sUSDC into $USDC
         /// @dev call will result in $USDC minted/transferred to the Zap contract
