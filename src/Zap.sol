@@ -35,6 +35,9 @@ abstract contract Zap is ZapEvents {
     /// @notice Synthetix v3 Spot Market Proxy contract address
     ISpotMarketProxy internal immutable SPOT_MARKET_PROXY;
 
+    /// @notice $USDC token decimals
+    uint8 internal immutable USDC_DECIMALS;
+
     /*//////////////////////////////////////////////////////////////
                               CONSTRUCTOR
     //////////////////////////////////////////////////////////////*/
@@ -60,6 +63,8 @@ abstract contract Zap is ZapEvents {
         SUSD = IERC20(_susd);
         SPOT_MARKET_PROXY = ISpotMarketProxy(_spotMarketProxy);
 
+        USDC_DECIMALS = IERC20(_usdc).decimals();
+
         assert(
             keccak256(abi.encodePacked(SPOT_MARKET_PROXY.name(_sUSDCId)))
                 == HASHED_USDC_NAME
@@ -73,12 +78,16 @@ abstract contract Zap is ZapEvents {
                                  HOOKS
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice hook called immediately prior to executing a zap
-    /// @dev only implement if needed
+    /// @notice hook called prior to executing a zap
+    /// @dev use hooks with caution; refer to
+    /// https://docs.openzeppelin.com/contracts/3.x/extending-contracts#using-hooks
+    /// for more information
     function _preZap() internal virtual {}
 
-    /// @notice hook called immediately after executing a zap
-    /// @dev only implement if needed
+    /// @notice hook called after executing a zap
+    /// @dev use hooks with caution; refer to
+    /// https://docs.openzeppelin.com/contracts/3.x/extending-contracts#using-hooks
+    /// for more information
     function _postZap() internal virtual {}
 
     /*//////////////////////////////////////////////////////////////
@@ -109,27 +118,34 @@ abstract contract Zap is ZapEvents {
         // allocate $USDC allowance to the Spot Market Proxy
         assert(USDC.approve(address(SPOT_MARKET_PROXY), _amount));
 
+        /// @notice $USDC might use non-standard decimals
+        /// @dev adjustedAmount is the amount of $sUSDC expected to receive from wrapping
+        /// @custom:example if $USDC has 6 decimals,
+        /// and $sUSD and $sUSDC have 18 decimals,
+        /// then, 1e12 $sUSD/$sUSDC = 1 $USDC
+        uint256 adjustedAmount = _amount * 10 ** (18 - USDC_DECIMALS);
+
         // wrap $USDC into $sUSDC
         /// @dev call will result in $sUSDC minted/transferred to the Zap contract
         SPOT_MARKET_PROXY.wrap({
             marketId: SUSDC_SPOT_MARKET_ID,
             wrapAmount: _amount,
-            minAmountReceived: _amount
+            minAmountReceived: adjustedAmount
         });
 
         // allocate $sUSDC allowance to the Spot Market Proxy
-        assert(SUSDC.approve(address(SPOT_MARKET_PROXY), _amount));
+        assert(SUSDC.approve(address(SPOT_MARKET_PROXY), adjustedAmount));
 
         // sell $sUSDC for $sUSD
         /// @dev call will result in $sUSD minted/transferred to the Zap contract
         SPOT_MARKET_PROXY.sell({
             marketId: SUSDC_SPOT_MARKET_ID,
-            synthAmount: _amount,
-            minUsdAmount: _amount,
+            synthAmount: adjustedAmount,
+            minUsdAmount: adjustedAmount,
             referrer: _referrer
         });
 
-        emit ZappedIn(_amount);
+        emit ZappedIn(adjustedAmount);
     }
 
     function _zapOut(uint256 _amount, address _referrer) internal {
@@ -148,14 +164,27 @@ abstract contract Zap is ZapEvents {
         // allocate $sUSDC allowance to the Spot Market Proxy
         assert(SUSDC.approve(address(SPOT_MARKET_PROXY), _amount));
 
+        // prior to unwrapping, ensure that there is enough $sUSDC to unwrap
+        /// @custom:example if $USDC has 6 decimals, and $sUSDC has greater than 6 decimals,
+        /// then it is possible that the amount of $sUSDC to unwrap is less than 1 $USDC;
+        /// this contract will prevent such cases
+        assert(_amount >= 10 ** (18 - USDC_DECIMALS));
+
+        /// @notice $USDC might use non-standard decimals
+        /// @dev adjustedAmount is the amount of $USDC expected to receive from unwrapping
+        /// @custom:example if $USDC has 6 decimals,
+        /// and $sUSD and $sUSDC have 18 decimals,
+        /// then, 1e12 $sUSD/$sUSDC = 1 $USDC
+        uint256 adjustedAmount = _amount / 10 ** (18 - USDC_DECIMALS);
+
         // unwrap $sUSDC into $USDC
         /// @dev call will result in $USDC minted/transferred to the Zap contract
         SPOT_MARKET_PROXY.unwrap({
             marketId: SUSDC_SPOT_MARKET_ID,
             unwrapAmount: _amount,
-            minAmountReceived: _amount / 1e12
+            minAmountReceived: adjustedAmount
         });
 
-        emit ZappedOut(_amount);
+        emit ZappedOut(adjustedAmount);
     }
 }
