@@ -13,7 +13,8 @@ contract ZapErrors {
     /// contract for the name of the Spot Market ID returns
     /// a different name than expected
     /// @dev only can be thrown in during Zap deployment
-    error InvalidHashedUSDCName(bytes32 hashedName);
+    /// @param id Synthetix v3 Spot Market ID for $sUSDC
+    error InvalidIdSUSDC(uint128 id);
 
     /// @notice thrown when a given token transfer fails
     /// @param token address of the token contract

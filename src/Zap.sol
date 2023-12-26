@@ -71,9 +71,10 @@ abstract contract Zap is ZapErrors, ZapEvents {
 
         DECIMALS_FACTOR = 10 ** (18 - IERC20(_usdc).decimals());
 
-        bytes32 hash =
-            keccak256(abi.encodePacked(SPOT_MARKET_PROXY.name(_sUSDCId)));
-        if (hash != HASHED_SUSDC_NAME) revert InvalidHashedUSDCName(hash);
+        if (
+            keccak256(abi.encodePacked(SPOT_MARKET_PROXY.name(_sUSDCId)))
+                != HASHED_SUSDC_NAME
+        ) revert InvalidIdSUSDC(_sUSDCId);
 
         // id of $sUSDC is verified to be correct via the above
         // name comparison check
