@@ -103,9 +103,14 @@ abstract contract Zap is ZapErrors, ZapEvents {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice zap wraps/unwraps $USDC into/from $sUSD
-    /// @dev must approve the Zap contract to spend $USDC if wrapping
-    /// @dev assumes zero fees when wrapping/unwrapping/selling/buying
+    /// @dev wrapping $USDC requires sufficient Zap
+    /// contract $USDC allowance
     /// and thus is a pure 1:1 ratio
+    /// @dev unwrapping may result in a loss of precision:
+    /// unwrapping (1e12 + n) $sUSDC results in 1 $USDC
+    /// where n is a number less than 1e12
+    /// @dev assumes zero fees when
+    /// wrapping/unwrapping/selling/buying
     /// @param _amount is the amount of $USDC to wrap/unwrap
     /// @param _referrer optional address of the referrer,
     /// for Synthetix fee share
