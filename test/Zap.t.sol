@@ -1,8 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.20;
 
-import {Bootstrap} from "test/utils/Bootstrap.sol";
+import {
+    Bootstrap,
+    MockSpotMarketProxy,
+    MockUSDC,
+    MockSUSD
+} from "test/utils/Bootstrap.sol";
 import {IERC20} from "../src/interfaces/IERC20.sol";
+import {ZapErrors} from "../src/ZapErrors.sol";
 import {ZapExposed} from "test/utils/exposed/ZapExposed.sol";
 
 /**
@@ -30,6 +36,10 @@ contract ZapTest is Bootstrap {
     IERC20 internal SUSD;
     IERC20 internal USDC;
 
+    MockSpotMarketProxy public mockSpotMarketProxy;
+    MockUSDC public mockUSDC;
+    MockSUSD public mockSUSD;
+
     uint256 internal DECIMAL_FACTOR;
 
     function setUp() public {
@@ -38,6 +48,10 @@ contract ZapTest is Bootstrap {
 
         SUSD = IERC20(ZapExposed(address(zap)).expose_SUSD());
         USDC = IERC20(ZapExposed(address(zap)).expose_USDC());
+
+        mockSpotMarketProxy = new MockSpotMarketProxy();
+        mockUSDC = new MockUSDC();
+        mockSUSD = new MockSUSD();
 
         deal(address(SUSD), ACTOR, INITIAL_MINT);
         deal(address(USDC), ACTOR, INITIAL_MINT);
@@ -66,33 +80,33 @@ contract Deployment is ZapTest {
     }
 
     function test_usdc_zero_address() public {
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSelector(ZapErrors.ZeroAddress.selector));
 
         new ZapExposed({
             _usdc: address(0),
-            _susd: address(0x1),
-            _spotMarketProxy: address(0x1),
+            _susd: address(mockSUSD),
+            _spotMarketProxy: address(mockSpotMarketProxy),
             _sUSDCId: type(uint128).max
         });
     }
 
     function test_susd_zero_address() public {
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSelector(ZapErrors.ZeroAddress.selector));
 
         new ZapExposed({
-            _usdc: address(0x1),
+            _usdc: address(mockUSDC),
             _susd: address(0),
-            _spotMarketProxy: address(0x1),
+            _spotMarketProxy: address(mockSpotMarketProxy),
             _sUSDCId: type(uint128).max
         });
     }
 
     function test_spotMarketProxy_zero_address() public {
-        vm.expectRevert();
+        vm.expectRevert(abi.encodeWithSelector(ZapErrors.ZeroAddress.selector));
 
         new ZapExposed({
-            _usdc: address(0x1),
-            _susd: address(0x1),
+            _usdc: address(mockUSDC),
+            _susd: address(mockSUSD),
             _spotMarketProxy: address(0),
             _sUSDCId: type(uint128).max
         });
@@ -103,12 +117,16 @@ contract Deployment is ZapTest {
     }
 
     function test_sUSDCId_invalid() public {
-        vm.expectRevert();
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ZapErrors.InvalidIdSUSDC.selector, type(uint128).max
+            )
+        );
 
         new ZapExposed({
-            _usdc: address(0x1),
-            _susd: address(0x1),
-            _spotMarketProxy: address(0x1),
+            _usdc: address(mockUSDC),
+            _susd: address(mockSUSD),
+            _spotMarketProxy: address(mockSpotMarketProxy),
             _sUSDCId: type(uint128).max
         });
     }
