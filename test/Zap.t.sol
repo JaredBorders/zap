@@ -58,9 +58,9 @@ contract Deployment is ZapTest {
         assert(address(zap) != address(0));
     }
 
-    function test_hashed_usdc_name() public {
+    function test_hashed_susdc_name() public {
         assertEq(
-            ZapExposed(address(zap)).expose_HASHED_USDC_NAME(),
+            ZapExposed(address(zap)).expose_HASHED_SUSDC_NAME(),
             keccak256(abi.encodePacked("Synthetic USD Coin Spot Market"))
         );
     }

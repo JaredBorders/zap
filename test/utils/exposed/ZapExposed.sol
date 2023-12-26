@@ -9,8 +9,8 @@ import {ZapExposedEvents} from "./ZapExposedEvents.sol";
 /// *not* safe and *not* meant for mainnet
 /// @author JaredBorders (jaredborders@pm.me)
 contract ZapExposed is Zap, ZapExposedEvents {
-    function expose_HASHED_USDC_NAME() public pure returns (bytes32) {
-        return HASHED_USDC_NAME;
+    function expose_HASHED_SUSDC_NAME() public pure returns (bytes32) {
+        return HASHED_SUSDC_NAME;
     }
 
     function expose_USDC() public view returns (address) {
