@@ -16,6 +16,8 @@ import {MockSUSD} from "../utils/mocks/MockSUSD.sol";
 import {SynthetixV3Errors} from "./errors/SynthetixV3Errors.sol";
 import {Test} from "../../lib/forge-std/src/Test.sol";
 
+/// @title Bootstrap contract for setting up test environment
+/// @author JaredBorders (jaredborders@pm.me)
 contract Bootstrap is Test, ZapEvents, SynthetixV3Errors, Constants {
     using console2 for *;
 

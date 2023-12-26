@@ -3,6 +3,8 @@ pragma solidity 0.8.20;
 
 import {ISpotMarketProxy} from "./../../../src/interfaces/ISpotMarketProxy.sol";
 
+/// @title MockSpotMarketProxy contract for testing
+/// @author JaredBorders (jaredborders@pm.me)
 contract MockSpotMarketProxy is ISpotMarketProxy {
     function name(uint128 /* marketId */ )
         external

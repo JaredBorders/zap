@@ -3,6 +3,8 @@ pragma solidity 0.8.20;
 
 import {IERC20} from "./../../../src/interfaces/IERC20.sol";
 
+/// @title MockSUSD contract for testing
+/// @author JaredBorders (jaredborders@pm.me)
 contract MockUSDC is IERC20 {
     function decimals() external pure override returns (uint8) {
         return 6;
