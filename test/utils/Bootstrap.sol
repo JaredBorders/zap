@@ -1,20 +1,20 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.20;
 
-import {console2} from "lib/forge-std/src/console2.sol";
+import {console2} from "../../lib/forge-std/src/console2.sol";
 import {
     Zap,
     BaseGoerliParameters,
     BaseParameters,
     Setup
-} from "script/Deploy.s.sol";
+} from "../../script/Deploy.s.sol";
 import {ZapEvents} from "./../../src/ZapEvents.sol";
 import {Constants} from "./Constants.sol";
-import {MockSpotMarketProxy} from "test/utils/mocks/MockSpotMarketProxy.sol";
-import {MockUSDC} from "test/utils/mocks/MockUSDC.sol";
-import {MockSUSD} from "test/utils/mocks/MockSUSD.sol";
+import {MockSpotMarketProxy} from "../utils/mocks/MockSpotMarketProxy.sol";
+import {MockUSDC} from "../utils/mocks/MockUSDC.sol";
+import {MockSUSD} from "../utils/mocks/MockSUSD.sol";
 import {SynthetixV3Errors} from "./errors/SynthetixV3Errors.sol";
-import {Test} from "lib/forge-std/src/Test.sol";
+import {Test} from "../../lib/forge-std/src/Test.sol";
 
 contract Bootstrap is Test, ZapEvents, SynthetixV3Errors, Constants {
     using console2 for *;

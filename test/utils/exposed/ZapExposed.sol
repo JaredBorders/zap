@@ -1,14 +1,14 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.20;
 
-import {Zap} from "src/Zap.sol";
-import {ZapExposedEvents} from "./ZapExposedEvents.sol";
+import {Zap} from "../../../src/Zap.sol";
+import {ZapExposedHookEvents} from "./ZapExposedHookEvents.sol";
 
 /// @title Exposed Zap contract used for testing and in the deploy script
 /// @dev although it is used in the deploy script, it is
 /// *not* safe and *not* meant for mainnet
 /// @author JaredBorders (jaredborders@pm.me)
-contract ZapExposed is Zap, ZapExposedEvents {
+contract ZapExposed is Zap, ZapExposedHookEvents {
     function expose_HASHED_SUSDC_NAME() public pure returns (bytes32) {
         return HASHED_SUSDC_NAME;
     }

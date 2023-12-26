@@ -6,11 +6,11 @@ import {
     MockSpotMarketProxy,
     MockUSDC,
     MockSUSD
-} from "test/utils/Bootstrap.sol";
+} from "./utils/Bootstrap.sol";
 import {IERC20} from "../src/interfaces/IERC20.sol";
 import {ISpotMarketProxy} from "../src/interfaces/ISpotMarketProxy.sol";
 import {ZapErrors} from "../src/ZapErrors.sol";
-import {ZapExposed} from "test/utils/exposed/ZapExposed.sol";
+import {ZapExposed} from "./utils/exposed/ZapExposed.sol";
 
 /**
  * @custom:example-wrap-and-unwrap

@@ -2,15 +2,15 @@
 pragma solidity 0.8.20;
 
 import {BaseGoerliParameters} from
-    "script/utils/parameters/BaseGoerliParameters.sol";
-import {BaseParameters} from "script/utils/parameters/BaseParameters.sol";
+    "./utils/parameters/BaseGoerliParameters.sol";
+import {BaseParameters} from "./utils/parameters/BaseParameters.sol";
 import {OptimismGoerliParameters} from
-    "script/utils/parameters/OptimismGoerliParameters.sol";
+    "./utils/parameters/OptimismGoerliParameters.sol";
 import {OptimismParameters} from
-    "script/utils/parameters/OptimismParameters.sol";
-import {Script} from "lib/forge-std/src/Script.sol";
-import {Zap} from "src/Zap.sol";
-import {ZapExposed} from "test/utils/exposed/ZapExposed.sol";
+    "./utils/parameters/OptimismParameters.sol";
+import {Script} from "../lib/forge-std/src/Script.sol";
+import {Zap} from "../src/Zap.sol";
+import {ZapExposed} from "../test/utils/exposed/ZapExposed.sol";
 
 /// @title Zap deployment script
 /// @notice ZapExposed is deployed (not Zap) and
