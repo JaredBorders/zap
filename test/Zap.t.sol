@@ -8,6 +8,7 @@ import {
     MockSUSD
 } from "test/utils/Bootstrap.sol";
 import {IERC20} from "../src/interfaces/IERC20.sol";
+import {ISpotMarketProxy} from "../src/interfaces/ISpotMarketProxy.sol";
 import {ZapErrors} from "../src/ZapErrors.sol";
 import {ZapExposed} from "test/utils/exposed/ZapExposed.sol";
 
@@ -35,6 +36,8 @@ import {ZapExposed} from "test/utils/exposed/ZapExposed.sol";
 contract ZapTest is Bootstrap {
     IERC20 internal SUSD;
     IERC20 internal USDC;
+    IERC20 internal SUSDC;
+    ISpotMarketProxy internal SPOT_MARKET_PROXY;
 
     MockSpotMarketProxy public mockSpotMarketProxy;
     MockUSDC public mockUSDC;
@@ -48,6 +51,10 @@ contract ZapTest is Bootstrap {
 
         SUSD = IERC20(ZapExposed(address(zap)).expose_SUSD());
         USDC = IERC20(ZapExposed(address(zap)).expose_USDC());
+        SUSDC = IERC20(ZapExposed(address(zap)).expose_SUSDC());
+        SPOT_MARKET_PROXY = ISpotMarketProxy(
+            ZapExposed(address(zap)).expose_SPOT_MARKET_PROXY()
+        );
 
         mockSpotMarketProxy = new MockSpotMarketProxy();
         mockUSDC = new MockUSDC();
@@ -159,6 +166,86 @@ contract ZapIn is ZapTest {
         vm.stopPrank();
     }
 
+    function test_zap_in_usdc_transfer_fails() public {
+        vm.mockCall(
+            address(USDC),
+            abi.encodeWithSelector(
+                IERC20.transferFrom.selector, ACTOR, address(zap), UINT_AMOUNT
+            ),
+            abi.encode(false)
+        );
+
+        vm.startPrank(ACTOR);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ZapErrors.TransferFailed.selector,
+                address(USDC),
+                ACTOR,
+                address(zap),
+                UINT_AMOUNT
+            )
+        );
+
+        zap.zap(INT_AMOUNT, REFERRER);
+
+        vm.stopPrank();
+    }
+
+    function test_zap_in_usdc_approve_fails() public {
+        vm.mockCall(
+            address(USDC),
+            abi.encodeWithSelector(
+                IERC20.approve.selector, address(SPOT_MARKET_PROXY), UINT_AMOUNT
+            ),
+            abi.encode(false)
+        );
+
+        vm.startPrank(ACTOR);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ZapErrors.ApprovalFailed.selector,
+                address(USDC),
+                address(zap),
+                address(SPOT_MARKET_PROXY),
+                UINT_AMOUNT
+            )
+        );
+
+        zap.zap(INT_AMOUNT, REFERRER);
+
+        vm.stopPrank();
+    }
+
+    function test_zap_in_susdc_approve_fails() public {
+        vm.mockCall(
+            address(SUSDC),
+            abi.encodeWithSelector(
+                IERC20.approve.selector,
+                address(SPOT_MARKET_PROXY),
+                UINT_AMOUNT * DECIMAL_FACTOR
+            ),
+            abi.encode(false)
+        );
+
+        vm.startPrank(ACTOR);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ZapErrors.ApprovalFailed.selector,
+                address(SUSDC),
+                address(zap),
+                address(SPOT_MARKET_PROXY),
+                UINT_AMOUNT * DECIMAL_FACTOR
+            )
+        );
+
+        zap.zap(INT_AMOUNT, REFERRER);
+
+        vm.stopPrank();
+    }
+
     function test_zap_in_event() public {
         vm.startPrank(ACTOR);
 
@@ -190,6 +277,97 @@ contract ZapOut is ZapTest {
         vm.expectRevert();
 
         zap.zap(0, REFERRER);
+
+        vm.stopPrank();
+    }
+
+    function test_zap_out_susd_approve_fails() public {
+        vm.mockCall(
+            address(SUSD),
+            abi.encodeWithSelector(
+                IERC20.approve.selector,
+                address(SPOT_MARKET_PROXY),
+                UINT_AMOUNT * DECIMAL_FACTOR
+            ),
+            abi.encode(false)
+        );
+
+        vm.startPrank(ACTOR);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ZapErrors.ApprovalFailed.selector,
+                address(SUSD),
+                address(zap),
+                address(SPOT_MARKET_PROXY),
+                UINT_AMOUNT * DECIMAL_FACTOR
+            )
+        );
+
+        zap.zap(-INT_AMOUNT * int256(DECIMAL_FACTOR), REFERRER);
+
+        vm.stopPrank();
+    }
+
+    function test_zap_out_susdc_approve_fails() public {
+        vm.mockCall(
+            address(SUSDC),
+            abi.encodeWithSelector(
+                IERC20.approve.selector,
+                address(SPOT_MARKET_PROXY),
+                UINT_AMOUNT * DECIMAL_FACTOR
+            ),
+            abi.encode(false)
+        );
+
+        vm.startPrank(ACTOR);
+
+        SUSD.transfer(address(zap), UINT_AMOUNT * DECIMAL_FACTOR);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ZapErrors.ApprovalFailed.selector,
+                address(SUSDC),
+                address(zap),
+                address(SPOT_MARKET_PROXY),
+                UINT_AMOUNT * DECIMAL_FACTOR
+            )
+        );
+
+        zap.zap(-INT_AMOUNT * int256(DECIMAL_FACTOR), REFERRER);
+
+        vm.stopPrank();
+    }
+
+    function test_zap_out_insufficient_amount() public {
+        vm.startPrank(ACTOR);
+
+        SUSD.transfer(address(zap), UINT_AMOUNT * DECIMAL_FACTOR);
+
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                ZapErrors.InsufficientAmount.selector, DECIMAL_FACTOR - 1
+            )
+        );
+
+        zap.zap(-int256(DECIMAL_FACTOR - 1), REFERRER);
+
+        vm.stopPrank();
+    }
+
+    function test_zap_out_precision_loss(uint256 sUSDLost) public {
+        vm.assume(sUSDLost < DECIMAL_FACTOR);
+
+        vm.startPrank(ACTOR);
+
+        SUSD.transfer(address(zap), (UINT_AMOUNT * DECIMAL_FACTOR) + sUSDLost);
+
+        zap.zap(
+            -((INT_AMOUNT * int256(DECIMAL_FACTOR)) + int256(sUSDLost)),
+            REFERRER
+        );
+
+        assertEq(USDC.balanceOf(address(zap)), UINT_AMOUNT);
 
         vm.stopPrank();
     }
