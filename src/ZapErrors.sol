@@ -4,9 +4,18 @@ pragma solidity 0.8.20;
 /// @title Zap contract errors
 /// @author JaredBorders (jaredborders@pm.me)
 contract ZapErrors {
-    /// @notice thrown when address is zero
+    /// @notice thrown when $USDC address is zero
     /// @dev only can be thrown in during Zap deployment
-    error ZeroAddress();
+    error USDCZeroAddress();
+
+    /// @notice thrown when $sUSD address is zero
+    /// @dev only can be thrown in during Zap deployment
+    error SUSDZeroAddress();
+
+    /// @notice thrown when Synthetix v3 Spot Market Proxy
+    /// address is zero
+    /// @dev only can be thrown in during Zap deployment
+    error SpotMarketZeroAddress();
 
     /// @notice thrown when the given Synthetix v3 Spot Market ID
     /// for $sUSDC is incorrect; querying the Spot Market Proxy
