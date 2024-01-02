@@ -10,31 +10,31 @@ import {ZapExposedHookEvents} from "./ZapExposedHookEvents.sol";
 /// @author JaredBorders (jaredborders@pm.me)
 contract ZapExposed is Zap, ZapExposedHookEvents {
     function expose_HASHED_SUSDC_NAME() public pure returns (bytes32) {
-        return HASHED_SUSDC_NAME;
+        return _HASHED_SUSDC_NAME;
     }
 
     function expose_USDC() public view returns (address) {
-        return address(USDC);
+        return address(_USDC);
     }
 
     function expose_SUSD() public view returns (address) {
-        return address(SUSD);
+        return address(_SUSD);
     }
 
     function expose_SUSDC() public view returns (address) {
-        return address(SUSDC);
+        return address(_SUSDC);
     }
 
     function expose_SUSDC_SPOT_MARKET_ID() public view returns (uint128) {
-        return SUSDC_SPOT_MARKET_ID;
+        return _SUSDC_SPOT_MARKET_ID;
     }
 
     function expose_SPOT_MARKET_PROXY() public view returns (address) {
-        return address(SPOT_MARKET_PROXY);
+        return address(_SPOT_MARKET_PROXY);
     }
 
     function expose_DECIMALS_FACTOR() public view returns (uint256) {
-        return DECIMALS_FACTOR;
+        return _DECIMALS_FACTOR;
     }
 
     constructor(

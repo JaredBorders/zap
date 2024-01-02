@@ -87,7 +87,9 @@ contract Deployment is ZapTest {
     }
 
     function test_usdc_zero_address() public {
-        vm.expectRevert(abi.encodeWithSelector(ZapErrors.ZeroAddress.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(ZapErrors.USDCZeroAddress.selector)
+        );
 
         new ZapExposed({
             _usdc: address(0),
@@ -98,7 +100,9 @@ contract Deployment is ZapTest {
     }
 
     function test_susd_zero_address() public {
-        vm.expectRevert(abi.encodeWithSelector(ZapErrors.ZeroAddress.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(ZapErrors.SUSDZeroAddress.selector)
+        );
 
         new ZapExposed({
             _usdc: address(mockUSDC),
@@ -109,7 +113,9 @@ contract Deployment is ZapTest {
     }
 
     function test_spotMarketProxy_zero_address() public {
-        vm.expectRevert(abi.encodeWithSelector(ZapErrors.ZeroAddress.selector));
+        vm.expectRevert(
+            abi.encodeWithSelector(ZapErrors.SpotMarketZeroAddress.selector)
+        );
 
         new ZapExposed({
             _usdc: address(mockUSDC),
