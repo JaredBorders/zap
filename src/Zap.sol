@@ -121,15 +121,26 @@ abstract contract Zap is ZapErrors, ZapEvents {
         _preZap();
 
         if (_amount > 0) {
-            _zapIn(_amount.abs256(), _referrer);
+            /// @dev given the amount is positive,
+            /// simply casting (int -> uint) is safe
+            uint256 adjustedAmount = _zapIn(uint256(_amount), _referrer);
+
+            emit ZappedIn(adjustedAmount);
         } else {
-            _zapOut(_amount.abs256(), _referrer);
+            /// @dev given the amount is negative,
+            /// simply casting (int -> uint) is unsafe, thus we use .abs()
+            uint256 adjustedAmount = _zapOut(_amount.abs256(), _referrer);
+
+            emit ZappedOut(adjustedAmount);
         }
 
         _postZap();
     }
 
-    function _zapIn(uint256 _amount, address _referrer) internal {
+    function _zapIn(uint256 _amount, address _referrer)
+        internal
+        returns (uint256 adjustedAmount)
+    {
         // transfer $USDC to the Zap contract
         if (!_USDC.transferFrom(msg.sender, address(this), _amount)) {
             revert TransferFailed(
@@ -154,7 +165,7 @@ abstract contract Zap is ZapErrors, ZapEvents {
         /// @custom:example if $USDC has 6 decimals,
         /// and $sUSD and $sUSDC have 18 decimals,
         /// then, 1e12 $sUSD/$sUSDC = 1 $USDC
-        uint256 adjustedAmount = _amount * _DECIMALS_FACTOR;
+        adjustedAmount = _amount * _DECIMALS_FACTOR;
 
         /// @notice wrap $USDC into $sUSDC
         /// @dev call will result in $sUSDC minted/transferred
@@ -184,11 +195,12 @@ abstract contract Zap is ZapErrors, ZapEvents {
             minUsdAmount: adjustedAmount,
             referrer: _referrer
         });
-
-        emit ZappedIn(adjustedAmount);
     }
 
-    function _zapOut(uint256 _amount, address _referrer) internal {
+    function _zapOut(uint256 _amount, address _referrer)
+        internal
+        returns (uint256 adjustedAmount)
+    {
         // allocate $sUSD allowance to the Spot Market Proxy
         if (!_SUSD.approve(address(_SPOT_MARKET_PROXY), _amount)) {
             revert ApprovalFailed(
@@ -238,7 +250,7 @@ abstract contract Zap is ZapErrors, ZapEvents {
         /// @custom:example if $USDC has 6 decimals,
         /// and $sUSD and $sUSDC have 18 decimals,
         /// then, 1e12 $sUSD/$sUSDC = 1 $USDC
-        uint256 adjustedAmount = _amount / _DECIMALS_FACTOR;
+        adjustedAmount = _amount / _DECIMALS_FACTOR;
 
         /// @notice unwrap $USDC via burning $sUSDC
         /// @dev call will result in $USDC minted/transferred
@@ -248,7 +260,5 @@ abstract contract Zap is ZapErrors, ZapEvents {
             unwrapAmount: _amount,
             minAmountReceived: adjustedAmount
         });
-
-        emit ZappedOut(adjustedAmount);
     }
 }
