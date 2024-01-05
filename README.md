@@ -20,9 +20,11 @@ src/
 ├── Zap.sol
 ├── ZapErrors.sol
 ├── ZapEvents.sol
-└── interfaces
-    ├── IERC20.sol
-    └── ISpotMarketProxy.sol
+├── interfaces
+│   ├── IERC20.sol
+│   └── ISpotMarketProxy.sol
+└── libraries
+    └── MathLib.sol
 ```
 
 ## Tests
