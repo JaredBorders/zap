@@ -3,6 +3,7 @@ pragma solidity 0.8.20;
 
 import {IERC20} from "./interfaces/IERC20.sol";
 import {ISpotMarketProxy} from "./interfaces/ISpotMarketProxy.sol";
+import {MathLib} from "./libraries/MathLib.sol";
 import {ZapErrors} from "./ZapErrors.sol";
 import {ZapEvents} from "./ZapEvents.sol";
 
@@ -10,6 +11,8 @@ import {ZapEvents} from "./ZapEvents.sol";
 /// via Synthetix v3 Andromeda Spot Market
 /// @author JaredBorders (jaredborders@pm.me)
 abstract contract Zap is ZapErrors, ZapEvents {
+    using MathLib for int256;
+
     /*//////////////////////////////////////////////////////////////
                                CONSTANTS
     //////////////////////////////////////////////////////////////*/
@@ -118,9 +121,9 @@ abstract contract Zap is ZapErrors, ZapEvents {
         _preZap();
 
         if (_amount > 0) {
-            _zapIn(uint256(_amount), _referrer);
+            _zapIn(_amount.abs256(), _referrer);
         } else {
-            _zapOut(uint256(-_amount), _referrer);
+            _zapOut(_amount.abs256(), _referrer);
         }
 
         _postZap();
