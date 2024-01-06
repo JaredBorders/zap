@@ -117,7 +117,7 @@ abstract contract Zap is ZapErrors, ZapEvents {
     /// @param _amount is the amount of $USDC to wrap/unwrap
     /// @param _referrer optional address of the referrer,
     /// for Synthetix fee share
-    function zap(int256 _amount, address _referrer) external {
+    function zap(int256 _amount, address _referrer) external virtual {
         _preZap();
 
         if (_amount > 0) {
