@@ -5,10 +5,12 @@ pragma solidity 0.8.20;
 /// @author JaredBorders (jaredborders@pm.me)
 contract ZapEvents {
     /// @notice emitted after successful $USDC -> $sUSD zap
-    /// @param amount of $USDC wrapped and $sUSD minted
-    event ZappedIn(uint256 amount);
+    /// @param amountWrapped amount of $USDC wrapped
+    /// @param amountMinted amount of $sUSD minted
+    event ZappedIn(uint256 amountWrapped, uint256 amountMinted);
 
     /// @notice emitted after successful $sUSD -> $USDC zap
-    /// @param amount of $USDC unwrapped and $sUSD burned
-    event ZappedOut(uint256 amount);
+    /// @param amountBurned amount of $sUSD burned
+    /// @param amountUnwrapped amount of $USDC unwrapped
+    event ZappedOut(uint256 amountBurned, uint256 amountUnwrapped);
 }

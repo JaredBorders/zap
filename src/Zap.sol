@@ -3,7 +3,6 @@ pragma solidity 0.8.20;
 
 import {IERC20} from "./interfaces/IERC20.sol";
 import {ISpotMarketProxy} from "./interfaces/ISpotMarketProxy.sol";
-import {MathLib} from "./libraries/MathLib.sol";
 import {ZapErrors} from "./ZapErrors.sol";
 import {ZapEvents} from "./ZapEvents.sol";
 
@@ -11,8 +10,6 @@ import {ZapEvents} from "./ZapEvents.sol";
 /// via Synthetix v3 Andromeda Spot Market
 /// @author JaredBorders (jaredborders@pm.me)
 abstract contract Zap is ZapErrors, ZapEvents {
-    using MathLib for int256;
-
     /*//////////////////////////////////////////////////////////////
                                CONSTANTS
     //////////////////////////////////////////////////////////////*/
@@ -86,59 +83,23 @@ abstract contract Zap is ZapErrors, ZapEvents {
     }
 
     /*//////////////////////////////////////////////////////////////
-                                 HOOKS
+                                 ZAP IN
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice hook called prior to executing a zap
-    /// @dev use hooks with caution; refer to
-    /// docs.openzeppelin.com/contracts/3.x/extending-contracts#using-hooks
-    /// for more information
-    function _preZap() internal virtual {}
-
-    /// @notice hook called after executing a zap
-    /// @dev use hooks with caution; refer to
-    /// docs.openzeppelin.com/contracts/3.x/extending-contracts#using-hooks
-    /// for more information
-    function _postZap() internal virtual {}
-
-    /*//////////////////////////////////////////////////////////////
-                                ZAPPING
-    //////////////////////////////////////////////////////////////*/
-
-    /// @notice zap wraps/unwraps $USDC into/from $sUSD
+    /// @notice wrap $USDC into $sUSD
+    /// @dev call will result in $sUSD minted to this contract
+    /// @dev override this function to execute logic before/after
     /// @dev wrapping $USDC requires sufficient Zap
-    /// contract $USDC allowance
-    /// and thus is a pure 1:1 ratio
-    /// @dev unwrapping may result in a loss of precision:
-    /// unwrapping (1e12 + n) $sUSDC results in 1 $USDC
-    /// where n is a number less than 1e12
+    /// contract $USDC allowance and results in a
+    /// 1:1 ratio in terms of value
     /// @dev assumes zero fees when
     /// wrapping/unwrapping/selling/buying
-    /// @param _amount is the amount of $USDC to wrap/unwrap
+    /// @param _amount is the amount of $USDC to wrap
     /// @param _referrer optional address of the referrer,
     /// for Synthetix fee share
-    function zap(int256 _amount, address _referrer) external virtual {
-        _preZap();
-
-        if (_amount > 0) {
-            /// @dev given the amount is positive,
-            /// simply casting (int -> uint) is safe
-            uint256 adjustedAmount = _zapIn(uint256(_amount), _referrer);
-
-            emit ZappedIn(adjustedAmount);
-        } else {
-            /// @dev given the amount is negative,
-            /// simply casting (int -> uint) is unsafe, thus we use .abs()
-            uint256 adjustedAmount = _zapOut(_amount.abs256(), _referrer);
-
-            emit ZappedOut(adjustedAmount);
-        }
-
-        _postZap();
-    }
-
     function _zapIn(uint256 _amount, address _referrer)
         internal
+        virtual
         returns (uint256 adjustedAmount)
     {
         // transfer $USDC to the Zap contract
@@ -195,10 +156,27 @@ abstract contract Zap is ZapErrors, ZapEvents {
             minUsdAmount: adjustedAmount,
             referrer: _referrer
         });
+
+        emit ZappedIn({amountWrapped: _amount, amountMinted: adjustedAmount});
     }
 
+    /*//////////////////////////////////////////////////////////////
+                                ZAP OUT
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice unwrap $USDC from $sUSD
+    /// @dev call will result in $USDC transferred to this contract
+    /// @dev use hooks to execute logic before/after unwrapping
+    /// @dev unwrapping may result in a loss of precision:
+    /// unwrapping (1e12 + n) $sUSDC results in 1 $USDC
+    /// when n is a number less than 1e12; n $sUSDC is lost
+    /// @param _amount is the amount of $sUSD to sell
+    /// for $sUSDC and then unwrap
+    /// @param _referrer optional address of the referrer,
+    /// for Synthetix fee share
     function _zapOut(uint256 _amount, address _referrer)
         internal
+        virtual
         returns (uint256 adjustedAmount)
     {
         // allocate $sUSD allowance to the Spot Market Proxy
@@ -260,5 +238,7 @@ abstract contract Zap is ZapErrors, ZapEvents {
             unwrapAmount: _amount,
             minAmountReceived: adjustedAmount
         });
+
+        emit ZappedOut({amountBurned: _amount, amountUnwrapped: adjustedAmount});
     }
 }
