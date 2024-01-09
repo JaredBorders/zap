@@ -88,7 +88,7 @@ abstract contract Zap is ZapErrors, ZapEvents {
 
     /// @notice wrap $USDC into $sUSD
     /// @dev call will result in $sUSD minted to this contract
-    /// @dev override this function to execute logic before/after
+    /// @dev override this function to include additional logic
     /// @dev wrapping $USDC requires sufficient Zap
     /// contract $USDC allowance and results in a
     /// 1:1 ratio in terms of value
@@ -166,7 +166,7 @@ abstract contract Zap is ZapErrors, ZapEvents {
 
     /// @notice unwrap $USDC from $sUSD
     /// @dev call will result in $USDC transferred to this contract
-    /// @dev use hooks to execute logic before/after unwrapping
+    /// @dev override this function to include additional logic
     /// @dev unwrapping may result in a loss of precision:
     /// unwrapping (1e12 + n) $sUSDC results in 1 $USDC
     /// when n is a number less than 1e12; n $sUSDC is lost
