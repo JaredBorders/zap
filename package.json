@@ -2,7 +2,7 @@
   "name": "zap",
   "version": "1.0.0",
   "license": "GPL-3.0-or-later",
-  "homepage": "https://github.com/JaredBorders/Zap#readme",
+  "homepage": "https://github.com/JaredBorders/zap#readme",
   "scripts": {
     "compile": "forge build",
     "test": "forge test --fork-url $(grep BASE_RPC_URL .env | cut -d '=' -f2) --etherscan-api-key $(grep BASESCAN_API_KEY .env | cut -d '=' -f2) --gas-report -vvv",
@@ -15,10 +15,10 @@
   },
   "repository": {
     "type": "git",
-    "url": "https://github.com/JaredBorders/Zap"
+    "url": "https://github.com/JaredBorders/zap"
   },
   "bugs": {
-    "url": "https://github.com/JaredBorders/Zap/issues"
+    "url": "https://github.com/JaredBorders/zap/issues"
   },
   "devDependencies": {},
   "dependencies": {}
