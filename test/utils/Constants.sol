@@ -11,6 +11,5 @@ contract Constants {
 
     uint256 public constant INITIAL_MINT = type(uint256).max / 10;
 
-    uint256 public constant UINT_AMOUNT = 1000;
-    int256 public constant INT_AMOUNT = 1000;
+    uint256 public constant AMOUNT = 1000;
 }

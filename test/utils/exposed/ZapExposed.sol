@@ -2,13 +2,12 @@
 pragma solidity 0.8.20;
 
 import {Zap} from "../../../src/Zap.sol";
-import {ZapExposedHookEvents} from "./ZapExposedHookEvents.sol";
 
 /// @title Exposed Zap contract used for testing and in the deploy script
 /// @dev although it is used in the deploy script, it is
 /// *not* safe and *not* meant for mainnet
 /// @author JaredBorders (jaredborders@pm.me)
-contract ZapExposed is Zap, ZapExposedHookEvents {
+contract ZapExposed is Zap {
     function expose_HASHED_SUSDC_NAME() public pure returns (bytes32) {
         return _HASHED_SUSDC_NAME;
     }
@@ -44,11 +43,11 @@ contract ZapExposed is Zap, ZapExposedHookEvents {
         uint128 _sUSDCId
     ) Zap(_usdc, _susd, _spotMarketProxy, _sUSDCId) {}
 
-    function _preZap() internal override {
-        emit PreZap();
+    function expose_zapIn(uint256 _amount, address _referrer) public {
+        _zapIn(_amount, _referrer);
     }
 
-    function _postZap() internal override {
-        emit PostZap();
+    function expose_zapOut(uint256 _amount, address _referrer) public {
+        _zapOut(_amount, _referrer);
     }
 }

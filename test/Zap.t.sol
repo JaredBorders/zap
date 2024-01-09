@@ -15,16 +15,18 @@ import {ZapExposed} from "./utils/exposed/ZapExposed.sol";
 /**
  * @custom:example-wrap-and-unwrap
  *
- * 1 $USDC <-- Synthetix Spot Market: Wrap --> 1e12 $sUSDC
- *                                                ^
- *                                                |
- *                                                |
- *                                    Synthetix Spot Market: Sell
- *                                                |
- *                                                |
- *                                                v
- *                                            1e12 $sUSD
- *
+ *                     1 $USDC
+ *                        ^
+ *                        |
+ *                        |
+ *    Synthetix Spot Market: Wrap --> 1e12 $sUSDC
+ *                        |
+ *                        |
+ *           Synthetix Spot Market: Sell
+ *                        |
+ *                        |
+ *                        v
+ *                    1e12 $sUSD
  *
  * @dev
  *
@@ -49,12 +51,10 @@ contract ZapTest is Bootstrap {
         vm.rollFork(BASE_BLOCK_NUMBER);
         initializeBase();
 
-        SUSD = IERC20(ZapExposed(address(zap)).expose_SUSD());
-        USDC = IERC20(ZapExposed(address(zap)).expose_USDC());
-        SUSDC = IERC20(ZapExposed(address(zap)).expose_SUSDC());
-        SPOT_MARKET_PROXY = ISpotMarketProxy(
-            ZapExposed(address(zap)).expose_SPOT_MARKET_PROXY()
-        );
+        SUSD = IERC20(zap.expose_SUSD());
+        USDC = IERC20(zap.expose_USDC());
+        SUSDC = IERC20(zap.expose_SUSDC());
+        SPOT_MARKET_PROXY = ISpotMarketProxy(zap.expose_SPOT_MARKET_PROXY());
 
         mockSpotMarketProxy = new MockSpotMarketProxy();
         mockUSDC = new MockUSDC();
@@ -70,7 +70,7 @@ contract ZapTest is Bootstrap {
 
         vm.stopPrank();
 
-        DECIMAL_FACTOR = ZapExposed(address(zap)).expose_DECIMALS_FACTOR();
+        DECIMAL_FACTOR = zap.expose_DECIMALS_FACTOR();
     }
 }
 
@@ -81,7 +81,7 @@ contract Deployment is ZapTest {
 
     function test_hashed_susdc_name() public {
         assertEq(
-            ZapExposed(address(zap)).expose_HASHED_SUSDC_NAME(),
+            zap.expose_HASHED_SUSDC_NAME(),
             keccak256(abi.encodePacked("Synthetic USD Coin Spot Market"))
         );
     }
@@ -126,7 +126,7 @@ contract Deployment is ZapTest {
     }
 
     function test_usdc_decimals_factor() public view {
-        assert(ZapExposed(address(zap)).expose_DECIMALS_FACTOR() != 0);
+        assert(zap.expose_DECIMALS_FACTOR() != 0);
     }
 
     function test_sUSDCId_invalid() public {
@@ -145,7 +145,7 @@ contract Deployment is ZapTest {
     }
 
     function test_sUSDC_address() public view {
-        assert(ZapExposed(address(zap)).expose_SUSDC() != address(0));
+        assert(zap.expose_SUSDC() != address(0));
     }
 }
 
@@ -153,9 +153,19 @@ contract ZapIn is ZapTest {
     function test_zap_in() public {
         vm.startPrank(ACTOR);
 
-        zap.zap(INT_AMOUNT, REFERRER);
+        zap.expose_zapIn(AMOUNT, REFERRER);
 
-        assertEq(SUSD.balanceOf(address(zap)), UINT_AMOUNT * DECIMAL_FACTOR);
+        assertEq(SUSD.balanceOf(address(zap)), AMOUNT * DECIMAL_FACTOR);
+
+        vm.stopPrank();
+    }
+
+    function test_zap_in_zero() public {
+        vm.startPrank(ACTOR);
+
+        vm.expectRevert();
+
+        zap.expose_zapIn(0, REFERRER);
 
         vm.stopPrank();
     }
@@ -163,9 +173,9 @@ contract ZapIn is ZapTest {
     function test_zap_in_exceeds_cap() public {
         vm.startPrank(ACTOR);
 
-        try zap.zap(type(int128).max, REFERRER) {}
+        try zap.expose_zapIn(AMOUNT * 10, REFERRER) {}
         catch (bytes memory reason) {
-            // assumes type(int128).max always exceeds cap
+            // (AMOUNT * 10) exceeds cap at the given BASE_BLOCK_NUMBER
             assertEq(bytes4(reason), WrapperExceedsMaxAmount.selector);
         }
 
@@ -176,7 +186,7 @@ contract ZapIn is ZapTest {
         vm.mockCall(
             address(USDC),
             abi.encodeWithSelector(
-                IERC20.transferFrom.selector, ACTOR, address(zap), UINT_AMOUNT
+                IERC20.transferFrom.selector, ACTOR, address(zap), AMOUNT
             ),
             abi.encode(false)
         );
@@ -189,11 +199,11 @@ contract ZapIn is ZapTest {
                 address(USDC),
                 ACTOR,
                 address(zap),
-                UINT_AMOUNT
+                AMOUNT
             )
         );
 
-        zap.zap(INT_AMOUNT, REFERRER);
+        zap.expose_zapIn(AMOUNT, REFERRER);
 
         vm.stopPrank();
     }
@@ -202,7 +212,7 @@ contract ZapIn is ZapTest {
         vm.mockCall(
             address(USDC),
             abi.encodeWithSelector(
-                IERC20.approve.selector, address(SPOT_MARKET_PROXY), UINT_AMOUNT
+                IERC20.approve.selector, address(SPOT_MARKET_PROXY), AMOUNT
             ),
             abi.encode(false)
         );
@@ -215,11 +225,11 @@ contract ZapIn is ZapTest {
                 address(USDC),
                 address(zap),
                 address(SPOT_MARKET_PROXY),
-                UINT_AMOUNT
+                AMOUNT
             )
         );
 
-        zap.zap(INT_AMOUNT, REFERRER);
+        zap.expose_zapIn(AMOUNT, REFERRER);
 
         vm.stopPrank();
     }
@@ -230,7 +240,7 @@ contract ZapIn is ZapTest {
             abi.encodeWithSelector(
                 IERC20.approve.selector,
                 address(SPOT_MARKET_PROXY),
-                UINT_AMOUNT * DECIMAL_FACTOR
+                AMOUNT * DECIMAL_FACTOR
             ),
             abi.encode(false)
         );
@@ -243,11 +253,11 @@ contract ZapIn is ZapTest {
                 address(SUSDC),
                 address(zap),
                 address(SPOT_MARKET_PROXY),
-                UINT_AMOUNT * DECIMAL_FACTOR
+                AMOUNT * DECIMAL_FACTOR
             )
         );
 
-        zap.zap(INT_AMOUNT, REFERRER);
+        zap.expose_zapIn(AMOUNT, REFERRER);
 
         vm.stopPrank();
     }
@@ -256,9 +266,9 @@ contract ZapIn is ZapTest {
         vm.startPrank(ACTOR);
 
         vm.expectEmit(true, true, true, true);
-        emit ZappedIn(UINT_AMOUNT * DECIMAL_FACTOR);
+        emit ZappedIn(AMOUNT, AMOUNT * DECIMAL_FACTOR);
 
-        zap.zap(INT_AMOUNT, REFERRER);
+        zap.expose_zapIn(AMOUNT, REFERRER);
 
         vm.stopPrank();
     }
@@ -268,11 +278,11 @@ contract ZapOut is ZapTest {
     function test_zap_out() public {
         vm.startPrank(ACTOR);
 
-        SUSD.transfer(address(zap), UINT_AMOUNT * DECIMAL_FACTOR);
+        SUSD.transfer(address(zap), AMOUNT * DECIMAL_FACTOR);
 
-        zap.zap(-INT_AMOUNT * int256(DECIMAL_FACTOR), REFERRER);
+        zap.expose_zapOut(AMOUNT * DECIMAL_FACTOR, REFERRER);
 
-        assertEq(USDC.balanceOf(address(zap)), UINT_AMOUNT);
+        assertEq(USDC.balanceOf(address(zap)), AMOUNT);
 
         vm.stopPrank();
     }
@@ -282,7 +292,7 @@ contract ZapOut is ZapTest {
 
         vm.expectRevert();
 
-        zap.zap(0, REFERRER);
+        zap.expose_zapOut(0, REFERRER);
 
         vm.stopPrank();
     }
@@ -293,7 +303,7 @@ contract ZapOut is ZapTest {
             abi.encodeWithSelector(
                 IERC20.approve.selector,
                 address(SPOT_MARKET_PROXY),
-                UINT_AMOUNT * DECIMAL_FACTOR
+                AMOUNT * DECIMAL_FACTOR
             ),
             abi.encode(false)
         );
@@ -306,11 +316,11 @@ contract ZapOut is ZapTest {
                 address(SUSD),
                 address(zap),
                 address(SPOT_MARKET_PROXY),
-                UINT_AMOUNT * DECIMAL_FACTOR
+                AMOUNT * DECIMAL_FACTOR
             )
         );
 
-        zap.zap(-INT_AMOUNT * int256(DECIMAL_FACTOR), REFERRER);
+        zap.expose_zapOut((AMOUNT * DECIMAL_FACTOR), REFERRER);
 
         vm.stopPrank();
     }
@@ -321,14 +331,14 @@ contract ZapOut is ZapTest {
             abi.encodeWithSelector(
                 IERC20.approve.selector,
                 address(SPOT_MARKET_PROXY),
-                UINT_AMOUNT * DECIMAL_FACTOR
+                AMOUNT * DECIMAL_FACTOR
             ),
             abi.encode(false)
         );
 
         vm.startPrank(ACTOR);
 
-        SUSD.transfer(address(zap), UINT_AMOUNT * DECIMAL_FACTOR);
+        SUSD.transfer(address(zap), AMOUNT * DECIMAL_FACTOR);
 
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -336,11 +346,11 @@ contract ZapOut is ZapTest {
                 address(SUSDC),
                 address(zap),
                 address(SPOT_MARKET_PROXY),
-                UINT_AMOUNT * DECIMAL_FACTOR
+                AMOUNT * DECIMAL_FACTOR
             )
         );
 
-        zap.zap(-INT_AMOUNT * int256(DECIMAL_FACTOR), REFERRER);
+        zap.expose_zapOut((AMOUNT * DECIMAL_FACTOR), REFERRER);
 
         vm.stopPrank();
     }
@@ -348,7 +358,7 @@ contract ZapOut is ZapTest {
     function test_zap_out_insufficient_amount() public {
         vm.startPrank(ACTOR);
 
-        SUSD.transfer(address(zap), UINT_AMOUNT * DECIMAL_FACTOR);
+        SUSD.transfer(address(zap), AMOUNT * DECIMAL_FACTOR);
 
         vm.expectRevert(
             abi.encodeWithSelector(
@@ -356,7 +366,7 @@ contract ZapOut is ZapTest {
             )
         );
 
-        zap.zap(-int256(DECIMAL_FACTOR - 1), REFERRER);
+        zap.expose_zapOut(DECIMAL_FACTOR - 1, REFERRER);
 
         vm.stopPrank();
     }
@@ -366,14 +376,11 @@ contract ZapOut is ZapTest {
 
         vm.startPrank(ACTOR);
 
-        SUSD.transfer(address(zap), (UINT_AMOUNT * DECIMAL_FACTOR) + sUSDLost);
+        SUSD.transfer(address(zap), (AMOUNT * DECIMAL_FACTOR) + sUSDLost);
 
-        zap.zap(
-            -((INT_AMOUNT * int256(DECIMAL_FACTOR)) + int256(sUSDLost)),
-            REFERRER
-        );
+        zap.expose_zapOut(AMOUNT * DECIMAL_FACTOR + sUSDLost, REFERRER);
 
-        assertEq(USDC.balanceOf(address(zap)), UINT_AMOUNT);
+        assertEq(USDC.balanceOf(address(zap)), AMOUNT);
 
         vm.stopPrank();
     }
@@ -381,12 +388,12 @@ contract ZapOut is ZapTest {
     function test_zap_out_event() public {
         vm.startPrank(ACTOR);
 
-        SUSD.transfer(address(zap), UINT_AMOUNT * DECIMAL_FACTOR);
+        SUSD.transfer(address(zap), AMOUNT * DECIMAL_FACTOR);
 
         vm.expectEmit(true, true, true, true);
-        emit ZappedOut(UINT_AMOUNT);
+        emit ZappedOut(AMOUNT * DECIMAL_FACTOR, AMOUNT);
 
-        zap.zap(-INT_AMOUNT * int256(DECIMAL_FACTOR), REFERRER);
+        zap.expose_zapOut((AMOUNT * DECIMAL_FACTOR), REFERRER);
 
         vm.stopPrank();
     }

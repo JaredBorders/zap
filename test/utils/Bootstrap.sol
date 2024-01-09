@@ -15,33 +15,34 @@ import {MockUSDC} from "../utils/mocks/MockUSDC.sol";
 import {MockSUSD} from "../utils/mocks/MockSUSD.sol";
 import {SynthetixV3Errors} from "./errors/SynthetixV3Errors.sol";
 import {Test} from "../../lib/forge-std/src/Test.sol";
+import {ZapExposed} from "../utils/exposed/ZapExposed.sol";
 
 /// @title Bootstrap contract for setting up test environment
 /// @author JaredBorders (jaredborders@pm.me)
 contract Bootstrap is Test, ZapEvents, SynthetixV3Errors, Constants {
     using console2 for *;
 
-    Zap internal zap;
+    ZapExposed public zap;
 
     function initializeLocal() internal {
         BootstrapLocal bootstrap = new BootstrapLocal();
         (address zapAddress) = bootstrap.init();
 
-        zap = Zap(zapAddress);
+        zap = ZapExposed(zapAddress);
     }
 
     function initializeBase() internal {
         BootstrapBase bootstrap = new BootstrapBase();
         (address zapAddress) = bootstrap.init();
 
-        zap = Zap(zapAddress);
+        zap = ZapExposed(zapAddress);
     }
 
     function initializeBaseGoerli() internal {
         BootstrapBaseGoerli bootstrap = new BootstrapBaseGoerli();
         (address zapAddress) = bootstrap.init();
 
-        zap = Zap(zapAddress);
+        zap = ZapExposed(zapAddress);
     }
 }
 
