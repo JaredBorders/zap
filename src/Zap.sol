@@ -179,6 +179,19 @@ abstract contract Zap is ZapErrors, ZapEvents {
         virtual
         returns (uint256 adjustedAmount)
     {
+        /// @notice prior to unwrapping, ensure that there
+        /// is enough $sUSDC to unwrap
+        /// @custom:example if $USDC has 6 decimals, and
+        /// $sUSDC has greater than 6 decimals,
+        /// then it is possible that the amount of
+        /// $sUSDC to unwrap is less than 1 $USDC;
+        /// this contract will prevent such cases
+        /// @dev if $USDC has 6 decimals, and $sUSDC has 18 decimals,
+        /// precision may be lost
+        if (_amount < _DECIMALS_FACTOR) {
+            revert InsufficientAmount(_amount);
+        }
+        
         // allocate $sUSD allowance to the Spot Market Proxy
         if (!_SUSD.approve(address(_SPOT_MARKET_PROXY), _amount)) {
             revert ApprovalFailed(
@@ -207,19 +220,6 @@ abstract contract Zap is ZapErrors, ZapEvents {
                 address(_SPOT_MARKET_PROXY),
                 _amount
             );
-        }
-
-        /// @notice prior to unwrapping, ensure that there
-        /// is enough $sUSDC to unwrap
-        /// @custom:example if $USDC has 6 decimals, and
-        /// $sUSDC has greater than 6 decimals,
-        /// then it is possible that the amount of
-        /// $sUSDC to unwrap is less than 1 $USDC;
-        /// this contract will prevent such cases
-        /// @dev if $USDC has 6 decimals, and $sUSDC has 18 decimals,
-        /// precision may be lost
-        if (_amount < _DECIMALS_FACTOR) {
-            revert InsufficientAmount(_amount);
         }
 
         /// @notice $USDC might use non-standard decimals
