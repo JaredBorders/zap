@@ -43,11 +43,11 @@ contract ZapExposed is Zap {
         uint128 _sUSDCId
     ) Zap(_usdc, _susd, _spotMarketProxy, _sUSDCId) {}
 
-    function expose_zapIn(uint256 _amount, address _referrer) public {
-        _zapIn(_amount, _referrer);
+    function expose_zapIn(uint256 _amount) public {
+        _zapIn(_amount);
     }
 
-    function expose_zapOut(uint256 _amount, address _referrer) public {
-        _zapOut(_amount, _referrer);
+    function expose_zapOut(uint256 _amount) public {
+        _zapOut(_amount);
     }
 }

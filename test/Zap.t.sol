@@ -153,7 +153,7 @@ contract ZapIn is ZapTest {
     function test_zap_in() public {
         vm.startPrank(ACTOR);
 
-        zap.expose_zapIn(AMOUNT, REFERRER);
+        zap.expose_zapIn(AMOUNT);
 
         assertEq(SUSD.balanceOf(address(zap)), AMOUNT * DECIMAL_FACTOR);
 
@@ -165,7 +165,7 @@ contract ZapIn is ZapTest {
 
         vm.expectRevert();
 
-        zap.expose_zapIn(0, REFERRER);
+        zap.expose_zapIn(0);
 
         vm.stopPrank();
     }
@@ -173,7 +173,7 @@ contract ZapIn is ZapTest {
     function test_zap_in_exceeds_cap() public {
         vm.startPrank(ACTOR);
 
-        try zap.expose_zapIn(AMOUNT * 10, REFERRER) {}
+        try zap.expose_zapIn(AMOUNT * 10) {}
         catch (bytes memory reason) {
             // (AMOUNT * 10) exceeds cap at the given BASE_BLOCK_NUMBER
             assertEq(bytes4(reason), WrapperExceedsMaxAmount.selector);
@@ -203,7 +203,7 @@ contract ZapIn is ZapTest {
             )
         );
 
-        zap.expose_zapIn(AMOUNT, REFERRER);
+        zap.expose_zapIn(AMOUNT);
 
         vm.stopPrank();
     }
@@ -229,7 +229,7 @@ contract ZapIn is ZapTest {
             )
         );
 
-        zap.expose_zapIn(AMOUNT, REFERRER);
+        zap.expose_zapIn(AMOUNT);
 
         vm.stopPrank();
     }
@@ -257,7 +257,7 @@ contract ZapIn is ZapTest {
             )
         );
 
-        zap.expose_zapIn(AMOUNT, REFERRER);
+        zap.expose_zapIn(AMOUNT);
 
         vm.stopPrank();
     }
@@ -268,7 +268,7 @@ contract ZapIn is ZapTest {
         vm.expectEmit(true, true, true, true);
         emit ZappedIn(AMOUNT, AMOUNT * DECIMAL_FACTOR);
 
-        zap.expose_zapIn(AMOUNT, REFERRER);
+        zap.expose_zapIn(AMOUNT);
 
         vm.stopPrank();
     }
@@ -280,7 +280,7 @@ contract ZapOut is ZapTest {
 
         SUSD.transfer(address(zap), AMOUNT * DECIMAL_FACTOR);
 
-        zap.expose_zapOut(AMOUNT * DECIMAL_FACTOR, REFERRER);
+        zap.expose_zapOut(AMOUNT * DECIMAL_FACTOR);
 
         assertEq(USDC.balanceOf(address(zap)), AMOUNT);
 
@@ -292,7 +292,7 @@ contract ZapOut is ZapTest {
 
         vm.expectRevert();
 
-        zap.expose_zapOut(0, REFERRER);
+        zap.expose_zapOut(0);
 
         vm.stopPrank();
     }
@@ -320,7 +320,7 @@ contract ZapOut is ZapTest {
             )
         );
 
-        zap.expose_zapOut((AMOUNT * DECIMAL_FACTOR), REFERRER);
+        zap.expose_zapOut((AMOUNT * DECIMAL_FACTOR));
 
         vm.stopPrank();
     }
@@ -350,7 +350,7 @@ contract ZapOut is ZapTest {
             )
         );
 
-        zap.expose_zapOut((AMOUNT * DECIMAL_FACTOR), REFERRER);
+        zap.expose_zapOut((AMOUNT * DECIMAL_FACTOR));
 
         vm.stopPrank();
     }
@@ -366,7 +366,7 @@ contract ZapOut is ZapTest {
             )
         );
 
-        zap.expose_zapOut(DECIMAL_FACTOR - 1, REFERRER);
+        zap.expose_zapOut(DECIMAL_FACTOR - 1);
 
         vm.stopPrank();
     }
@@ -378,7 +378,7 @@ contract ZapOut is ZapTest {
 
         SUSD.transfer(address(zap), (AMOUNT * DECIMAL_FACTOR) + sUSDLost);
 
-        zap.expose_zapOut(AMOUNT * DECIMAL_FACTOR + sUSDLost, REFERRER);
+        zap.expose_zapOut(AMOUNT * DECIMAL_FACTOR + sUSDLost);
 
         assertEq(USDC.balanceOf(address(zap)), AMOUNT);
 
@@ -393,7 +393,7 @@ contract ZapOut is ZapTest {
         vm.expectEmit(true, true, true, true);
         emit ZappedOut(AMOUNT * DECIMAL_FACTOR, AMOUNT);
 
-        zap.expose_zapOut((AMOUNT * DECIMAL_FACTOR), REFERRER);
+        zap.expose_zapOut((AMOUNT * DECIMAL_FACTOR));
 
         vm.stopPrank();
     }

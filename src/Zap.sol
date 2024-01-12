@@ -95,9 +95,7 @@ abstract contract Zap is ZapErrors, ZapEvents {
     /// @dev assumes zero fees when
     /// wrapping/unwrapping/selling/buying
     /// @param _amount is the amount of $USDC to wrap
-    /// @param _referrer optional address of the referrer,
-    /// for Synthetix fee share
-    function _zapIn(uint256 _amount, address _referrer)
+    function _zapIn(uint256 _amount)
         internal
         virtual
         returns (uint256 adjustedAmount)
@@ -154,7 +152,7 @@ abstract contract Zap is ZapErrors, ZapEvents {
             marketId: _SUSDC_SPOT_MARKET_ID,
             synthAmount: adjustedAmount,
             minUsdAmount: adjustedAmount,
-            referrer: _referrer
+            referrer: address(0)
         });
 
         emit ZappedIn({amountWrapped: _amount, amountMinted: adjustedAmount});
@@ -172,9 +170,7 @@ abstract contract Zap is ZapErrors, ZapEvents {
     /// when n is a number less than 1e12; n $sUSDC is lost
     /// @param _amount is the amount of $sUSD to sell
     /// for $sUSDC and then unwrap
-    /// @param _referrer optional address of the referrer,
-    /// for Synthetix fee share
-    function _zapOut(uint256 _amount, address _referrer)
+    function _zapOut(uint256 _amount)
         internal
         virtual
         returns (uint256 adjustedAmount)
@@ -191,7 +187,7 @@ abstract contract Zap is ZapErrors, ZapEvents {
         if (_amount < _DECIMALS_FACTOR) {
             revert InsufficientAmount(_amount);
         }
-        
+
         // allocate $sUSD allowance to the Spot Market Proxy
         if (!_SUSD.approve(address(_SPOT_MARKET_PROXY), _amount)) {
             revert ApprovalFailed(
@@ -209,7 +205,7 @@ abstract contract Zap is ZapErrors, ZapEvents {
             marketId: _SUSDC_SPOT_MARKET_ID,
             usdAmount: _amount,
             minAmountReceived: _amount,
-            referrer: _referrer
+            referrer: address(0)
         });
 
         // allocate $sUSDC allowance to the Spot Market Proxy
