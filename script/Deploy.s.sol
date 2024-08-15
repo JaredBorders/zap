@@ -6,6 +6,9 @@ import {BaseParameters} from "./utils/parameters/BaseParameters.sol";
 import {OptimismGoerliParameters} from
     "./utils/parameters/OptimismGoerliParameters.sol";
 import {OptimismParameters} from "./utils/parameters/OptimismParameters.sol";
+import {ArbitrumParameters} from "./utils/parameters/ArbitrumParameters.sol";
+import {ArbitrumSepoliaParameters} from
+    "./utils/parameters/ArbitrumSepoliaParameters.sol";
 import {Script} from "../lib/forge-std/src/Script.sol";
 import {Zap} from "../src/Zap.sol";
 import {ZapExposed} from "../test/utils/exposed/ZapExposed.sol";
@@ -77,8 +80,39 @@ contract DeployOptimism is Setup, OptimismParameters {
 /// @dev steps to deploy and verify on Optimism Goerli:
 /// (1) load the variables in the .env file via `source .env`
 /// (2) run `forge script script/Deploy.s.sol:DeployOptimismGoerli --rpc-url $OPTIMISM_GOERLI_RPC_URL --etherscan-api-key $OPTIMISM_ETHERSCAN_API_KEY --broadcast --verify -vvvv`
-
 contract DeployOptimismGoerli is Setup, OptimismGoerliParameters {
+    function run() public {
+        uint256 privateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(privateKey);
+
+        Setup.deploySystem(
+            USDC, USD_PROXY, SPOT_MARKET_PROXY, SUSDC_SPOT_MARKET_ID
+        );
+
+        vm.stopBroadcast();
+    }
+}
+
+/// @dev steps to deploy and verify on Arbitrum:
+/// (1) load the variables in the .env file via `source .env`
+/// (2) run `forge script script/Deploy.s.sol:DeployArbitrum --rpc-url $ARBITRUM_GOERLI_RPC_URL --etherscan-api-key $ARBITRUM_GOERLI_RPC_URL --broadcast --verify -vvvv`
+contract DeployArbitrum is Setup, ArbitrumParameters {
+    function run() public {
+        uint256 privateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(privateKey);
+
+        Setup.deploySystem(
+            USDC, USD_PROXY, SPOT_MARKET_PROXY, SUSDC_SPOT_MARKET_ID
+        );
+
+        vm.stopBroadcast();
+    }
+}
+
+/// @dev steps to deploy and verify on Arbitrum Sepolia:
+/// (1) load the variables in the .env file via `source .env`
+/// (2) run `forge script script/Deploy.s.sol:DeployArbitrumSepolia --rpc-url $ARBITRUM_SEPOLIA_RPC_URL --etherscan-api-key $ARBITRUM_SEPOLIA_RPC_URL --broadcast --verify -vvvv`
+contract DeployArbitrumSepolia is Setup, ArbitrumSepoliaParameters {
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(privateKey);
