@@ -6,8 +6,7 @@ import {ISpotMarketProxy} from "./interfaces/ISpotMarketProxy.sol";
 import {ZapErrors} from "./ZapErrors.sol";
 import {ZapEvents} from "./ZapEvents.sol";
 
-/// @title Zap contract for wrapping/unwrapping $USDC into $sUSD
-/// via Synthetix v3 Andromeda Spot Market
+/// @title Zap contract for zapping collateral in/out of Synthetix v3
 /// @author JaredBorders (jaredborders@pm.me)
 abstract contract Zap is ZapErrors, ZapEvents {
     /*//////////////////////////////////////////////////////////////
