@@ -1,15 +1,16 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.20;
 
-import {
-    Bootstrap,
-    MockSpotMarketProxy,
-    MockUSDC,
-    MockSUSD
-} from "./utils/Bootstrap.sol";
+import {ZapErrors} from "../src/ZapErrors.sol";
 import {IERC20} from "../src/interfaces/IERC20.sol";
 import {ISpotMarketProxy} from "../src/interfaces/ISpotMarketProxy.sol";
-import {ZapErrors} from "../src/ZapErrors.sol";
+import {
+    Bootstrap,
+    MockSUSD,
+    MockSpotMarketProxy,
+    MockUSDC
+} from "./utils/Bootstrap.sol";
+
 import {ZapExposed} from "./utils/exposed/ZapExposed.sol";
 
 /**
@@ -33,9 +34,11 @@ import {ZapExposed} from "./utils/exposed/ZapExposed.sol";
  * IF $USDC has 6 decimals
  * AND $sUSD and $sUSDC have 18 decimals
  * THEN 1e12 $sUSD/$sUSDC = 1 $USDC
- * AND in the context of this system, the DECIMAL_FACTOR would be: 10^(18-6) == 1e12
+ * AND in the context of this system, the DECIMAL_FACTOR would be: 10^(18-6) ==
+ * 1e12
  */
 contract ZapTest is Bootstrap {
+
     IERC20 internal SUSD;
     IERC20 internal USDC;
     IERC20 internal SUSDC;
@@ -72,9 +75,11 @@ contract ZapTest is Bootstrap {
 
         DECIMAL_FACTOR = zap.expose_DECIMALS_FACTOR();
     }
+
 }
 
 contract Deployment is ZapTest {
+
     function test_zap_address() public view {
         assert(address(zap) != address(0));
     }
@@ -147,9 +152,11 @@ contract Deployment is ZapTest {
     function test_sUSDC_address() public view {
         assert(zap.expose_SUSDC() != address(0));
     }
+
 }
 
 contract ZapIn is ZapTest {
+
     function test_zap_in() public {
         vm.startPrank(ACTOR);
 
@@ -272,9 +279,11 @@ contract ZapIn is ZapTest {
 
         vm.stopPrank();
     }
+
 }
 
 contract ZapOut is ZapTest {
+
     function test_zap_out() public {
         vm.startPrank(ACTOR);
 
@@ -397,4 +406,5 @@ contract ZapOut is ZapTest {
 
         vm.stopPrank();
     }
+
 }

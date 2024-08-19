@@ -6,6 +6,7 @@ import {IERC20} from "./../../../src/interfaces/IERC20.sol";
 /// @title MockSUSD contract for testing
 /// @author JaredBorders (jaredborders@pm.me)
 contract MockSUSD is IERC20 {
+
     function decimals() external pure override returns (uint8) {
         return 18;
     }
@@ -22,7 +23,11 @@ contract MockSUSD is IERC20 {
         return true;
     }
 
-    function transferFrom(address, address, uint256)
+    function transferFrom(
+        address,
+        address,
+        uint256
+    )
         external
         pure
         override
@@ -30,4 +35,5 @@ contract MockSUSD is IERC20 {
     {
         return true;
     }
+
 }

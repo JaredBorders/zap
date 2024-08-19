@@ -2,6 +2,7 @@
 pragma solidity 0.8.20;
 
 contract BaseParameters {
+
     // https://basescan.org/token/0x833589fcd6edb6e08f4c7c32d4f71b54bda02913
     address public constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
 
@@ -15,4 +16,5 @@ contract BaseParameters {
 
     // https://usecannon.com/packages/synthetix-spot-market/3.3.5/84531-andromeda
     uint128 public constant SUSDC_SPOT_MARKET_ID = 1;
+
 }

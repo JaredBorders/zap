@@ -8,6 +8,7 @@ import {Zap} from "../../../src/Zap.sol";
 /// *not* safe and *not* meant for mainnet
 /// @author JaredBorders (jaredborders@pm.me)
 contract ZapExposed is Zap {
+
     function expose_HASHED_SUSDC_NAME() public pure returns (bytes32) {
         return _HASHED_SUSDC_NAME;
     }
@@ -41,7 +42,9 @@ contract ZapExposed is Zap {
         address _susd,
         address _spotMarketProxy,
         uint128 _sUSDCId
-    ) Zap(_usdc, _susd, _spotMarketProxy, _sUSDCId) {}
+    )
+        Zap(_usdc, _susd, _spotMarketProxy, _sUSDCId)
+    {}
 
     function expose_zapIn(uint256 _amount) public {
         _zapIn(_amount);
@@ -50,4 +53,5 @@ contract ZapExposed is Zap {
     function expose_zapOut(uint256 _amount) public {
         _zapOut(_amount);
     }
+
 }

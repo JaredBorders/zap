@@ -2,6 +2,7 @@
 pragma solidity 0.8.20;
 
 contract BaseGoerliParameters {
+
     // https://goerli.basescan.org/token/0xf175520c52418dfe19c8098071a252da48cd1c19
     address public constant USDC = 0xF175520C52418dfE19C8098071a252da48Cd1C19;
 
@@ -15,4 +16,5 @@ contract BaseGoerliParameters {
 
     // https://usecannon.com/packages/synthetix-spot-market/3.3.5/84531-andromeda
     uint128 public constant SUSDC_SPOT_MARKET_ID = 1;
+
 }

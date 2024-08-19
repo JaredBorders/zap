@@ -4,6 +4,7 @@ pragma solidity 0.8.20;
 /// @title Zap contract errors
 /// @author JaredBorders (jaredborders@pm.me)
 contract ZapErrors {
+
     /// @notice thrown when $USDC address is zero
     /// @dev only can be thrown in during Zap deployment
     error USDCZeroAddress();
@@ -51,4 +52,5 @@ contract ZapErrors {
     /// then it is possible that the amount of
     /// $sUSDC to unwrap is less than 1 $USDC
     error InsufficientAmount(uint256 amount);
+
 }

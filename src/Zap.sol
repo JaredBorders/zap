@@ -1,14 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
 pragma solidity 0.8.20;
 
-import {IERC20} from "./interfaces/IERC20.sol";
-import {ISpotMarketProxy} from "./interfaces/ISpotMarketProxy.sol";
 import {ZapErrors} from "./ZapErrors.sol";
 import {ZapEvents} from "./ZapEvents.sol";
+import {IERC20} from "./interfaces/IERC20.sol";
+import {ISpotMarketProxy} from "./interfaces/ISpotMarketProxy.sol";
 
 /// @title Zap contract for zapping collateral in/out of Synthetix v3
 /// @author JaredBorders (jaredborders@pm.me)
 abstract contract Zap is ZapErrors, ZapEvents {
+
     /*//////////////////////////////////////////////////////////////
                                CONSTANTS
     //////////////////////////////////////////////////////////////*/
@@ -94,7 +95,9 @@ abstract contract Zap is ZapErrors, ZapEvents {
     /// @dev assumes zero fees when
     /// wrapping/unwrapping/selling/buying
     /// @param _amount is the amount of $USDC to wrap
-    function _zapIn(uint256 _amount)
+    function _zapIn(
+        uint256 _amount
+    )
         internal
         virtual
         returns (uint256 adjustedAmount)
@@ -169,7 +172,9 @@ abstract contract Zap is ZapErrors, ZapEvents {
     /// when n is a number less than 1e12; n $sUSDC is lost
     /// @param _amount is the amount of $sUSD to sell
     /// for $sUSDC and then unwrap
-    function _zapOut(uint256 _amount)
+    function _zapOut(
+        uint256 _amount
+    )
         internal
         virtual
         returns (uint256 adjustedAmount)
@@ -236,4 +241,5 @@ abstract contract Zap is ZapErrors, ZapEvents {
 
         emit ZappedOut({amountBurned: _amount, amountUnwrapped: adjustedAmount});
     }
+
 }

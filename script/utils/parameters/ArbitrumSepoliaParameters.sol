@@ -2,6 +2,7 @@
 pragma solidity 0.8.20;
 
 contract ArbitrumSepoliaParameters {
+
     // https://arbiscan
     address public constant USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
 
@@ -15,4 +16,5 @@ contract ArbitrumSepoliaParameters {
 
     // https://arbiscan
     uint128 public constant SUSDC_SPOT_MARKET_ID = 1;
+
 }
