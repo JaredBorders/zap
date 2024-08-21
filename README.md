@@ -11,20 +11,6 @@
 [license]: https://opensource.org/license/GPL-3.0/
 [license-badge]: https://img.shields.io/badge/GitHub-GPL--3.0-informational
 
-## Contracts
-
-> `tree src/`
-
-```
-src/
-├── Zap.sol
-├── ZapErrors.sol
-├── ZapEvents.sol
-└── interfaces
-    ├── IERC20.sol
-    └── ISpotMarketProxy.sol
-```
-
 ## Tests
 
 1. Follow the [Foundry guide to working on an existing project](https://book.getfoundry.sh/projects/working-on-an-existing-project.html)
