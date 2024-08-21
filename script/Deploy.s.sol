@@ -1,35 +1,15 @@
 // SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity 0.8.20;
+pragma solidity 0.8.26;
 
 import {Script} from "../lib/forge-std/src/Script.sol";
 import {Zap} from "../src/Zap.sol";
-import {ZapExposed} from "../test/utils/exposed/ZapExposed.sol";
-import {ArbitrumParameters} from "./utils/parameters/ArbitrumParameters.sol";
-import {ArbitrumSepoliaParameters} from
-    "./utils/parameters/ArbitrumSepoliaParameters.sol";
-import {BaseGoerliParameters} from "./utils/parameters/BaseGoerliParameters.sol";
-import {BaseParameters} from "./utils/parameters/BaseParameters.sol";
-import {OptimismGoerliParameters} from
-    "./utils/parameters/OptimismGoerliParameters.sol";
-import {OptimismParameters} from "./utils/parameters/OptimismParameters.sol";
 
 /// @title Zap deployment script
-/// @notice ZapExposed is deployed (not Zap) and
-/// ZapExposed is unsafe and not meant for production
 /// @author JaredBorders (jaredborders@pm.me)
 contract Setup is Script {
 
-    function deploySystem(
-        address _usdc,
-        address _susd,
-        address _spotMarketProxy,
-        uint128 _sUSDCId
-    )
-        public
-        returns (address zapAddress)
-    {
-        zapAddress =
-            address(new ZapExposed(_usdc, _susd, _spotMarketProxy, _sUSDCId));
+    function deploySystem() public returns (address zap) {
+        zap = address(new Zap());
     }
 
 }
@@ -38,35 +18,31 @@ contract Setup is Script {
 /// (1) load the variables in the .env file via `source .env`
 /// (2) run `forge script script/Deploy.s.sol:DeployBase --rpc-url $BASE_RPC_URL
 /// --etherscan-api-key $BASESCAN_API_KEY --broadcast --verify -vvvv`
-contract DeployBase is Setup, BaseParameters {
+contract DeployBase is Setup {
 
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(privateKey);
 
-        Setup.deploySystem(
-            USDC, USD_PROXY, SPOT_MARKET_PROXY, SUSDC_SPOT_MARKET_ID
-        );
+        Setup.deploySystem();
 
         vm.stopBroadcast();
     }
 
 }
 
-/// @dev steps to deploy and verify on Base Goerli:
+/// @dev steps to deploy and verify on Base Sepolia:
 /// (1) load the variables in the .env file via `source .env`
-/// (2) run `forge script script/Deploy.s.sol:DeployBaseGoerli --rpc-url
-/// $BASE_GOERLI_RPC_URL --etherscan-api-key $BASESCAN_API_KEY --broadcast
+/// (2) run `forge script script/Deploy.s.sol:DeployBaseSepolia --rpc-url
+/// $BASE_SEPOLIA_RPC_URL --etherscan-api-key $BASESCAN_API_KEY --broadcast
 /// --verify -vvvv`
-contract DeployBaseGoerli is Setup, BaseGoerliParameters {
+contract DeployBaseSepolia is Setup {
 
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(privateKey);
 
-        Setup.deploySystem(
-            USDC, USD_PROXY, SPOT_MARKET_PROXY, SUSDC_SPOT_MARKET_ID
-        );
+        Setup.deploySystem();
 
         vm.stopBroadcast();
     }
@@ -78,35 +54,31 @@ contract DeployBaseGoerli is Setup, BaseGoerliParameters {
 /// (2) run `forge script script/Deploy.s.sol:DeployOptimism --rpc-url
 /// $OPTIMISM_RPC_URL --etherscan-api-key $OPTIMISM_ETHERSCAN_API_KEY
 /// --broadcast --verify -vvvv`
-contract DeployOptimism is Setup, OptimismParameters {
+contract DeployOptimism is Setup {
 
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(privateKey);
 
-        Setup.deploySystem(
-            USDC, USD_PROXY, SPOT_MARKET_PROXY, SUSDC_SPOT_MARKET_ID
-        );
+        Setup.deploySystem();
 
         vm.stopBroadcast();
     }
 
 }
 
-/// @dev steps to deploy and verify on Optimism Goerli:
+/// @dev steps to deploy and verify on Optimism Sepolia:
 /// (1) load the variables in the .env file via `source .env`
-/// (2) run `forge script script/Deploy.s.sol:DeployOptimismGoerli --rpc-url
-/// $OPTIMISM_GOERLI_RPC_URL --etherscan-api-key $OPTIMISM_ETHERSCAN_API_KEY
+/// (2) run `forge script script/Deploy.s.sol:DeployOptimismSepolia --rpc-url
+/// $OPTIMISM_SEPOLIA_RPC_URL --etherscan-api-key $OPTIMISM_ETHERSCAN_API_KEY
 /// --broadcast --verify -vvvv`
-contract DeployOptimismGoerli is Setup, OptimismGoerliParameters {
+contract DeployOptimismSepolia is Setup {
 
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(privateKey);
 
-        Setup.deploySystem(
-            USDC, USD_PROXY, SPOT_MARKET_PROXY, SUSDC_SPOT_MARKET_ID
-        );
+        Setup.deploySystem();
 
         vm.stopBroadcast();
     }
@@ -116,17 +88,15 @@ contract DeployOptimismGoerli is Setup, OptimismGoerliParameters {
 /// @dev steps to deploy and verify on Arbitrum:
 /// (1) load the variables in the .env file via `source .env`
 /// (2) run `forge script script/Deploy.s.sol:DeployArbitrum --rpc-url
-/// $ARBITRUM_GOERLI_RPC_URL --etherscan-api-key $ARBITRUM_GOERLI_RPC_URL
+/// $ARBITRUM_RPC_URL --etherscan-api-key $ARBITRUM_RPC_URL
 /// --broadcast --verify -vvvv`
-contract DeployArbitrum is Setup, ArbitrumParameters {
+contract DeployArbitrum is Setup {
 
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(privateKey);
 
-        Setup.deploySystem(
-            USDC, USD_PROXY, SPOT_MARKET_PROXY, SUSDC_SPOT_MARKET_ID
-        );
+        Setup.deploySystem();
 
         vm.stopBroadcast();
     }
@@ -138,15 +108,13 @@ contract DeployArbitrum is Setup, ArbitrumParameters {
 /// (2) run `forge script script/Deploy.s.sol:DeployArbitrumSepolia --rpc-url
 /// $ARBITRUM_SEPOLIA_RPC_URL --etherscan-api-key $ARBITRUM_SEPOLIA_RPC_URL
 /// --broadcast --verify -vvvv`
-contract DeployArbitrumSepolia is Setup, ArbitrumSepoliaParameters {
+contract DeployArbitrumSepolia is Setup {
 
     function run() public {
         uint256 privateKey = vm.envUint("PRIVATE_KEY");
         vm.startBroadcast(privateKey);
 
-        Setup.deploySystem(
-            USDC, USD_PROXY, SPOT_MARKET_PROXY, SUSDC_SPOT_MARKET_ID
-        );
+        Setup.deploySystem();
 
         vm.stopBroadcast();
     }
