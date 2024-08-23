@@ -10,6 +10,29 @@ import {ISpotMarketProxy} from "./interfaces/ISpotMarketProxy.sol";
 /// @author JaredBorders (jaredborders@pm.me)
 contract Zap is ZapErrors, ZapEvents {
 
+    /**
+        1. Docs
+        2. Errors
+             - Unsupported market
+             - Unsupported collateral
+             - Try-Catch Pattern
+        3. Events
+        4. Tests
+        5. Update SMv3 to
+            - Define mutable address pointing to Zap.sol
+            - Define getter/setter for Zap.sol
+            - Update or Modify or Add new functions that use old Zap fucntionalities
+        6. "Upgrade" SMv3 to use Zap.sol
+            - Deploy Zap.sol
+            - Run upgrade script for SMv3 to get new Implementation
+            - Call UUPS upgradeToAndCall() with new implementation and data
+        7. (future) Update Zap to include flashloans
+        8. (future) Deploy new Zap contract with flashloans
+        9. (future) Call SMv3's Zap setter to point to new Zap contract
+            - (steps 7-9 are used for any future Zap changes)
+     */
+
+
     uint128 internal constant USD_SPOT_MARKET_ID = 0;
 
     enum Direction {
