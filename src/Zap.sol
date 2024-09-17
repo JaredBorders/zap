@@ -10,14 +10,6 @@ import {ISpotMarketProxy} from "./interfaces/ISpotMarketProxy.sol";
 /// @author JaredBorders (jaredborders@pm.me)
 contract Zap is ZapErrors, ZapEvents {
 
-    /**
-     * 2. Errors
-     *          - Unsupported market
-     *          - Unsupported collateral
-     *          - Try-Catch Pattern
-     *     4. Tests
-     */
-
     /// @notice Constant for the USD spot market ID
     uint128 internal constant USD_SPOT_MARKET_ID = 0;
 
