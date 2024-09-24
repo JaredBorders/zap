@@ -16,7 +16,8 @@ import {Test} from "forge-std/Test.sol";
 contract Bootstrap is Test, Base, Arbitrum, Constants {
 
     uint256 BASE;
-    uint256 ARBITRUM;
+    uint256 ARBITRUM_A;
+    uint256 ARBITRUM_B;
 
     Zap zap;
 
@@ -33,8 +34,9 @@ contract Bootstrap is Test, Base, Arbitrum, Constants {
         string memory BASE_RPC = vm.envString(BASE_RPC_REF);
         string memory ARBITRUM_RPC = vm.envString(ARBITRUM_RPC_REF);
 
-        BASE = vm.createFork(BASE_RPC);
-        ARBITRUM = vm.createFork(ARBITRUM_RPC);
+        BASE = vm.createFork(BASE_RPC, BASE_FORK_BLOCK);
+        ARBITRUM_A = vm.createFork(ARBITRUM_RPC, ARBITRUM_FORK_BLOCK);
+        ARBITRUM_B = vm.createFork(ARBITRUM_RPC, ARBITRUM_FORK_BLOCK_DEBT);
     }
 
     modifier base() {
@@ -61,7 +63,30 @@ contract Bootstrap is Test, Base, Arbitrum, Constants {
     }
 
     modifier arbitrum() {
-        vm.selectFork(ARBITRUM);
+        vm.selectFork(ARBITRUM_A);
+        zap = new Zap({
+            _usdc: ARBITRUM_USDC,
+            _usdx: ARBITRUM_USDX,
+            _spotMarket: ARBITRUM_SPOT_MARKET,
+            _perpsMarket: ARBITRUM_PERPS_MARKET,
+            _core: ARBITRUM_CORE,
+            _referrer: ARBITRUM_REFERRER,
+            _susdcSpotId: ARBITRUM_SUSDC_SPOT_MARKET_ID,
+            _aave: ARBITRUM_AAVE_POOL,
+            _uniswap: ARBITRUM_UNISWAP
+        });
+        core = ICore(ARBITRUM_CORE);
+        spotMarket = ISpotMarket(ARBITRUM_SPOT_MARKET);
+        perpsMarket = IPerpsMarket(ARBITRUM_PERPS_MARKET);
+        usdc = IERC20(ARBITRUM_USDC);
+        susdc = IERC20(spotMarket.getSynth(zap.SUSDC_SPOT_ID()));
+        usdx = IERC20(ARBITRUM_USDX);
+        weth = IERC20(ARBITRUM_WETH);
+        _;
+    }
+
+    modifier arbitrum_b() {
+        vm.selectFork(ARBITRUM_B);
         zap = new Zap({
             _usdc: ARBITRUM_USDC,
             _usdx: ARBITRUM_USDX,

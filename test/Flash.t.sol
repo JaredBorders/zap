@@ -20,7 +20,7 @@ contract FlashTest is Bootstrap {
         vm.rollFork(ARBITRUM_FORK_BLOCK_DEBT);
         _spin(ARBITRUM_BOB, usdx, amount, address(zap));
         vm.startPrank(ARBITRUM_BOB);
-        
+
         // 1. create perp market account
 
         // 2. approve usdx to perp market
