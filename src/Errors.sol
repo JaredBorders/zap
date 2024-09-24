@@ -13,12 +13,19 @@ contract Errors {
     /// @param reason string for the failure
     error UnwrapFailed(string reason);
 
+    /// @notice thrown when a buy operation fails
+    /// @param reason string for the failure
+    error BuyFailed(string reason);
+
+    /// @notice thrown when a sell operation fails
+    /// @param reason string for the failure
+    error SellFailed(string reason);
+
     /// @notice thrown when a swap operation fails
     /// @param reason string for the failure
     error SwapFailed(string reason);
 
-    /// @notice thrown when an address who is not permitted
-    /// to modify an account's collateral attempts to
-    error NotPermittedToModifyCollateral();
+    /// @notice thrown when operation is not permitted
+    error NotPermitted();
 
 }
