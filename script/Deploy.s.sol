@@ -8,8 +8,8 @@ import {Zap} from "../src/Zap.sol";
 /// @author JaredBorders (jaredborders@pm.me)
 contract Setup is Script {
 
+    /// @custom:todo
     function deploySystem() public returns (address zap) {
-        /// @custom:todo
         // zap = address(new Zap());
     }
 
