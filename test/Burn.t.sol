@@ -15,8 +15,7 @@ import {
 
 contract BurnTest is Bootstrap {
 
-    function test_burn_arbitrum(uint32 amount) public arbitrum {
-        vm.rollFork(ARBITRUM_FORK_BLOCK_DEBT);
+    function test_burn_arbitrum(uint32 amount) public arbitrum_b {
         _spin(ARBITRUM_BOB, usdx, amount, address(zap));
         vm.startPrank(ARBITRUM_BOB);
         core.grantPermission(ARBITRUM_BOB_ID, _BURN_PERMISSION, address(zap));
