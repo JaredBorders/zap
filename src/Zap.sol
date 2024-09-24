@@ -2,14 +2,21 @@
 pragma solidity 0.8.27;
 
 import {Errors} from "./Errors.sol";
-import {Events} from "./Events.sol";
-import {Types} from "./Types.sol";
 import {IPool} from "./interfaces/IAave.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import {ICore, IPerpsMarket, ISpotMarket} from "./interfaces/ISynthetix.sol";
 import {IUniswap} from "./interfaces/IUniswap.sol";
 
-contract Zap is Types, Errors, Events {
+/// @title Zap
+/// @custom:synthetix Zap USDC into and out of USDx
+/// @custom:aave Flashloan USDC to unwind synthetix collateral
+/// @custom:uniswap Swap unwound collateral for USDC to repay flashloan
+/// @dev Idle token balances are not safe
+/// @dev Intended for standalone use; do not inherit
+/// @author @jaredborders
+/// @author @barrasso
+/// @author @Flocqst
+contract Zap is Errors {
 
     /// @custom:synthetix
     address public immutable USDC;
@@ -21,6 +28,8 @@ contract Zap is Types, Errors, Events {
     uint128 public immutable SUSDC_SPOT_ID;
     uint128 public immutable PREFFERED_POOL_ID;
     bytes32 public immutable MODIFY_PERMISSION;
+    bytes32 public immutable BURN_PERMISSION;
+    uint128 public immutable USDX_ID;
 
     /// @custom:aave
     address public immutable AAVE;
@@ -28,7 +37,6 @@ contract Zap is Types, Errors, Events {
 
     /// @custom:uniswap
     address public immutable UNISWAP;
-    address public immutable FACTORY;
     uint24 public immutable FEE_TIER;
 
     constructor(
@@ -42,7 +50,7 @@ contract Zap is Types, Errors, Events {
         address _aave,
         address _uniswap
     ) {
-        /// @custom:synthetix address assignment
+        /// @custom:synthetix
         USDC = _usdc;
         USDX = _usdx;
         SPOT_MARKET = _spotMarket;
@@ -52,6 +60,8 @@ contract Zap is Types, Errors, Events {
         SUSDC_SPOT_ID = _susdcSpotId;
         PREFFERED_POOL_ID = ICore(CORE).getPreferredPool();
         MODIFY_PERMISSION = "PERPS_MODIFY_COLLATERAL";
+        BURN_PERMISSION = "BURN";
+        USDX_ID = 0;
 
         /// @custom:aave
         AAVE = _aave;
@@ -59,9 +69,12 @@ contract Zap is Types, Errors, Events {
 
         /// @custom:uniswap
         UNISWAP = _uniswap;
-        FACTORY = 0x33128a8fC17869897dcE68Ed026d694621f6FDfD;
         FEE_TIER = 3000;
     }
+
+    /*//////////////////////////////////////////////////////////////
+                                  ZAP
+    //////////////////////////////////////////////////////////////*/
 
     function zapIn(
         uint256 _amount,
@@ -110,6 +123,10 @@ contract Zap is Types, Errors, Events {
         (zapped,) = _buy(SUSDC_SPOT_ID, _amount, _tolerance);
         zapped = _unwrap(SUSDC_SPOT_ID, zapped, _tolerance);
     }
+
+    /*//////////////////////////////////////////////////////////////
+                            WRAP AND UNWRAP
+    //////////////////////////////////////////////////////////////*/
 
     function wrap(
         address _token,
@@ -186,6 +203,10 @@ contract Zap is Types, Errors, Events {
         }
     }
 
+    /*//////////////////////////////////////////////////////////////
+                              BUY AND SELL
+    //////////////////////////////////////////////////////////////*/
+
     function buy(
         uint128 _synthId,
         uint256 _amount,
@@ -218,7 +239,7 @@ contract Zap is Types, Errors, Events {
             received = amount;
             synth = ISpotMarket(SPOT_MARKET).getSynth(_synthId);
         } catch Error(string memory reason) {
-            revert SwapFailed(reason);
+            revert BuyFailed(reason);
         }
     }
 
@@ -255,37 +276,13 @@ contract Zap is Types, Errors, Events {
         }) returns (uint256 amount, ISpotMarket.Data memory) {
             received = amount;
         } catch Error(string memory reason) {
-            revert SwapFailed(reason);
+            revert SellFailed(reason);
         }
     }
 
-    function _pull(
-        address _token,
-        address _from,
-        uint256 _amount
-    )
-        internal
-        returns (bool success)
-    {
-        IERC20 token = IERC20(_token);
-        success = token.transferFrom(_from, address(this), _amount);
-    }
-
-    function _push(
-        address _token,
-        address _receiver,
-        uint256 _amount
-    )
-        internal
-        returns (bool success)
-    {
-        if (_receiver == address(this)) {
-            success = true;
-        } else {
-            IERC20 token = IERC20(_token);
-            success = token.transfer(_receiver, _amount);
-        }
-    }
+    /*//////////////////////////////////////////////////////////////
+                                  AAVE
+    //////////////////////////////////////////////////////////////*/
 
     function requestFlashloan(
         uint256 _usdcLoan,
@@ -308,7 +305,6 @@ contract Zap is Types, Errors, Events {
             _swapTolerance,
             receiver
         );
-
         IPool(AAVE).flashLoanSimple({
             receiverAddress: address(this),
             asset: USDC,
@@ -340,7 +336,6 @@ contract Zap is Types, Errors, Events {
             params,
             (uint256, address, uint128, uint128, uint256, uint256, address)
         );
-
         uint256 unwoundCollateral = _unwind(
             amount,
             collateralAmount,
@@ -352,35 +347,8 @@ contract Zap is Types, Errors, Events {
         );
         uint256 debt = amount + premium;
         uint256 differece = unwoundCollateral - debt;
-
         IERC20(USDC).approve(AAVE, debt);
-
         return IERC20(collateral).transfer(receiver, differece);
-    }
-
-    function unwind(
-        uint256 _usdcAmount,
-        uint256 _collateralAmount,
-        address _collateral,
-        uint128 _accountId,
-        uint128 _synthId,
-        uint256 _tolerance,
-        uint256 _swapTolerance,
-        address _receiver
-    )
-        external
-    {
-        _pull(USDC, msg.sender, _usdcAmount);
-        _unwind(
-            _usdcAmount,
-            _collateralAmount,
-            _collateral,
-            _accountId,
-            _synthId,
-            _tolerance,
-            _swapTolerance
-        );
-        _push(_collateral, _receiver, _collateralAmount);
     }
 
     function _unwind(
@@ -399,21 +367,30 @@ contract Zap is Types, Errors, Events {
         _burn(usdxAmount, _accountId);
         _withdraw(_synthId, _collateralAmount, _accountId);
         unwound = _unwrap(_synthId, _collateralAmount, _tolerance);
-
         if (_synthId != SUSDC_SPOT_ID) {
             _swap(_collateral, unwound, _swapTolerance);
         }
     }
+
+    /*//////////////////////////////////////////////////////////////
+                                  BURN
+    //////////////////////////////////////////////////////////////*/
 
     function burn(uint256 _amount, uint128 _accountId) external {
         _pull(USDX, msg.sender, _amount);
         _burn(_amount, _accountId);
     }
 
+    /// @custom:account permission required: "BURN"
     function _burn(uint256 _amount, uint128 _accountId) internal {
         IERC20(USDX).approve(CORE, _amount);
         ICore(CORE).burnUsd(_accountId, PREFFERED_POOL_ID, USDC, _amount);
+        ICore(CORE).renouncePermission(_accountId, BURN_PERMISSION);
     }
+
+    /*//////////////////////////////////////////////////////////////
+                                WITHDRAW
+    //////////////////////////////////////////////////////////////*/
 
     function withdraw(
         uint128 _synthId,
@@ -424,10 +401,13 @@ contract Zap is Types, Errors, Events {
         external
     {
         _withdraw(_synthId, _amount, _accountId);
-        address synth = ISpotMarket(SPOT_MARKET).getSynth(_synthId);
+        address synth = _synthId == USDX_ID
+            ? USDX
+            : ISpotMarket(SPOT_MARKET).getSynth(_synthId);
         _push(synth, _receiver, _amount);
     }
 
+    /// @custom:account permission required: "PERPS_MODIFY_COLLATERAL"
     function _withdraw(
         uint128 _synthId,
         uint256 _amount,
@@ -436,9 +416,6 @@ contract Zap is Types, Errors, Events {
         internal
     {
         IPerpsMarket market = IPerpsMarket(PERPS_MARKET);
-        bool canModify =
-            market.hasPermission(_accountId, MODIFY_PERMISSION, address(this));
-        require(canModify, NotPermittedToModifyCollateral());
         market.modifyCollateral({
             accountId: _accountId,
             synthMarketId: _synthId,
@@ -446,6 +423,10 @@ contract Zap is Types, Errors, Events {
         });
         market.renouncePermission(_accountId, MODIFY_PERMISSION);
     }
+
+    /*//////////////////////////////////////////////////////////////
+                                UNISWAP
+    //////////////////////////////////////////////////////////////*/
 
     function swap(
         address _from,
@@ -470,7 +451,6 @@ contract Zap is Types, Errors, Events {
         returns (uint256 received)
     {
         IERC20(_from).approve(UNISWAP, _amount);
-
         IUniswap.ExactInputSingleParams memory params = IUniswap
             .ExactInputSingleParams({
             tokenIn: _from,
@@ -488,6 +468,38 @@ contract Zap is Types, Errors, Events {
             received = amountOut;
         } catch Error(string memory reason) {
             revert SwapFailed(reason);
+        }
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                               TRANSFERS
+    //////////////////////////////////////////////////////////////*/
+
+    function _pull(
+        address _token,
+        address _from,
+        uint256 _amount
+    )
+        internal
+        returns (bool success)
+    {
+        IERC20 token = IERC20(_token);
+        success = token.transferFrom(_from, address(this), _amount);
+    }
+
+    function _push(
+        address _token,
+        address _receiver,
+        uint256 _amount
+    )
+        internal
+        returns (bool success)
+    {
+        if (_receiver == address(this)) {
+            success = true;
+        } else {
+            IERC20 token = IERC20(_token);
+            success = token.transfer(_receiver, _amount);
         }
     }
 
