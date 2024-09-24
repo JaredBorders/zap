@@ -13,57 +13,53 @@ import {
     Zap
 } from "./utils/Bootstrap.sol";
 
-contract UnwrapTest is Bootstrap {
+contract SellTest is Bootstrap {
 
-    function test_unwrap_base(uint32 amount) public base {
-        _spin(ACTOR, usdc, amount, address(zap));
+    function test_sell_base(uint32 amount) public base {
+        _spin(ACTOR, usdx, amount, address(zap));
         vm.startPrank(ACTOR);
-        uint256 wrapped = zap.wrap({
-            _token: address(usdc),
+        (uint256 received,) = zap.buy({
             _synthId: zap.SUSDC_SPOT_ID(),
             _amount: amount,
             _tolerance: DEFAULT_TOLERANCE,
             _receiver: ACTOR
         });
-        assertEq(usdc.balanceOf(ACTOR), 0);
+        assertEq(usdx.balanceOf(ACTOR), 0);
         assertGe(susdc.balanceOf(ACTOR), DEFAULT_TOLERANCE);
         susdc.approve(address(zap), type(uint256).max);
-        uint256 unwrapped = zap.unwrap({
-            _token: address(usdc),
+        received = zap.sell({
             _synthId: zap.SUSDC_SPOT_ID(),
-            _amount: wrapped,
+            _amount: received,
             _tolerance: DEFAULT_TOLERANCE,
             _receiver: ACTOR
         });
         vm.stopPrank();
-        assertGe(unwrapped, DEFAULT_TOLERANCE);
-        assertEq(usdc.balanceOf(ACTOR), amount);
+        assertGe(received, DEFAULT_TOLERANCE);
+        assertGe(usdx.balanceOf(ACTOR), DEFAULT_TOLERANCE);
         assertEq(susdc.balanceOf(ACTOR), 0);
     }
 
-    function test_unwrap_arbitrum(uint32 amount) public arbitrum {
-        _spin(ACTOR, usdc, amount, address(zap));
+    function test_sell_arbitrum(uint32 amount) public arbitrum {
+        _spin(ACTOR, usdx, amount, address(zap));
         vm.startPrank(ACTOR);
-        uint256 wrapped = zap.wrap({
-            _token: address(usdc),
+        (uint256 received,) = zap.buy({
             _synthId: zap.SUSDC_SPOT_ID(),
             _amount: amount,
             _tolerance: DEFAULT_TOLERANCE,
             _receiver: ACTOR
         });
-        assertEq(usdc.balanceOf(ACTOR), 0);
+        assertEq(usdx.balanceOf(ACTOR), 0);
         assertGe(susdc.balanceOf(ACTOR), DEFAULT_TOLERANCE);
         susdc.approve(address(zap), type(uint256).max);
-        uint256 unwrapped = zap.unwrap({
-            _token: address(usdc),
+        received = zap.sell({
             _synthId: zap.SUSDC_SPOT_ID(),
-            _amount: wrapped,
+            _amount: received,
             _tolerance: DEFAULT_TOLERANCE,
             _receiver: ACTOR
         });
         vm.stopPrank();
-        assertGe(unwrapped, DEFAULT_TOLERANCE);
-        assertEq(usdc.balanceOf(ACTOR), amount);
+        assertGe(received, DEFAULT_TOLERANCE);
+        assertGe(usdx.balanceOf(ACTOR), DEFAULT_TOLERANCE);
         assertEq(susdc.balanceOf(ACTOR), 0);
     }
 

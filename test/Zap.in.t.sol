@@ -9,46 +9,41 @@ import {
     IPerpsMarket,
     IPool,
     ISpotMarket,
-    Test,
     Zap
 } from "./utils/Bootstrap.sol";
 
-contract WrapTest is Bootstrap {
+contract ZapInTest is Bootstrap {
 
-    function test_wrap_base(uint32 amount) public base {
+    function test_zap_in_base(uint32 amount) public base {
         _spin(ACTOR, usdc, amount, address(zap));
         assertEq(usdc.balanceOf(ACTOR), amount);
-        assertEq(susdc.balanceOf(ACTOR), 0);
+        assertEq(usdx.balanceOf(ACTOR), 0);
         vm.startPrank(ACTOR);
-        uint256 wrapped = zap.wrap({
-            _token: address(usdc),
-            _synthId: zap.SUSDC_SPOT_ID(),
+        uint256 zapped = zap.zapIn({
             _amount: amount,
             _tolerance: DEFAULT_TOLERANCE,
             _receiver: ACTOR
         });
         vm.stopPrank();
-        assertGe(wrapped, DEFAULT_TOLERANCE);
+        assertGe(zapped, DEFAULT_TOLERANCE);
         assertEq(usdc.balanceOf(ACTOR), 0);
-        assertEq(susdc.balanceOf(ACTOR), wrapped);
+        assertEq(usdx.balanceOf(ACTOR), zapped);
     }
 
-    function test_wrap_arbitrum(uint32 amount) public arbitrum {
+    function test_zap_in_arbitrum(uint32 amount) public arbitrum {
         _spin(ACTOR, usdc, amount, address(zap));
         assertEq(usdc.balanceOf(ACTOR), amount);
-        assertEq(susdc.balanceOf(ACTOR), 0);
+        assertEq(usdx.balanceOf(ACTOR), 0);
         vm.startPrank(ACTOR);
-        uint256 wrapped = zap.wrap({
-            _token: address(usdc),
-            _synthId: zap.SUSDC_SPOT_ID(),
+        uint256 zapped = zap.zapIn({
             _amount: amount,
             _tolerance: DEFAULT_TOLERANCE,
             _receiver: ACTOR
         });
         vm.stopPrank();
-        assertGe(wrapped, DEFAULT_TOLERANCE);
+        assertGe(zapped, DEFAULT_TOLERANCE);
         assertEq(usdc.balanceOf(ACTOR), 0);
-        assertEq(susdc.balanceOf(ACTOR), wrapped);
+        assertEq(usdx.balanceOf(ACTOR), zapped);
     }
 
 }
