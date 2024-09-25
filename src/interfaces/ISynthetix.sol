@@ -206,6 +206,20 @@ interface IPerpsMarket {
         view
         returns (bool isAuthorized);
 
+    /**
+     * @notice Allows anyone to pay an account's debt
+     * @param accountId Id of the account.
+     * @param amount debt amount to pay off
+     */
+    function payDebt(uint128 accountId, uint256 amount) external;
+
+    /**
+     * @notice Returns account's debt
+     * @param accountId Id of the account.
+     * @return accountDebt specified account id's debt
+     */
+    function debt(uint128 accountId) external view returns (uint256 accountDebt);
+
 }
 
 interface ICore {
