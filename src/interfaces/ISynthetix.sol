@@ -218,7 +218,25 @@ interface IPerpsMarket {
      * @param accountId Id of the account.
      * @return accountDebt specified account id's debt
      */
-    function debt(uint128 accountId) external view returns (uint256 accountDebt);
+    function debt(uint128 accountId)
+        external
+        view
+        returns (uint256 accountDebt);
+
+    /**
+     * @notice Gets the account's collateral value for a specific collateral.
+     * @param accountId Id of the account.
+     * @param collateralId Id of the synth market used as collateral. Synth
+     * market id, 0 for snxUSD.
+     * @return collateralValue collateral value of the account.
+     */
+    function getCollateralAmount(
+        uint128 accountId,
+        uint128 collateralId
+    )
+        external
+        view
+        returns (uint256);
 
 }
 
