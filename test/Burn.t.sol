@@ -15,8 +15,7 @@ import {
 
 contract BurnTest is Bootstrap {
 
-    function test_burn_arbitrum(uint32 amount) public {
-        /// @custom:todo arbitrum sepolia fork required
-    }
+    /// @custom:todo on arbitrum sepolia fork
+    function test_burn_arbitrum_sepolia(uint32 amount) public {}
 
 }

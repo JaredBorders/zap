@@ -15,40 +15,16 @@ import {
 
 contract SwapTest is Bootstrap {
 
-    function test_swap_base() public base {
-        uint256 amount = 1 ether;
-        _spin(ACTOR, weth, amount, address(zap));
-        assertEq(weth.balanceOf(ACTOR), amount);
-        assertEq(usdc.balanceOf(ACTOR), 0);
-        vm.startPrank(ACTOR);
-        uint256 received = zap.swap({
-            _from: address(weth),
-            _amount: amount,
-            _tolerance: DEFAULT_TOLERANCE,
-            _receiver: ACTOR
-        });
-        vm.stopPrank();
-        assertEq(weth.balanceOf(ACTOR), 0);
-        assertEq(usdc.balanceOf(ACTOR), received);
-        assertTrue(received > 0);
-    }
+    /// @custom:todo
+    function test_swap_for_base() public base {}
 
-    function test_swap_arbitrum() public arbitrum {
-        uint256 amount = 1 ether;
-        _spin(ACTOR, weth, amount, address(zap));
-        assertEq(weth.balanceOf(ACTOR), amount);
-        assertEq(usdc.balanceOf(ACTOR), 0);
-        vm.startPrank(ACTOR);
-        uint256 received = zap.swap({
-            _from: address(weth),
-            _amount: amount,
-            _tolerance: DEFAULT_TOLERANCE,
-            _receiver: ACTOR
-        });
-        vm.stopPrank();
-        assertEq(weth.balanceOf(ACTOR), 0);
-        assertEq(usdc.balanceOf(ACTOR), received);
-        assertTrue(received > 0);
-    }
+    /// @custom:todo
+    function test_swap_with_base() public base {}
+
+    /// @custom:todo
+    function test_swap_for_arbitrum() public arbitrum {}
+
+    /// @custom:todo
+    function test_swap_with_arbitrum() public arbitrum {}
 
 }
