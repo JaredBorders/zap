@@ -76,6 +76,12 @@ contract Zap is Errors {
                                   ZAP
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice zap USDC into USDx
+    /// @dev caller must grant USDC allowance to this contract
+    /// @param _amount amount of USDC to zap
+    /// @param _tolerance acceptable slippage for wrapping and selling
+    /// @param _receiver address to receive USDx
+    /// @return zapped amount of USDx received
     function zapIn(
         uint256 _amount,
         uint256 _tolerance,
@@ -89,6 +95,8 @@ contract Zap is Errors {
         _push(USDX, _receiver, zapped);
     }
 
+    /// @dev allowance is assumed
+    /// @dev following execution, this contract will hold the zapped USDx
     function _zapIn(
         uint256 _amount,
         uint256 _tolerance
@@ -100,6 +108,12 @@ contract Zap is Errors {
         zapped = _sell(SUSDC_SPOT_ID, zapped, _tolerance);
     }
 
+    /// @notice zap USDx into USDC
+    /// @dev caller must grant USDx allowance to this contract
+    /// @param _amount amount of USDx to zap
+    /// @param _tolerance acceptable slippage for buying and unwrapping
+    /// @param _receiver address to receive USDC
+    /// @return zapped amount of USDC received
     function zapOut(
         uint256 _amount,
         uint256 _tolerance,
@@ -113,6 +127,8 @@ contract Zap is Errors {
         _push(USDC, _receiver, zapped);
     }
 
+    /// @dev allowance is assumed
+    /// @dev following execution, this contract will hold the zapped USDC
     function _zapOut(
         uint256 _amount,
         uint256 _tolerance
@@ -128,6 +144,15 @@ contract Zap is Errors {
                             WRAP AND UNWRAP
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice wrap collateral via synthetix spot market
+    /// @dev caller must grant token allowance to this contract
+    /// @custom:synth -> synthetix token representation of wrapped collateral
+    /// @param _token address of token to wrap
+    /// @param _synthId synthetix market id of synth to wrap into
+    /// @param _amount amount of token to wrap
+    /// @param _tolerance acceptable slippage for wrapping
+    /// @param _receiver address to receive wrapped synth
+    /// @return wrapped amount of synth received
     function wrap(
         address _token,
         uint128 _synthId,
@@ -140,10 +165,11 @@ contract Zap is Errors {
     {
         _pull(_token, msg.sender, _amount);
         wrapped = _wrap(_token, _synthId, _amount, _tolerance);
-        address synth = ISpotMarket(SPOT_MARKET).getSynth(_synthId);
-        _push(synth, _receiver, wrapped);
+        _push(ISpotMarket(SPOT_MARKET).getSynth(_synthId), _receiver, wrapped);
     }
 
+    /// @dev allowance is assumed
+    /// @dev following execution, this contract will hold the wrapped synth
     function _wrap(
         address _token,
         uint128 _synthId,
@@ -154,7 +180,6 @@ contract Zap is Errors {
         returns (uint256 wrapped)
     {
         IERC20(_token).approve(SPOT_MARKET, _amount);
-
         try ISpotMarket(SPOT_MARKET).wrap({
             marketId: _synthId,
             wrapAmount: _amount,
@@ -166,6 +191,15 @@ contract Zap is Errors {
         }
     }
 
+    /// @notice unwrap collateral via synthetix spot market
+    /// @dev caller must grant synth allowance to this contract
+    /// @custom:synth -> synthetix token representation of wrapped collateral
+    /// @param _token address of token to unwrap into
+    /// @param _synthId synthetix market id of synth to unwrap
+    /// @param _amount amount of synth to unwrap
+    /// @param _tolerance acceptable slippage for unwrapping
+    /// @param _receiver address to receive unwrapped token
+    /// @return unwrapped amount of token received
     function unwrap(
         address _token,
         uint128 _synthId,
@@ -182,6 +216,8 @@ contract Zap is Errors {
         _push(_token, _receiver, unwrapped);
     }
 
+    /// @dev allowance is assumed
+    /// @dev following execution, this contract will hold the unwrapped token
     function _unwrap(
         uint128 _synthId,
         uint256 _amount,
@@ -207,6 +243,13 @@ contract Zap is Errors {
                               BUY AND SELL
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice buy synth via synthetix spot market
+    /// @dev caller must grant USDX allowance to this contract
+    /// @param _synthId synthetix market id of synth to buy
+    /// @param _amount amount of USDX to spend
+    /// @param _tolerance acceptable slippage for buying
+    /// @param _receiver address to receive synth
+    /// @return received amount of synth
     function buy(
         uint128 _synthId,
         uint256 _amount,
@@ -221,6 +264,8 @@ contract Zap is Errors {
         _push(synth, _receiver, received);
     }
 
+    /// @dev allowance is assumed
+    /// @dev following execution, this contract will hold the bought synth
     function _buy(
         uint128 _synthId,
         uint256 _amount,
@@ -243,6 +288,13 @@ contract Zap is Errors {
         }
     }
 
+    /// @notice sell synth via synthetix spot market
+    /// @dev caller must grant synth allowance to this contract
+    /// @param _synthId synthetix market id of synth to sell
+    /// @param _amount amount of synth to sell
+    /// @param _tolerance acceptable slippage for selling
+    /// @param _receiver address to receive USDX
+    /// @return received amount of USDX
     function sell(
         uint128 _synthId,
         uint256 _amount,
@@ -258,6 +310,8 @@ contract Zap is Errors {
         _push(USDX, _receiver, received);
     }
 
+    /// @dev allowance is assumed
+    /// @dev following execution, this contract will hold the sold USDX
     function _sell(
         uint128 _synthId,
         uint256 _amount,
@@ -284,7 +338,14 @@ contract Zap is Errors {
                            UNWIND COLLATERAL
     //////////////////////////////////////////////////////////////*/
 
-    /// @dev assumed USDC:USDx exchange rate is 1:1
+    /// @notice unwind synthetix perp position collateral
+    /// @dev caller must grant USDC allowance to this contract
+    /// @custom:synthetix RBAC permission required: "PERPS_MODIFY_COLLATERAL"
+    /// @param _accountId synthetix perp market account id
+    /// @param _collateralId synthetix market id of collateral
+    /// @param _zapTolerance acceptable slippage for zapping
+    /// @param _swapTolerance acceptable slippage for swapping
+    /// @param _receiver address to receive unwound collateral
     function unwind(
         uint128 _accountId,
         uint128 _collateralId,
@@ -311,6 +372,12 @@ contract Zap is Errors {
         });
     }
 
+    /// @notice flashloan callback function
+    /// @dev caller is expected to be the Aave lending pool
+    /// @custom:caution calling this function directly is not recommended
+    /// @param _flashloan amount of USDC flashloaned from Aave
+    /// @param _premium amount of USDC premium owed to Aave
+    /// @return bool representing successful execution
     function executeOperation(
         address,
         uint256 _flashloan,
@@ -344,6 +411,15 @@ contract Zap is Errors {
         return _push(collateral, _receiver, unwound);
     }
 
+    /// @dev unwinds synthetix perp position collateral
+    /// @param _flashloan amount of USDC flashloaned from Aave
+    /// @param _premium amount of USDC premium owed to Aave
+    /// @param _accountId synthetix perp market account id
+    /// @param _collateralId synthetix market id of collateral
+    /// @param _zapTolerance acceptable slippage for zapping
+    /// @param _swapTolerance acceptable slippage for swapping
+    /// @return unwound amount of collateral
+    /// @return collateral address
     function _unwind(
         uint256 _flashloan,
         uint256 _premium,
@@ -393,11 +469,21 @@ contract Zap is Errors {
                                   BURN
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice burn USDx to pay off synthetix perp position debt
+    /// @custom:caution ALL USDx remaining post-burn will be sent to the caller
+    /// @dev caller must grant USDX allowance to this contract
+    /// @dev excess USDx will be returned to the caller
+    /// @param _amount amount of USDx to burn
+    /// @param _accountId synthetix perp market account id
     function burn(uint256 _amount, uint128 _accountId) external {
         _pull(USDX, msg.sender, _amount);
         _burn(_amount, _accountId);
+        uint256 remaining = IERC20(USDX).balanceOf(address(this));
+        _push(USDX, msg.sender, remaining);
     }
 
+    /// @dev allowance is assumed
+    /// @dev following execution, this contract will hold any excess USDx
     function _burn(uint256 _amount, uint128 _accountId) internal {
         IERC20(USDX).approve(CORE, _amount);
         IPerpsMarket(PERPS_MARKET).payDebt(_accountId, _amount);
@@ -407,6 +493,12 @@ contract Zap is Errors {
                                 WITHDRAW
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice withdraw collateral from synthetix perp position
+    /// @custom:synthetix RBAC permission required: "PERPS_MODIFY_COLLATERAL"
+    /// @param _synthId synthetix market id of collateral
+    /// @param _amount amount of collateral to withdraw
+    /// @param _accountId synthetix perp market account id
+    /// @param _receiver address to receive collateral
     function withdraw(
         uint128 _synthId,
         uint256 _amount,
@@ -422,7 +514,9 @@ contract Zap is Errors {
         _push(synth, _receiver, _amount);
     }
 
-    /// @custom:account permission required: "PERPS_MODIFY_COLLATERAL"
+    /// @custom:synthetix RBAC permission required: "PERPS_MODIFY_COLLATERAL"
+    /// @dev following execution, this contract will hold the withdrawn
+    /// collateral
     function _withdraw(
         uint128 _synthId,
         uint256 _amount,
@@ -443,6 +537,14 @@ contract Zap is Errors {
                                 UNISWAP
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice swap a tolerable amount of tokens for a specific amount of USDC
+    /// @dev caller must grant token allowance to this contract
+    /// @dev any excess token not spent will be returned to the caller
+    /// @param _from address of token to swap
+    /// @param _amount of USDC to receive in return
+    /// @param _tolerance or tolerable amount of token to spend
+    /// @param _receiver address to receive USDC
+    /// @return deducted amount of incoming token; i.e., amount spent
     function swapFor(
         address _from,
         uint256 _amount,
@@ -461,6 +563,8 @@ contract Zap is Errors {
         }
     }
 
+    /// @dev allowance is assumed
+    /// @dev following execution, this contract will hold the swapped USDC
     function _swapFor(
         address _from,
         uint256 _amount,
@@ -491,6 +595,13 @@ contract Zap is Errors {
         }
     }
 
+    /// @notice swap a specific amount of tokens for a tolerable amount of USDC
+    /// @dev caller must grant token allowance to this contract
+    /// @param _from address of token to swap
+    /// @param _amount of token to swap
+    /// @param _tolerance or tolerable amount of USDC to receive
+    /// @param _receiver address to receive USDC
+    /// @return received amount of USDC
     function swapWith(
         address _from,
         uint256 _amount,
@@ -505,6 +616,8 @@ contract Zap is Errors {
         _push(USDC, _receiver, received);
     }
 
+    /// @dev allowance is assumed
+    /// @dev following execution, this contract will hold the swapped USDC
     function _swapWith(
         address _from,
         uint256 _amount,
@@ -539,32 +652,38 @@ contract Zap is Errors {
                                TRANSFERS
     //////////////////////////////////////////////////////////////*/
 
+    /// @dev pull tokens from a sender
+    /// @param _token address of token to pull
+    /// @param _from address of sender
+    /// @param _amount amount of token to pull
+    /// @return bool representing successful execution
     function _pull(
         address _token,
         address _from,
         uint256 _amount
     )
         internal
-        returns (bool success)
+        returns (bool)
     {
         IERC20 token = IERC20(_token);
-        success = token.transferFrom(_from, address(this), _amount);
+        return token.transferFrom(_from, address(this), _amount);
     }
 
+    /// @dev push tokens to a receiver
+    /// @param _token address of token to push
+    /// @param _receiver address of receiver
+    /// @param _amount amount of token to push
+    /// @return bool representing successful execution
     function _push(
         address _token,
         address _receiver,
         uint256 _amount
     )
         internal
-        returns (bool success)
+        returns (bool)
     {
-        if (_receiver == address(this)) {
-            success = true;
-        } else {
-            IERC20 token = IERC20(_token);
-            success = token.transfer(_receiver, _amount);
-        }
+        IERC20 token = IERC20(_token);
+        return token.transfer(_receiver, _amount);
     }
 
 }
