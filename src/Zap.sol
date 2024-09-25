@@ -281,34 +281,31 @@ contract Zap is Errors {
     }
 
     /*//////////////////////////////////////////////////////////////
-                                  AAVE
+                           UNWIND COLLATERAL
     //////////////////////////////////////////////////////////////*/
 
-    function requestFlashloan(
-        uint256 _usdcLoan,
-        uint256 _collateralAmount,
-        address _collateral,
+    /// @dev assumed USDC:USDx exchange rate is 1:1
+    function unwind(
         uint128 _accountId,
-        uint128 _synthId,
-        uint256 _tolerance,
+        uint128 _collateralId,
+        uint256 _zapTolerance,
         uint256 _swapTolerance,
-        address receiver
+        address _receiver
     )
         external
     {
         bytes memory params = abi.encode(
-            _collateralAmount,
-            _collateral,
-            _accountId,
-            _synthId,
-            _tolerance,
-            _swapTolerance,
-            receiver
+            _accountId, _collateralId, _zapTolerance, _swapTolerance, _receiver
         );
+
+        // determine amount of synthetix perp position debt to unwind;
+        // debt is denominated in USD
+        uint256 debt = IPerpsMarket(PERPS_MARKET).debt(_accountId);
+
         IPool(AAVE).flashLoanSimple({
             receiverAddress: address(this),
             asset: USDC,
-            amount: _usdcLoan,
+            amount: debt,
             params: params,
             referralCode: REFERRAL_CODE
         });
@@ -316,60 +313,80 @@ contract Zap is Errors {
 
     function executeOperation(
         address,
-        uint256 amount,
-        uint256 premium,
+        uint256 _flashloan,
+        uint256 _premium,
         address,
-        bytes calldata params
+        bytes calldata _params
     )
         external
         returns (bool)
     {
         (
-            uint256 collateralAmount,
-            address collateral,
-            uint128 accountId,
-            uint128 synthId,
-            uint256 tolerance,
-            uint256 swapTolerance,
-            address receiver
-        ) = abi.decode(
-            params,
-            (uint256, address, uint128, uint128, uint256, uint256, address)
+            uint128 _accountId,
+            uint128 _collateralId,
+            uint256 _zapTolerance,
+            uint256 _swapTolerance,
+            address _receiver
+        ) = abi.decode(_params, (uint128, uint128, uint256, uint256, address));
+
+        (uint256 unwound, address collateral) = _unwind(
+            _flashloan,
+            _premium,
+            _accountId,
+            _collateralId,
+            _zapTolerance,
+            _swapTolerance
         );
-        uint256 unwoundCollateral = _unwind(
-            amount,
-            collateralAmount,
-            collateral,
-            accountId,
-            synthId,
-            tolerance,
-            swapTolerance
-        );
-        uint256 debt = amount + premium;
-        uint256 differece = unwoundCollateral - debt;
-        IERC20(USDC).approve(AAVE, debt);
-        return IERC20(collateral).transfer(receiver, differece);
+
+        _flashloan += _premium;
+        
+        IERC20(USDC).approve(AAVE, _flashloan);
+        return _push(collateral, _receiver, unwound);
     }
 
     function _unwind(
-        uint256 _usdcLoan,
-        uint256 _collateralAmount,
-        address _collateral,
+        uint256 _flashloan,
+        uint256 _premium,
         uint128 _accountId,
-        uint128 _synthId,
-        uint256 _tolerance,
+        uint128 _collateralId,
+        uint256 _zapTolerance,
         uint256 _swapTolerance
     )
         internal
-        returns (uint256 unwound)
+        returns (uint256 unwound, address collateral)
     {
-        uint256 usdxAmount = _zapIn(_usdcLoan, _tolerance);
+        // zap USDC from flashloan into USDx
+        uint256 usdxAmount = _zapIn(_flashloan, _zapTolerance);
+
+        // burn USDx to pay off synthetix perp position debt;
+        // debt is denominated in USD and thus repaid with USDx
         _burn(usdxAmount, _accountId);
-        _withdraw(_synthId, _collateralAmount, _accountId);
-        unwound = _unwrap(_synthId, _collateralAmount, _tolerance);
-        if (_synthId != SUSDC_SPOT_ID) {
-            _swap(_collateral, unwound, _swapTolerance);
-        }
+
+        // determine amount of synthetix perp position collateral
+        // i.e., # of sETH, # of sUSDC, # of sUSDe, # of stBTC, etc.
+        uint256 collateralAmount = IPerpsMarket(PERPS_MARKET)
+            .getCollateralAmount(_accountId, _collateralId);
+
+        // withdraw synthetix perp position collateral to this contract
+        _withdraw(_collateralId, collateralAmount, _accountId);
+
+        // unwrap synthetix perp position collateral;
+        // i.e., sETH -> WETH, sUSDC -> USDC, etc.
+        uint256 unwrapped =
+            _unwrap(_collateralId, collateralAmount, _swapTolerance);
+
+        // establish unwrapped collateral address
+        collateral = ISpotMarket(SPOT_MARKET).getSynth(_collateralId);
+
+        // establish total debt now owed to Aave
+        _flashloan += _premium;
+
+        // swap as necessary to repay Aave flashloan;
+        // only as much as necessary to repay the flashloan
+        uint256 deducted = _swapFor(collateral, _flashloan, _swapTolerance);
+
+        // establish amount of unwound collateral after deduction
+        unwound = unwrapped - deducted;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -381,11 +398,9 @@ contract Zap is Errors {
         _burn(_amount, _accountId);
     }
 
-    /// @custom:account permission required: "BURN"
     function _burn(uint256 _amount, uint128 _accountId) internal {
         IERC20(USDX).approve(CORE, _amount);
-        ICore(CORE).burnUsd(_accountId, PREFFERED_POOL_ID, USDC, _amount);
-        ICore(CORE).renouncePermission(_accountId, BURN_PERMISSION);
+        IPerpsMarket(PERPS_MARKET).payDebt(_accountId, _amount);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -428,7 +443,55 @@ contract Zap is Errors {
                                 UNISWAP
     //////////////////////////////////////////////////////////////*/
 
-    function swap(
+    function swapFor(
+        address _from,
+        uint256 _amount,
+        uint256 _tolerance,
+        address _receiver
+    )
+        external
+        returns (uint256 deducted)
+    {
+        _pull(_from, msg.sender, _tolerance);
+        deducted = _swapFor(_from, _amount, _tolerance);
+        _push(USDC, _receiver, _amount);
+
+        if (deducted < _tolerance) {
+            _push(_from, msg.sender, _tolerance - deducted);
+        }
+    }
+
+    function _swapFor(
+        address _from,
+        uint256 _amount,
+        uint256 _tolerance
+    )
+        internal
+        returns (uint256 deducted)
+    {
+        IERC20(_from).approve(UNISWAP, _tolerance);
+
+        IUniswap.ExactOutputSingleParams memory params = IUniswap
+            .ExactOutputSingleParams({
+            tokenIn: _from,
+            tokenOut: USDC,
+            fee: FEE_TIER,
+            recipient: address(this),
+            amountOut: _amount,
+            amountInMaximum: _tolerance,
+            sqrtPriceLimitX96: 0
+        });
+
+        try IUniswap(UNISWAP).exactOutputSingle(params) returns (
+            uint256 amountIn
+        ) {
+            deducted = amountIn;
+        } catch Error(string memory reason) {
+            revert SwapFailed(reason);
+        }
+    }
+
+    function swapWith(
         address _from,
         uint256 _amount,
         uint256 _tolerance,
@@ -438,11 +501,11 @@ contract Zap is Errors {
         returns (uint256 received)
     {
         _pull(_from, msg.sender, _amount);
-        received = _swap(_from, _amount, _tolerance);
+        received = _swapWith(_from, _amount, _tolerance);
         _push(USDC, _receiver, received);
     }
 
-    function _swap(
+    function _swapWith(
         address _from,
         uint256 _amount,
         uint256 _tolerance
@@ -451,6 +514,7 @@ contract Zap is Errors {
         returns (uint256 received)
     {
         IERC20(_from).approve(UNISWAP, _amount);
+
         IUniswap.ExactInputSingleParams memory params = IUniswap
             .ExactInputSingleParams({
             tokenIn: _from,
