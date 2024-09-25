@@ -15,12 +15,8 @@ import {
 
 contract BurnTest is Bootstrap {
 
-    function test_burn_arbitrum(uint32 amount) public arbitrum_b {
-        _spin(ARBITRUM_BOB, usdx, amount, address(zap));
-        vm.startPrank(ARBITRUM_BOB);
-        core.grantPermission(ARBITRUM_BOB_ID, _BURN_PERMISSION, address(zap));
-        zap.burn({_amount: amount, _accountId: ARBITRUM_BOB_ID});
-        vm.stopPrank();
+    function test_burn_arbitrum(uint32 amount) public {
+        /// @custom:todo arbitrum sepolia fork required
     }
 
 }
