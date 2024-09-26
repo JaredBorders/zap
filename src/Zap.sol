@@ -667,7 +667,8 @@ contract Zap is Errors {
         returns (bool)
     {
         IERC20 token = IERC20(_token);
-        return token.transferFrom(_from, address(this), _amount);
+        token.safeTransferFrom(token, _from, address(this), _amount);
+        return true;
     }
 
     /// @dev push tokens to a receiver
@@ -684,7 +685,8 @@ contract Zap is Errors {
         returns (bool)
     {
         IERC20 token = IERC20(_token);
-        return token.transfer(_receiver, _amount);
+        token.safeTransfer(token, _receiver, _amount);
+        return true;
     }
 
 }
