@@ -8,6 +8,7 @@ pragma solidity ^0.8.20;
  * @author OpenZeppelin
  */
 interface IERC20 {
+
     /**
      * @dev Emitted when `value` tokens are moved from one account (`from`) to
      * another (`to`).
@@ -20,7 +21,9 @@ interface IERC20 {
      * @dev Emitted when the allowance of a `spender` for an `owner` is set by
      * a call to {approve}. `value` is the new allowance.
      */
-    event Approval(address indexed owner, address indexed spender, uint256 value);
+    event Approval(
+        address indexed owner, address indexed spender, uint256 value
+    );
 
     /**
      * @dev Returns the value of tokens in existence.
@@ -48,15 +51,23 @@ interface IERC20 {
      *
      * This value changes when {approve} or {transferFrom} are called.
      */
-    function allowance(address owner, address spender) external view returns (uint256);
+    function allowance(
+        address owner,
+        address spender
+    )
+        external
+        view
+        returns (uint256);
 
     /**
-     * @dev Sets a `value` amount of tokens as the allowance of `spender` over the
+     * @dev Sets a `value` amount of tokens as the allowance of `spender` over
+     * the
      * caller's tokens.
      *
      * Returns a boolean value indicating whether the operation succeeded.
      *
-     * IMPORTANT: Beware that changing an allowance with this method brings the risk
+     * IMPORTANT: Beware that changing an allowance with this method brings the
+     * risk
      * that someone may use both the old and the new allowance by unfortunate
      * transaction ordering. One possible solution to mitigate this race
      * condition is to first reduce the spender's allowance to 0 and set the
@@ -76,16 +87,32 @@ interface IERC20 {
      *
      * Emits a {Transfer} event.
      */
-    function transferFrom(address from, address to, uint256 value) external returns (bool);
+    function transferFrom(
+        address from,
+        address to,
+        uint256 value
+    )
+        external
+        returns (bool);
 
     /**
-     * @dev Transfer `value` amount of `token` from the calling contract to `to`. If `token` returns no value,
+     * @dev Transfer `value` amount of `token` from the calling contract to
+     * `to`. If `token` returns no value,
      * non-reverting calls are assumed to be successful.
      */
     function safeTransfer(IERC20 token, address to, uint256 value) external;
     /**
-     * @dev Transfer `value` amount of `token` from `from` to `to`, spending the approval given by `from` to the
-     * calling contract. If `token` returns no value, non-reverting calls are assumed to be successful.
+     * @dev Transfer `value` amount of `token` from `from` to `to`, spending the
+     * approval given by `from` to the
+     * calling contract. If `token` returns no value, non-reverting calls are
+     * assumed to be successful.
      */
-    function safeTransferFrom(IERC20 token, address from, address to, uint256 value) external;
+    function safeTransferFrom(
+        IERC20 token,
+        address from,
+        address to,
+        uint256 value
+    )
+        external;
+
 }
