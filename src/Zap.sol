@@ -389,6 +389,10 @@ contract Zap is Errors {
         external
         returns (bool)
     {
+        if (msg.sender != AAVE) {
+            revert Errors.NotPermitted();
+        }
+
         (
             uint128 _accountId,
             uint128 _collateralId,
