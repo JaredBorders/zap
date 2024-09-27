@@ -706,25 +706,35 @@ contract Zap is Enums, Errors {
     /// @param _token address of token to pull
     /// @param _from address of sender
     /// @param _amount amount of token to pull
-    /// @return bool representing successful execution
+    /// @return success boolean representing execution success
     function _pull(
         address _token,
         address _from,
         uint256 _amount
     )
         internal
-        returns (bool)
+        returns (bool success)
     {
         IERC20 token = IERC20(_token);
-        token.safeTransferFrom(token, _from, address(this), _amount);
-        return true;
+
+        try token.transferFrom(_from, address(this), _amount) returns (
+            bool result
+        ) {
+            success = result;
+            require(
+                success,
+                PullFailed(abi.encodePacked(address(token), _from, _amount))
+            );
+        } catch Error(string memory reason) {
+            revert PullFailed(bytes(reason));
+        }
     }
 
     /// @dev push tokens to a receiver
     /// @param _token address of token to push
     /// @param _receiver address of receiver
     /// @param _amount amount of token to push
-    /// @return bool representing successful execution
+    /// @return success boolean representing execution success
     function _push(
         address _token,
         address _receiver,
@@ -734,8 +744,16 @@ contract Zap is Enums, Errors {
         returns (bool success)
     {
         IERC20 token = IERC20(_token);
-        token.safeTransfer(token, _receiver, _amount);
-        return true;
+
+        try token.transfer(_receiver, _amount) returns (bool result) {
+            success = result;
+            require(
+                success,
+                PushFailed(abi.encodePacked(address(token), _receiver, _amount))
+            );
+        } catch Error(string memory reason) {
+            revert PushFailed(bytes(reason));
+        }
     }
 
 }
