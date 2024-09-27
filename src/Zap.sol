@@ -78,6 +78,20 @@ contract Zap is Enums, Errors {
     }
 
     /*//////////////////////////////////////////////////////////////
+                               MODIFIERS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice validate caller is authorized to modify synthetix perp position
+    /// @param _accountId synthetix perp market account id
+    modifier isAuthorized(uint128 _accountId) {
+        bool authorized = IPerpsMarket(PERPS_MARKET).isAuthorized(
+            _accountId, MODIFY_PERMISSION, msg.sender
+        );
+        require(authorized, NotPermitted());
+        _;
+    }
+
+    /*//////////////////////////////////////////////////////////////
                                   ZAP
     //////////////////////////////////////////////////////////////*/
 
@@ -359,18 +373,14 @@ contract Zap is Enums, Errors {
         address _receiver
     )
         external
+        isAuthorized(_accountId)
     {
         if (reentrancyGuard != MultiLevelReentrancyGuard.Unset) {
             revert ReentrancyGuardReentrantCall();
         } else {
             reentrancyGuard = MultiLevelReentrancyGuard.Level1;
         }
-        
-        IPerpsMarket market = IPerpsMarket(PERPS_MARKET);
-        if (!market.hasPermission(_accountId, MODIFY_PERMISSION, msg.sender)) {
-            revert Errors.NotPermitted();
-        }
-        
+
         bytes memory params = abi.encode(
             _accountId, _collateralId, _zapTolerance, _swapTolerance, _receiver
         );
@@ -410,7 +420,7 @@ contract Zap is Enums, Errors {
         if (reentrancyGuard != MultiLevelReentrancyGuard.Level1) {
             revert ReentrancyGuardReentrantCall();
         } else {
-          reentrancyGuard = MultiLevelReentrancyGuard.Level2;
+            reentrancyGuard = MultiLevelReentrancyGuard.Level2;
         }
 
         if (msg.sender != AAVE) {
@@ -544,6 +554,7 @@ contract Zap is Enums, Errors {
         address _receiver
     )
         external
+        isAuthorized(_accountId)
     {
         _withdraw(_synthId, _amount, _accountId);
         address synth = _synthId == USDX_ID
