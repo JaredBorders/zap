@@ -361,13 +361,16 @@ contract Zap is Errors {
         );
 
         // determine amount of synthetix perp position debt to unwind;
-        // debt is denominated in USD
+        // debt is denominated in USD with 18 decimals
+        // the Aave USDC pool uses USDC token amounts denominated with 6
+        // decimals
         uint256 debt = IPerpsMarket(PERPS_MARKET).debt(_accountId);
+        uint256 debt6Decimals = debt / (10 ** (18 - 6));
 
         IPool(AAVE).flashLoanSimple({
             receiverAddress: address(this),
             asset: USDC,
-            amount: debt,
+            amount: debt6Decimals,
             params: params,
             referralCode: REFERRAL_CODE
         });
@@ -542,7 +545,7 @@ contract Zap is Errors {
     /// @dev caller must grant token allowance to this contract
     /// @dev any excess token not spent will be returned to the caller
     /// @param _from address of token to swap
-    /// @param _amount of USDC to receive in return
+    /// @param _amount 6 decimal amount of USDC to receive in return
     /// @param _tolerance or tolerable amount of token to spend
     /// @param _receiver address to receive USDC
     /// @return deducted amount of incoming token; i.e., amount spent
@@ -600,7 +603,8 @@ contract Zap is Errors {
     /// @dev caller must grant token allowance to this contract
     /// @param _from address of token to swap
     /// @param _amount of token to swap
-    /// @param _tolerance or tolerable amount of USDC to receive
+    /// @param _tolerance tolerable amount of USDC to receive specified with 6
+    /// decimals
     /// @param _receiver address to receive USDC
     /// @return received amount of USDC
     function swapWith(
