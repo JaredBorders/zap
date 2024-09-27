@@ -417,14 +417,12 @@ contract Zap is Enums, Errors {
         external
         returns (bool)
     {
+        require(msg.sender == AAVE, OnlyAave(msg.sender));
+
         if (reentrancyGuard != MultiLevelReentrancyGuard.Level1) {
             revert ReentrancyGuardReentrantCall();
         } else {
             reentrancyGuard = MultiLevelReentrancyGuard.Level2;
-        }
-
-        if (msg.sender != AAVE) {
-            revert Errors.NotPermitted();
         }
 
         (
