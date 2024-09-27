@@ -39,4 +39,8 @@ contract Errors {
     /// @param reason data for the failure
     error PushFailed(bytes reason);
 
+    /// @notice thrown when caller is not Aave pool address
+    /// @param caller address of the msg.sender
+    error OnlyAave(address caller);
+
 }
