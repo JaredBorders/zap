@@ -441,16 +441,22 @@ contract Zap is Errors {
 
         // determine amount of synthetix perp position collateral
         // i.e., # of sETH, # of sUSDC, # of sUSDe, # of stBTC, etc.
-        uint256 collateralAmount = IPerpsMarket(PERPS_MARKET)
-            .getCollateralAmount(_accountId, _collateralId);
+        uint256 withdrawableMargin = IPerpsMarket(PERPS_MARKET)
+            .getWithdrawableMargin(_accountId, _collateralId);
+
+        // TODO, should we subtract (or do something else) the fees from the
+        // OrderFeesData return values?
+        (uint256 withdrawableAmount,) = ISpotMarket(SPOT_MARKET).quoteBuyExactIn(
+            SUSDC_SPOT_ID, withdrawableMargin, ISpotMarket.Tolerance.STRICT
+        );
 
         // withdraw synthetix perp position collateral to this contract
-        _withdraw(_collateralId, collateralAmount, _accountId);
+        _withdraw(_collateralId, withdrawableAmount, _accountId);
 
         // unwrap synthetix perp position collateral;
         // i.e., sETH -> WETH, sUSDC -> USDC, etc.
         uint256 unwrapped =
-            _unwrap(_collateralId, collateralAmount, _swapTolerance);
+            _unwrap(_collateralId, withdrawableAmount, _swapTolerance);
 
         // establish unwrapped collateral address
         collateral = ISpotMarket(SPOT_MARKET).getSynth(_collateralId);

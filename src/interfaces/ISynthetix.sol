@@ -39,6 +39,18 @@ interface ISpotMarket {
         int256 wrapperFees;
     }
 
+    struct OrderFeesData {
+        uint256 fixedFees;
+        uint256 utilizationFees;
+        int256 skewFees;
+        int256 wrapperFees;
+    }
+
+    enum Tolerance {
+        DEFAULT,
+        STRICT
+    }
+
     /// @notice Wraps the specified amount and returns similar value of synth
     /// minus the fees.
     /// @dev Fees are collected from the user by way of the contract returning
@@ -129,6 +141,25 @@ interface ISpotMarket {
     )
         external
         returns (uint256 usdAmountReceived, Data memory fees);
+
+    /**
+     * @notice  quote for buyExactIn.  same parameters and return values as
+     * buyExactIn
+     * @param   synthMarketId  market id value
+     * @param   usdAmount  amount of USD to use for the trade
+     * @param   stalenessTolerance  this enum determines what staleness
+     * tolerance to use
+     * @return  synthAmount  return amount of synth given the USD amount - fees
+     * @return  fees  breakdown of all the quoted fees for the buy txn
+     */
+    function quoteBuyExactIn(
+        uint128 synthMarketId,
+        uint256 usdAmount,
+        Tolerance stalenessTolerance
+    )
+        external
+        view
+        returns (uint256 synthAmount, OrderFeesData memory fees);
 
 }
 
@@ -223,16 +254,17 @@ interface IPerpsMarket {
         view
         returns (uint256 accountDebt);
 
-    /**
-     * @notice Gets the account's collateral value for a specific collateral.
-     * @param accountId Id of the account.
-     * @param collateralId Id of the synth market used as collateral. Synth
-     * market id, 0 for snxUSD.
-     * @return collateralValue collateral value of the account.
-     */
-    function getCollateralAmount(
+    /// @notice Returns the withdrawable margin given the discounted margin for
+    /// `accountId` accounting for any open position. Callers can invoke
+    /// `getMarginDigest` to retrieve the available margin (i.e. discounted
+    /// margin when there is a position open or marginUsd when there isn't).
+    /// @param accountId Account of the margin account to query against
+    /// @param marketId Market of the margin account to query against
+    /// @return getWithdrawableMargin Amount of margin in USD that can be
+    /// withdrawn
+    function getWithdrawableMargin(
         uint128 accountId,
-        uint128 collateralId
+        uint128 marketId
     )
         external
         view
