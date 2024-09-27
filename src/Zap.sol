@@ -362,10 +362,15 @@ contract Zap is Enums, Errors {
     {
         if (reentrancyGuard != MultiLevelReentrancyGuard.Unset) {
             revert ReentrancyGuardReentrantCall();
+        } else {
+            reentrancyGuard = MultiLevelReentrancyGuard.Level1;
         }
-
-        reentrancyGuard = MultiLevelReentrancyGuard.Level1;
-
+        
+        IPerpsMarket market = IPerpsMarket(PERPS_MARKET);
+        if (!market.hasPermission(_accountId, MODIFY_PERMISSION, msg.sender)) {
+            revert Errors.NotPermitted();
+        }
+        
         bytes memory params = abi.encode(
             _accountId, _collateralId, _zapTolerance, _swapTolerance, _receiver
         );
@@ -401,8 +406,13 @@ contract Zap is Enums, Errors {
     {
         if (reentrancyGuard != MultiLevelReentrancyGuard.Level1) {
             revert ReentrancyGuardReentrantCall();
+        } else {
+          reentrancyGuard = MultiLevelReentrancyGuard.Level2;
         }
-        reentrancyGuard = MultiLevelReentrancyGuard.Level2;
+
+        if (msg.sender != AAVE) {
+            revert Errors.NotPermitted();
+        }
 
         (
             uint128 _accountId,
@@ -685,7 +695,8 @@ contract Zap is Enums, Errors {
         returns (bool)
     {
         IERC20 token = IERC20(_token);
-        return token.transferFrom(_from, address(this), _amount);
+        token.safeTransferFrom(token, _from, address(this), _amount);
+        return true;
     }
 
     /// @dev push tokens to a receiver
@@ -702,7 +713,8 @@ contract Zap is Enums, Errors {
         returns (bool success)
     {
         IERC20 token = IERC20(_token);
-        success = token.transfer(_receiver, _amount);
+        token.safeTransfer(token, _receiver, _amount);
+        return true;
     }
 
 }
