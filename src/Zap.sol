@@ -355,6 +355,11 @@ contract Zap is Errors {
     )
         external
     {
+        IPerpsMarket market = IPerpsMarket(PERPS_MARKET);
+        if (!market.hasPermission(_accountId, MODIFY_PERMISSION, msg.sender)) {
+            revert Errors.NotPermitted();
+        }
+
         bytes memory params = abi.encode(
             _accountId, _collateralId, _zapTolerance, _swapTolerance, _receiver
         );
