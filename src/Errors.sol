@@ -31,4 +31,12 @@ contract Errors {
     /// @notice Unauthorized reentrant call.
     error ReentrancyGuardReentrantCall();
 
+    /// @notice thrown when a pull operation fails
+    /// @param reason data for the failure
+    error PullFailed(bytes reason);
+
+    /// @notice thrown when a push operation fails
+    /// @param reason data for the failure
+    error PushFailed(bytes reason);
+
 }
