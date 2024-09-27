@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.27;
 
-import {Enums} from "./Enums.sol";
-import {Errors} from "./Errors.sol";
 import {IPool} from "./interfaces/IAave.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import {ICore, IPerpsMarket, ISpotMarket} from "./interfaces/ISynthetix.sol";
 import {IUniswap} from "./interfaces/IUniswap.sol";
+import {Errors} from "./utils/Errors.sol";
+import {Reentrancy} from "./utils/Reentrancy.sol";
 
 /// @title Zap
 /// @custom:synthetix Zap USDC into and out of USDx
@@ -18,7 +18,7 @@ import {IUniswap} from "./interfaces/IUniswap.sol";
 /// @author @barrasso
 /// @author @Flocqst
 /// @author @moss-eth
-contract Zap is Enums, Errors {
+contract Zap is Reentrancy, Errors {
 
     /// @custom:synthetix
     address public immutable USDC;
@@ -40,9 +40,6 @@ contract Zap is Enums, Errors {
     /// @custom:uniswap
     address public immutable UNISWAP;
     uint24 public immutable FEE_TIER;
-
-    /// @dev set to `Unset` by default
-    MultiLevelReentrancyGuard reentrancyGuard;
 
     constructor(
         address _usdc,
@@ -88,6 +85,12 @@ contract Zap is Enums, Errors {
             _accountId, MODIFY_PERMISSION, msg.sender
         );
         require(authorized, NotPermitted());
+        _;
+    }
+
+    /// @notice validate caller is Aave lending pool
+    modifier onlyAave() {
+        require(msg.sender == AAVE, OnlyAave(msg.sender));
         _;
     }
 
@@ -374,12 +377,10 @@ contract Zap is Enums, Errors {
     )
         external
         isAuthorized(_accountId)
+        requireStage(Stage.UNSET)
+        onlyAave
     {
-        if (reentrancyGuard != MultiLevelReentrancyGuard.Unset) {
-            revert ReentrancyGuardReentrantCall();
-        } else {
-            reentrancyGuard = MultiLevelReentrancyGuard.Level1;
-        }
+        stage = Stage.LEVEL1;
 
         bytes memory params = abi.encode(
             _accountId, _collateralId, _zapTolerance, _swapTolerance, _receiver
@@ -399,6 +400,8 @@ contract Zap is Enums, Errors {
             params: params,
             referralCode: REFERRAL_CODE
         });
+
+        stage = Stage.UNSET;
     }
 
     /// @notice flashloan callback function
@@ -415,40 +418,35 @@ contract Zap is Enums, Errors {
         bytes calldata _params
     )
         external
+        requireStage(Stage.LEVEL1)
         returns (bool)
     {
-        require(msg.sender == AAVE, OnlyAave(msg.sender));
+        stage = Stage.LEVEL2;
 
-        if (reentrancyGuard != MultiLevelReentrancyGuard.Level1) {
-            revert ReentrancyGuardReentrantCall();
-        } else {
-            reentrancyGuard = MultiLevelReentrancyGuard.Level2;
+        {
+            (
+                uint128 _accountId,
+                uint128 _collateralId,
+                uint256 _zapTolerance,
+                uint256 _swapTolerance,
+                address _receiver
+            ) = abi.decode(
+                _params, (uint128, uint128, uint256, uint256, address)
+            );
+
+            (uint256 unwound, address collateral) = _unwind(
+                _flashloan,
+                _premium,
+                _accountId,
+                _collateralId,
+                _zapTolerance,
+                _swapTolerance
+            );
+
+            _push(collateral, _receiver, unwound);
         }
 
-        (
-            uint128 _accountId,
-            uint128 _collateralId,
-            uint256 _zapTolerance,
-            uint256 _swapTolerance,
-            address _receiver
-        ) = abi.decode(_params, (uint128, uint128, uint256, uint256, address));
-
-        (uint256 unwound, address collateral) = _unwind(
-            _flashloan,
-            _premium,
-            _accountId,
-            _collateralId,
-            _zapTolerance,
-            _swapTolerance
-        );
-
-        _flashloan += _premium;
-
-        IERC20(USDC).approve(AAVE, _flashloan);
-
-        reentrancyGuard = MultiLevelReentrancyGuard.Unset;
-
-        return _push(collateral, _receiver, unwound);
+        return IERC20(USDC).approve(AAVE, _flashloan + _premium);
     }
 
     /// @dev unwinds synthetix perp position collateral
@@ -469,6 +467,7 @@ contract Zap is Enums, Errors {
         uint256 _swapTolerance
     )
         internal
+        requireStage(Stage.LEVEL2)
         returns (uint256 unwound, address collateral)
     {
         // zap USDC from flashloan into USDx
