@@ -28,4 +28,7 @@ contract Errors {
     /// @notice thrown when operation is not permitted
     error NotPermitted();
 
+    /// @notice Unauthorized reentrant call.
+    error ReentrancyGuardReentrantCall();
+
 }

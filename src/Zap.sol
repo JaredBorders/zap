@@ -1,6 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.27;
 
+import {Enums} from "./Enums.sol";
 import {Errors} from "./Errors.sol";
 import {IPool} from "./interfaces/IAave.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
@@ -17,7 +18,7 @@ import {IUniswap} from "./interfaces/IUniswap.sol";
 /// @author @barrasso
 /// @author @Flocqst
 /// @author @moss-eth
-contract Zap is Errors {
+contract Zap is Enums, Errors {
 
     /// @custom:synthetix
     address public immutable USDC;
@@ -39,6 +40,9 @@ contract Zap is Errors {
     /// @custom:uniswap
     address public immutable UNISWAP;
     uint24 public immutable FEE_TIER;
+
+    /// @dev set to `Unset` by default
+    MultiLevelReentrancyGuard reentrancyGuard;
 
     constructor(
         address _usdc,
@@ -356,11 +360,17 @@ contract Zap is Errors {
     )
         external
     {
+        if (reentrancyGuard != MultiLevelReentrancyGuard.Unset) {
+            revert ReentrancyGuardReentrantCall();
+        } else {
+            reentrancyGuard = MultiLevelReentrancyGuard.Level1;
+        }
+        
         IPerpsMarket market = IPerpsMarket(PERPS_MARKET);
         if (!market.hasPermission(_accountId, MODIFY_PERMISSION, msg.sender)) {
             revert Errors.NotPermitted();
         }
-
+        
         bytes memory params = abi.encode(
             _accountId, _collateralId, _zapTolerance, _swapTolerance, _receiver
         );
@@ -394,6 +404,12 @@ contract Zap is Errors {
         external
         returns (bool)
     {
+        if (reentrancyGuard != MultiLevelReentrancyGuard.Level1) {
+            revert ReentrancyGuardReentrantCall();
+        } else {
+          reentrancyGuard = MultiLevelReentrancyGuard.Level2;
+        }
+
         if (msg.sender != AAVE) {
             revert Errors.NotPermitted();
         }
@@ -418,6 +434,9 @@ contract Zap is Errors {
         _flashloan += _premium;
 
         IERC20(USDC).approve(AAVE, _flashloan);
+
+        reentrancyGuard = MultiLevelReentrancyGuard.Unset;
+
         return _push(collateral, _receiver, unwound);
     }
 
@@ -691,7 +710,7 @@ contract Zap is Errors {
         uint256 _amount
     )
         internal
-        returns (bool)
+        returns (bool success)
     {
         IERC20 token = IERC20(_token);
         token.safeTransfer(token, _receiver, _amount);
