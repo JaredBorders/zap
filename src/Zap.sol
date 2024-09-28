@@ -20,8 +20,10 @@ import {Reentrancy} from "./utils/Reentrancy.sol";
 /// @author @moss-eth
 contract Zap is Reentrancy, Errors {
 
-    /// @custom:synthetix
+    /// @custom:circle
     address public immutable USDC;
+
+    /// @custom:synthetix
     address public immutable USDX;
     address public immutable SPOT_MARKET;
     address public immutable PERPS_MARKET;
@@ -52,8 +54,10 @@ contract Zap is Reentrancy, Errors {
         address _aave,
         address _uniswap
     ) {
-        /// @custom:synthetix
+        /// @custom:circle
         USDC = _usdc;
+
+        /// @custom:synthetix
         USDX = _usdx;
         SPOT_MARKET = _spotMarket;
         PERPS_MARKET = _perpsMarket;
@@ -366,12 +370,14 @@ contract Zap is Reentrancy, Errors {
     /// @param _accountId synthetix perp market account id
     /// @param _collateralId synthetix market id of collateral
     /// @param _zapTolerance acceptable slippage for zapping
+    /// @param _unwrapTolerance acceptable slippage for unwrapping
     /// @param _swapTolerance acceptable slippage for swapping
     /// @param _receiver address to receive unwound collateral
     function unwind(
         uint128 _accountId,
         uint128 _collateralId,
         uint256 _zapTolerance,
+        uint256 _unwrapTolerance,
         uint256 _swapTolerance,
         address _receiver
     )
@@ -383,20 +389,21 @@ contract Zap is Reentrancy, Errors {
         stage = Stage.LEVEL1;
 
         bytes memory params = abi.encode(
-            _accountId, _collateralId, _zapTolerance, _swapTolerance, _receiver
+            _accountId,
+            _collateralId,
+            _zapTolerance,
+            _unwrapTolerance,
+            _swapTolerance,
+            _receiver
         );
 
-        // determine amount of synthetix perp position debt to unwind;
-        // debt is denominated in USD with 18 decimals
-        // the Aave USDC pool uses USDC token amounts denominated with 6
-        // decimals
-        uint256 debt = IPerpsMarket(PERPS_MARKET).debt(_accountId);
-        uint256 debt6Decimals = debt / (10 ** (18 - 6));
+        // determine amount of synthetix perp position debt to unwind
+        uint256 debt = _approximateLoanNeeded(_accountId);
 
         IPool(AAVE).flashLoanSimple({
             receiverAddress: address(this),
             asset: USDC,
-            amount: debt6Decimals,
+            amount: debt,
             params: params,
             referralCode: REFERRAL_CODE
         });
@@ -428,10 +435,11 @@ contract Zap is Reentrancy, Errors {
                 uint128 _accountId,
                 uint128 _collateralId,
                 uint256 _zapTolerance,
+                uint256 _unwrapTolerance,
                 uint256 _swapTolerance,
                 address _receiver
             ) = abi.decode(
-                _params, (uint128, uint128, uint256, uint256, address)
+                _params, (uint128, uint128, uint256, uint256, uint256, address)
             );
 
             (uint256 unwound, address collateral) = _unwind(
@@ -440,6 +448,7 @@ contract Zap is Reentrancy, Errors {
                 _accountId,
                 _collateralId,
                 _zapTolerance,
+                _unwrapTolerance,
                 _swapTolerance
             );
 
@@ -455,6 +464,7 @@ contract Zap is Reentrancy, Errors {
     /// @param _accountId synthetix perp market account id
     /// @param _collateralId synthetix market id of collateral
     /// @param _zapTolerance acceptable slippage for zapping
+    /// @param _unwrapTolerance acceptable slippage for unwrapping
     /// @param _swapTolerance acceptable slippage for swapping
     /// @return unwound amount of collateral
     /// @return collateral address
@@ -464,6 +474,7 @@ contract Zap is Reentrancy, Errors {
         uint128 _accountId,
         uint128 _collateralId,
         uint256 _zapTolerance,
+        uint256 _unwrapTolerance,
         uint256 _swapTolerance
     )
         internal
@@ -479,27 +490,28 @@ contract Zap is Reentrancy, Errors {
 
         // determine amount of synthetix perp position collateral
         // i.e., # of sETH, # of sUSDC, # of sUSDe, # of stBTC, etc.
-        uint256 withdrawableMargin = IPerpsMarket(PERPS_MARKET)
-            .getWithdrawableMargin(_accountId, _collateralId);
+        unwound = IPerpsMarket(PERPS_MARKET).getWithdrawableMargin(
+            _accountId, _collateralId
+        );
 
         // TODO, should we subtract (or do something else) the fees from the
         // OrderFeesData return values?
-        (uint256 withdrawableAmount,) = ISpotMarket(SPOT_MARKET).quoteBuyExactIn(
-            SUSDC_SPOT_ID, withdrawableMargin, ISpotMarket.Tolerance.STRICT
+        (unwound,) = ISpotMarket(SPOT_MARKET).quoteBuyExactIn(
+            SUSDC_SPOT_ID, unwound, ISpotMarket.Tolerance.STRICT
         );
 
         // withdraw synthetix perp position collateral to this contract
-        _withdraw(_collateralId, withdrawableAmount, _accountId);
+        _withdraw(_collateralId, unwound, _accountId);
 
         // unwrap synthetix perp position collateral;
         // i.e., sETH -> WETH, sUSDC -> USDC, etc.
-        uint256 unwrapped =
-            _unwrap(_collateralId, withdrawableAmount, _swapTolerance);
+        unwound = _unwrap(_collateralId, unwound, _unwrapTolerance);
 
         // establish unwrapped collateral address
         collateral = ISpotMarket(SPOT_MARKET).getSynth(_collateralId);
 
-        // establish total debt now owed to Aave
+        // establish total debt now owed to Aave;
+        // i.e., denominated in USDC
         _flashloan += _premium;
 
         // swap as necessary to repay Aave flashloan;
@@ -507,7 +519,32 @@ contract Zap is Reentrancy, Errors {
         uint256 deducted = _swapFor(collateral, _flashloan, _swapTolerance);
 
         // establish amount of unwound collateral after deduction
-        unwound = unwrapped - deducted;
+        unwound -= deducted;
+    }
+
+    /// @notice approximate USDC needed to unwind synthetix perp position
+    /// @param _accountId synthetix perp market account id
+    /// @return amount of USDC needed
+    function _approximateLoanNeeded(uint128 _accountId)
+        internal
+        view
+        returns (uint256 amount)
+    {
+        // determine amount of debt associated with synthetix perp position
+        amount = IPerpsMarket(PERPS_MARKET).debt(_accountId);
+
+        uint256 usdxDecimals = IERC20(USDX).decimals();
+        uint256 usdcDecimals = IERC20(USDC).decimals();
+
+        /// @custom:synthetix debt is denominated in USDx
+        /// @custom:aave debt is denominated in USDC
+        /// @dev scale loan samount accordingly
+        amount /= 10 ** (usdxDecimals - usdcDecimals);
+
+        /// @dev barring exceptional circumstances,
+        /// a 1 USD buffer is sufficient to circumvent
+        /// precision loss
+        amount += 10 ** usdcDecimals;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -587,7 +624,7 @@ contract Zap is Reentrancy, Errors {
     /// @dev caller must grant token allowance to this contract
     /// @dev any excess token not spent will be returned to the caller
     /// @param _from address of token to swap
-    /// @param _amount 6 decimal amount of USDC to receive in return
+    /// @param _amount amount of USDC to receive in return
     /// @param _tolerance or tolerable amount of token to spend
     /// @param _receiver address to receive USDC
     /// @return deducted amount of incoming token; i.e., amount spent
