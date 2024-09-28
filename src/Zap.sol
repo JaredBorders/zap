@@ -365,12 +365,12 @@ contract Zap is Enums, Errors {
         } else {
             reentrancyGuard = MultiLevelReentrancyGuard.Level1;
         }
-        
+
         IPerpsMarket market = IPerpsMarket(PERPS_MARKET);
         if (!market.hasPermission(_accountId, MODIFY_PERMISSION, msg.sender)) {
             revert Errors.NotPermitted();
         }
-        
+
         bytes memory params = abi.encode(
             _accountId, _collateralId, _zapTolerance, _swapTolerance, _receiver
         );
@@ -410,7 +410,7 @@ contract Zap is Enums, Errors {
         if (reentrancyGuard != MultiLevelReentrancyGuard.Level1) {
             revert ReentrancyGuardReentrantCall();
         } else {
-          reentrancyGuard = MultiLevelReentrancyGuard.Level2;
+            reentrancyGuard = MultiLevelReentrancyGuard.Level2;
         }
 
         if (msg.sender != AAVE) {
