@@ -386,7 +386,6 @@ contract Zap is Reentrancy, Errors {
         external
         isAuthorized(_accountId)
         requireStage(Stage.UNSET)
-        onlyAave
     {
         stage = Stage.LEVEL1;
 
@@ -415,7 +414,7 @@ contract Zap is Reentrancy, Errors {
     }
 
     /// @notice flashloan callback function
-    /// @dev caller is expected to be the Aave lending pool
+    /// @dev caller must be the Aave lending pool
     /// @custom:caution calling this function directly is not recommended
     /// @param _flashloan amount of USDC flashloaned from Aave
     /// @param _premium amount of USDC premium owed to Aave
@@ -429,6 +428,7 @@ contract Zap is Reentrancy, Errors {
         bytes calldata _params
     )
         external
+        onlyAave
         requireStage(Stage.LEVEL1)
         returns (bool)
     {
