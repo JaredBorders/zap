@@ -567,7 +567,7 @@ contract Zap is Reentrancy, Errors {
     /// @dev allowance is assumed
     /// @dev following execution, this contract will hold any excess USDx
     function _burn(uint256 _amount, uint128 _accountId) internal {
-        IERC20(USDX).approve(CORE, _amount);
+        IERC20(USDX).approve(PERPS_MARKET, _amount);
         IPerpsMarket(PERPS_MARKET).payDebt(_accountId, _amount);
     }
 
