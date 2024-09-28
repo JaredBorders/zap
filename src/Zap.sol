@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.27;
 
-import {Enums} from "./Enums.sol";
-import {Errors} from "./Errors.sol";
 import {IPool} from "./interfaces/IAave.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import {ICore, IPerpsMarket, ISpotMarket} from "./interfaces/ISynthetix.sol";
 import {IUniswap} from "./interfaces/IUniswap.sol";
+import {Errors} from "./utils/Errors.sol";
+import {Reentrancy} from "./utils/Reentrancy.sol";
 
 /// @title Zap
 /// @custom:synthetix Zap USDC into and out of USDx
@@ -18,10 +18,12 @@ import {IUniswap} from "./interfaces/IUniswap.sol";
 /// @author @barrasso
 /// @author @Flocqst
 /// @author @moss-eth
-contract Zap is Enums, Errors {
+contract Zap is Reentrancy, Errors {
+
+    /// @custom:circle
+    address public immutable USDC;
 
     /// @custom:synthetix
-    address public immutable USDC;
     address public immutable USDX;
     address public immutable SPOT_MARKET;
     address public immutable PERPS_MARKET;
@@ -41,9 +43,6 @@ contract Zap is Enums, Errors {
     address public immutable UNISWAP;
     uint24 public immutable FEE_TIER;
 
-    /// @dev set to `Unset` by default
-    MultiLevelReentrancyGuard reentrancyGuard;
-
     constructor(
         address _usdc,
         address _usdx,
@@ -55,8 +54,10 @@ contract Zap is Enums, Errors {
         address _aave,
         address _uniswap
     ) {
-        /// @custom:synthetix
+        /// @custom:circle
         USDC = _usdc;
+
+        /// @custom:synthetix
         USDX = _usdx;
         SPOT_MARKET = _spotMarket;
         PERPS_MARKET = _perpsMarket;
@@ -75,6 +76,26 @@ contract Zap is Enums, Errors {
         /// @custom:uniswap
         UNISWAP = _uniswap;
         FEE_TIER = 3000;
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                               MODIFIERS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice validate caller is authorized to modify synthetix perp position
+    /// @param _accountId synthetix perp market account id
+    modifier isAuthorized(uint128 _accountId) {
+        bool authorized = IPerpsMarket(PERPS_MARKET).isAuthorized(
+            _accountId, MODIFY_PERMISSION, msg.sender
+        );
+        require(authorized, NotPermitted());
+        _;
+    }
+
+    /// @notice validate caller is Aave lending pool
+    modifier onlyAave() {
+        require(msg.sender == AAVE, OnlyAave(msg.sender));
+        _;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -348,54 +369,56 @@ contract Zap is Enums, Errors {
     /// @custom:synthetix RBAC permission required: "PERPS_MODIFY_COLLATERAL"
     /// @param _accountId synthetix perp market account id
     /// @param _collateralId synthetix market id of collateral
+    /// @param _collateralAmount amount of collateral to unwind
     /// @param _zapTolerance acceptable slippage for zapping
+    /// @param _unwrapTolerance acceptable slippage for unwrapping
     /// @param _swapTolerance acceptable slippage for swapping
     /// @param _receiver address to receive unwound collateral
     function unwind(
         uint128 _accountId,
         uint128 _collateralId,
+        uint256 _collateralAmount,
         uint256 _zapTolerance,
+        uint256 _unwrapTolerance,
         uint256 _swapTolerance,
         address _receiver
     )
         external
+        isAuthorized(_accountId)
+        requireStage(Stage.UNSET)
     {
-        if (reentrancyGuard != MultiLevelReentrancyGuard.Unset) {
-            revert ReentrancyGuardReentrantCall();
-        } else {
-            reentrancyGuard = MultiLevelReentrancyGuard.Level1;
-        }
-        
-        IPerpsMarket market = IPerpsMarket(PERPS_MARKET);
-        if (!market.hasPermission(_accountId, MODIFY_PERMISSION, msg.sender)) {
-            revert Errors.NotPermitted();
-        }
-        
+        stage = Stage.LEVEL1;
+
         bytes memory params = abi.encode(
-            _accountId, _collateralId, _zapTolerance, _swapTolerance, _receiver
+            _accountId,
+            _collateralId,
+            _collateralAmount,
+            _zapTolerance,
+            _unwrapTolerance,
+            _swapTolerance,
+            _receiver
         );
 
-        // determine amount of synthetix perp position debt to unwind;
-        // debt is denominated in USD with 18 decimals
-        // the Aave USDC pool uses USDC token amounts denominated with 6
-        // decimals
-        uint256 debt = IPerpsMarket(PERPS_MARKET).debt(_accountId);
-        uint256 debt6Decimals = debt / (10 ** (18 - 6));
+        // determine amount of synthetix perp position debt to unwind
+        uint256 debt = _approximateLoanNeeded(_accountId);
 
         IPool(AAVE).flashLoanSimple({
             receiverAddress: address(this),
             asset: USDC,
-            amount: debt6Decimals,
+            amount: debt,
             params: params,
             referralCode: REFERRAL_CODE
         });
+
+        stage = Stage.UNSET;
     }
 
     /// @notice flashloan callback function
-    /// @dev caller is expected to be the Aave lending pool
+    /// @dev caller must be the Aave lending pool
     /// @custom:caution calling this function directly is not recommended
     /// @param _flashloan amount of USDC flashloaned from Aave
     /// @param _premium amount of USDC premium owed to Aave
+    /// @param _params encoded parameters for unwinding synthetix perp position
     /// @return bool representing successful execution
     function executeOperation(
         address,
@@ -405,64 +428,52 @@ contract Zap is Enums, Errors {
         bytes calldata _params
     )
         external
+        onlyAave
+        requireStage(Stage.LEVEL1)
         returns (bool)
     {
-        if (reentrancyGuard != MultiLevelReentrancyGuard.Level1) {
-            revert ReentrancyGuardReentrantCall();
-        } else {
-          reentrancyGuard = MultiLevelReentrancyGuard.Level2;
-        }
+        stage = Stage.LEVEL2;
 
-        if (msg.sender != AAVE) {
-            revert Errors.NotPermitted();
-        }
-
-        (
-            uint128 _accountId,
-            uint128 _collateralId,
-            uint256 _zapTolerance,
-            uint256 _swapTolerance,
-            address _receiver
-        ) = abi.decode(_params, (uint128, uint128, uint256, uint256, address));
-
-        (uint256 unwound, address collateral) = _unwind(
-            _flashloan,
-            _premium,
-            _accountId,
-            _collateralId,
-            _zapTolerance,
-            _swapTolerance
+        (,,,,,, address _receiver) = abi.decode(
+            _params,
+            (uint128, uint128, uint256, uint256, uint256, uint256, address)
         );
 
-        _flashloan += _premium;
+        (uint256 unwound, address collateral) =
+            _unwind(_flashloan, _premium, _params);
 
-        IERC20(USDC).approve(AAVE, _flashloan);
+        _push(collateral, _receiver, unwound);
 
-        reentrancyGuard = MultiLevelReentrancyGuard.Unset;
-
-        return _push(collateral, _receiver, unwound);
+        return IERC20(USDC).approve(AAVE, _flashloan + _premium);
     }
 
     /// @dev unwinds synthetix perp position collateral
     /// @param _flashloan amount of USDC flashloaned from Aave
     /// @param _premium amount of USDC premium owed to Aave
-    /// @param _accountId synthetix perp market account id
-    /// @param _collateralId synthetix market id of collateral
-    /// @param _zapTolerance acceptable slippage for zapping
-    /// @param _swapTolerance acceptable slippage for swapping
+    /// @param _params encoded parameters for unwinding synthetix perp position
     /// @return unwound amount of collateral
     /// @return collateral address
     function _unwind(
         uint256 _flashloan,
         uint256 _premium,
-        uint128 _accountId,
-        uint128 _collateralId,
-        uint256 _zapTolerance,
-        uint256 _swapTolerance
+        bytes calldata _params
     )
         internal
+        requireStage(Stage.LEVEL2)
         returns (uint256 unwound, address collateral)
     {
+        (
+            uint128 _accountId,
+            uint128 _collateralId,
+            uint256 _collateralAmount,
+            uint256 _zapTolerance,
+            uint256 _unwrapTolerance,
+            uint256 _swapTolerance,
+        ) = abi.decode(
+            _params,
+            (uint128, uint128, uint256, uint256, uint256, uint256, address)
+        );
+
         // zap USDC from flashloan into USDx
         uint256 usdxAmount = _zapIn(_flashloan, _zapTolerance);
 
@@ -470,37 +481,55 @@ contract Zap is Enums, Errors {
         // debt is denominated in USD and thus repaid with USDx
         _burn(usdxAmount, _accountId);
 
-        // determine amount of synthetix perp position collateral
-        // i.e., # of sETH, # of sUSDC, # of sUSDe, # of stBTC, etc.
-        uint256 withdrawableMargin = IPerpsMarket(PERPS_MARKET)
-            .getWithdrawableMargin(_accountId, _collateralId);
+        // withdraw synthetix perp position collateral to this contract;
+        // i.e., # of sETH, # of sUSDe, # of sUSDC (...)
+        _withdraw(_collateralId, _collateralAmount, _accountId);
 
-        // TODO, should we subtract (or do something else) the fees from the
-        // OrderFeesData return values?
-        (uint256 withdrawableAmount,) = ISpotMarket(SPOT_MARKET).quoteBuyExactIn(
-            SUSDC_SPOT_ID, withdrawableMargin, ISpotMarket.Tolerance.STRICT
-        );
-
-        // withdraw synthetix perp position collateral to this contract
-        _withdraw(_collateralId, withdrawableAmount, _accountId);
-
-        // unwrap synthetix perp position collateral;
-        // i.e., sETH -> WETH, sUSDC -> USDC, etc.
-        uint256 unwrapped =
-            _unwrap(_collateralId, withdrawableAmount, _swapTolerance);
+        // unwrap withdrawn synthetix perp position collateral;
+        // i.e., sETH -> WETH, sUSDe -> USDe, sUSDC -> USDC (...)
+        unwound = _unwrap(_collateralId, _collateralAmount, _unwrapTolerance);
 
         // establish unwrapped collateral address
+        // i.e., WETH, USDe, USDC (...)
         collateral = ISpotMarket(SPOT_MARKET).getSynth(_collateralId);
 
-        // establish total debt now owed to Aave
+        // establish total debt now owed to Aave;
+        // i.e., # of USDC
         _flashloan += _premium;
 
-        // swap as necessary to repay Aave flashloan;
-        // only as much as necessary to repay the flashloan
-        uint256 deducted = _swapFor(collateral, _flashloan, _swapTolerance);
+        // swap as much (or little) as necessary to repay Aave flashloan;
+        // i.e., WETH -(swap)-> USDC -(repay)-> Aave
+        // i.e., USDe -(swap)-> USDC -(repay)-> Aave
+        // i.e., USDC -(repay)-> Aave
+        // whatever collateral amount is remaining is returned to the caller
+        unwound -= collateral == USDC
+            ? _flashloan
+            : _swapFor(collateral, _flashloan, _swapTolerance);
+    }
 
-        // establish amount of unwound collateral after deduction
-        unwound = unwrapped - deducted;
+    /// @notice approximate USDC needed to unwind synthetix perp position
+    /// @param _accountId synthetix perp market account id
+    /// @return amount of USDC needed
+    function _approximateLoanNeeded(uint128 _accountId)
+        internal
+        view
+        returns (uint256 amount)
+    {
+        // determine amount of debt associated with synthetix perp position
+        amount = IPerpsMarket(PERPS_MARKET).debt(_accountId);
+
+        uint256 usdxDecimals = IERC20(USDX).decimals();
+        uint256 usdcDecimals = IERC20(USDC).decimals();
+
+        /// @custom:synthetix debt is denominated in USDx
+        /// @custom:aave debt is denominated in USDC
+        /// @dev scale loan samount accordingly
+        amount /= 10 ** (usdxDecimals - usdcDecimals);
+
+        /// @dev barring exceptional circumstances,
+        /// a 1 USD buffer is sufficient to circumvent
+        /// precision loss
+        amount += 10 ** usdcDecimals;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -523,7 +552,7 @@ contract Zap is Enums, Errors {
     /// @dev allowance is assumed
     /// @dev following execution, this contract will hold any excess USDx
     function _burn(uint256 _amount, uint128 _accountId) internal {
-        IERC20(USDX).approve(CORE, _amount);
+        IERC20(USDX).approve(PERPS_MARKET, _amount);
         IPerpsMarket(PERPS_MARKET).payDebt(_accountId, _amount);
     }
 
@@ -544,6 +573,7 @@ contract Zap is Enums, Errors {
         address _receiver
     )
         external
+        isAuthorized(_accountId)
     {
         _withdraw(_synthId, _amount, _accountId);
         address synth = _synthId == USDX_ID
@@ -579,7 +609,7 @@ contract Zap is Enums, Errors {
     /// @dev caller must grant token allowance to this contract
     /// @dev any excess token not spent will be returned to the caller
     /// @param _from address of token to swap
-    /// @param _amount 6 decimal amount of USDC to receive in return
+    /// @param _amount amount of USDC to receive in return
     /// @param _tolerance or tolerable amount of token to spend
     /// @param _receiver address to receive USDC
     /// @return deducted amount of incoming token; i.e., amount spent
@@ -695,25 +725,35 @@ contract Zap is Enums, Errors {
     /// @param _token address of token to pull
     /// @param _from address of sender
     /// @param _amount amount of token to pull
-    /// @return bool representing successful execution
+    /// @return success boolean representing execution success
     function _pull(
         address _token,
         address _from,
         uint256 _amount
     )
         internal
-        returns (bool)
+        returns (bool success)
     {
         IERC20 token = IERC20(_token);
-        token.safeTransferFrom(token, _from, address(this), _amount);
-        return true;
+
+        try token.transferFrom(_from, address(this), _amount) returns (
+            bool result
+        ) {
+            success = result;
+            require(
+                success,
+                PullFailed(abi.encodePacked(address(token), _from, _amount))
+            );
+        } catch Error(string memory reason) {
+            revert PullFailed(bytes(reason));
+        }
     }
 
     /// @dev push tokens to a receiver
     /// @param _token address of token to push
     /// @param _receiver address of receiver
     /// @param _amount amount of token to push
-    /// @return bool representing successful execution
+    /// @return success boolean representing execution success
     function _push(
         address _token,
         address _receiver,
@@ -723,8 +763,16 @@ contract Zap is Enums, Errors {
         returns (bool success)
     {
         IERC20 token = IERC20(_token);
-        token.safeTransfer(token, _receiver, _amount);
-        return true;
+
+        try token.transfer(_receiver, _amount) returns (bool result) {
+            success = result;
+            require(
+                success,
+                PushFailed(abi.encodePacked(address(token), _receiver, _amount))
+            );
+        } catch Error(string memory reason) {
+            revert PushFailed(bytes(reason));
+        }
     }
 
 }

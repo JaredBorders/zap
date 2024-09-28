@@ -4,6 +4,7 @@ pragma solidity 0.8.27;
 import {
     Bootstrap,
     Constants,
+    Errors,
     ICore,
     IERC20,
     IPerpsMarket,
@@ -13,7 +14,19 @@ import {
     Zap
 } from "./utils/Bootstrap.sol";
 
-contract WithdrawTest is Bootstrap {
+contract WithdrawTest is Bootstrap, Errors {
+
+    function test_withdraw_is_authorized_arbitrum() public arbitrum {
+        vm.prank(ACTOR);
+        vm.expectRevert(NotPermitted.selector);
+        zap.withdraw(0, 0, 0, address(0));
+    }
+
+    function test_withdraw_is_authorized_base() public base {
+        vm.prank(ACTOR);
+        vm.expectRevert(NotPermitted.selector);
+        zap.withdraw(0, 0, 0, address(0));
+    }
 
     function test_withdraw_base() public base {
         uint32 amount = 1_000_000_000;

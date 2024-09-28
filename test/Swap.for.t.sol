@@ -13,9 +13,12 @@ import {
     Zap
 } from "./utils/Bootstrap.sol";
 
-contract BurnTest is Bootstrap {
+contract SwapForTest is Bootstrap {
 
     /// @custom:todo
-    function test_burn_arbitrum_sepolia(uint32 amount) public {}
+    function test_swap_for_base() public base {}
+
+    /// @custom:todo
+    function test_swap_for_arbitrum() public arbitrum {}
 
 }

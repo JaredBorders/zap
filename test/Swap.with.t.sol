@@ -13,16 +13,10 @@ import {
     Zap
 } from "./utils/Bootstrap.sol";
 
-contract SwapTest is Bootstrap {
-
-    /// @custom:todo
-    function test_swap_for_base() public base {}
+contract SwapWithTest is Bootstrap {
 
     /// @custom:todo
     function test_swap_with_base() public base {}
-
-    /// @custom:todo
-    function test_swap_for_arbitrum() public arbitrum {}
 
     /// @custom:todo
     function test_swap_with_arbitrum() public arbitrum {}

@@ -3,11 +3,13 @@ pragma solidity 0.8.27;
 
 import {Arbitrum, Base} from "../../script/utils/Parameters.sol";
 import {
+    Errors,
     ICore,
     IERC20,
     IPerpsMarket,
     IPool,
     ISpotMarket,
+    Reentrancy,
     Zap
 } from "../../src/Zap.sol";
 import {Constants} from "../utils/Constants.sol";
