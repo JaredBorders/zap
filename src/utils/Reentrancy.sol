@@ -25,11 +25,15 @@ contract Reentrancy {
     /// @notice validate current stage of execution is as expected
     /// @param expected stage of execution
     modifier requireStage(Stage expected) {
-        require(
-            expected == stage,
-            ReentrancyDetected({actual: stage, expected: expected})
-        );
+        _requireStage(expected);
         _;
+    }
+
+    function _requireStage(Stage _expected) internal view {
+        require(
+            _expected == stage,
+            ReentrancyDetected({actual: stage, expected: _expected})
+        );
     }
 
 }
