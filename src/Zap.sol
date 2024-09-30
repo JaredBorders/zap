@@ -540,7 +540,7 @@ contract Zap is Reentrancy, Errors {
 
         /// @custom:synthetix debt is denominated in USDx
         /// @custom:aave debt is denominated in USDC
-        /// @dev scale loan samount accordingly
+        /// @dev scale loan amount accordingly
         amount /= 10 ** (usdxDecimals - usdcDecimals);
 
         /// @dev barring exceptional circumstances,
