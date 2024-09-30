@@ -563,7 +563,7 @@ contract Zap is Reentrancy, Errors {
         _pull(USDX, msg.sender, _amount);
         _burn(_amount, _accountId);
         uint256 remaining = IERC20(USDX).balanceOf(address(this));
-        _push(USDX, msg.sender, remaining);
+        if (remaining > 0) _push(USDX, msg.sender, remaining);
     }
 
     /// @dev allowance is assumed
