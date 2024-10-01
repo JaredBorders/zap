@@ -82,4 +82,22 @@ interface IPerpsMarket {
         view
         returns (uint256 accountDebt);
 
+    function hasPermission(
+        uint128 accountId,
+        bytes32 permission,
+        address user
+    )
+        external
+        view
+        returns (bool);
+
+    function createAccount() external returns (uint128 accountId);
+
+    function grantPermission(
+        uint128 accountId,
+        bytes32 permission,
+        address user
+    )
+        external;
+
 }

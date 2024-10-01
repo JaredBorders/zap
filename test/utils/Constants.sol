@@ -3,20 +3,21 @@ pragma solidity 0.8.27;
 
 contract Constants {
 
-    /// @custom:zap
+    /// @custom:forks
     string constant BASE_RPC_REF = "BASE_RPC";
     string constant ARBITRUM_RPC_REF = "ARBITRUM_RPC";
+    string constant ARBITRUM_SEPOLIA_RPC_REF = "ARBITRUM_SEPOLIA_RPC";
     uint256 constant BASE_FORK_BLOCK = 20_165_000;
-    uint256 constant ARBITRUM_FORK_BLOCK_DEBT = 256_215_787;
     uint256 constant ARBITRUM_FORK_BLOCK = 256_615_000;
+    uint256 constant ARBITRUM_SEPOLIA_FORK_BLOCK = 85_443_000;
+
+    /// @custom:values
     address constant ACTOR = 0x7777777777777777777777777777777777777777;
-    address constant ARBITRUM_BOB = 0x3bd5e344Ac629C9f232F921bAfDeEEc312deAC9b;
-    uint128 constant ARBITRUM_BOB_ID =
-        170_141_183_460_469_231_731_687_303_715_884_105_912;
     uint256 constant DEFAULT_TOLERANCE = 0;
 
     /// @custom:tokens
     address constant ARBITRUM_WETH = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
+    address constant ARBITRUM_SEPOLIA_WETH = address(0);
     address constant BASE_WETH = 0x4200000000000000000000000000000000000006;
 
     /// @custom:synthetix

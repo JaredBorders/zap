@@ -5,7 +5,6 @@ import {
     Bootstrap,
     Constants,
     Errors,
-    ICore,
     IERC20,
     IPerpsMarket,
     IPool,

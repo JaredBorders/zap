@@ -3,20 +3,20 @@ pragma solidity 0.8.27;
 
 import {IPool} from "./interfaces/IAave.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
-import {ICore, IPerpsMarket, ISpotMarket} from "./interfaces/ISynthetix.sol";
-import {IUniswap} from "./interfaces/IUniswap.sol";
+import {IPerpsMarket, ISpotMarket} from "./interfaces/ISynthetix.sol";
+import {IQuoter, IRouter} from "./interfaces/IUniswap.sol";
 import {Errors} from "./utils/Errors.sol";
 import {Reentrancy} from "./utils/Reentrancy.sol";
 
-/// @title Zap
-/// @custom:synthetix Zap USDC into and out of USDx
-/// @custom:aave Flashloan USDC to unwind synthetix collateral
-/// @custom:uniswap Swap unwound collateral for USDC to repay flashloan
-/// @dev Idle token balances are not safe
-/// @dev Intended for standalone use; do not inherit
+/// @title zap
+/// @custom:synthetix zap USDC into and out of USDx
+/// @custom:aave flash loan USDC to unwind synthetix collateral
+/// @custom:uniswap swap unwound collateral for USDC to repay flashloan
+/// @dev idle token balances are not safe
+/// @dev intended for standalone use; do not inherit
 /// @author @jaredborders
+/// @author @flocqst
 /// @author @barrasso
-/// @author @Flocqst
 /// @author @moss-eth
 contract Zap is Reentrancy, Errors {
 
@@ -30,7 +30,6 @@ contract Zap is Reentrancy, Errors {
     address public immutable CORE;
     address public immutable REFERRER;
     uint128 public immutable SUSDC_SPOT_ID;
-    uint128 public immutable PREFFERED_POOL_ID;
     bytes32 public immutable MODIFY_PERMISSION;
     bytes32 public immutable BURN_PERMISSION;
     uint128 public immutable USDX_ID;
@@ -40,7 +39,8 @@ contract Zap is Reentrancy, Errors {
     uint16 public immutable REFERRAL_CODE;
 
     /// @custom:uniswap
-    address public immutable UNISWAP;
+    address public immutable ROUTER;
+    address public immutable QUOTER;
     uint24 public immutable FEE_TIER;
 
     constructor(
@@ -48,11 +48,11 @@ contract Zap is Reentrancy, Errors {
         address _usdx,
         address _spotMarket,
         address _perpsMarket,
-        address _core,
         address _referrer,
         uint128 _susdcSpotId,
         address _aave,
-        address _uniswap
+        address _router,
+        address _quoter
     ) {
         /// @custom:circle
         USDC = _usdc;
@@ -61,10 +61,8 @@ contract Zap is Reentrancy, Errors {
         USDX = _usdx;
         SPOT_MARKET = _spotMarket;
         PERPS_MARKET = _perpsMarket;
-        CORE = _core;
         REFERRER = _referrer;
         SUSDC_SPOT_ID = _susdcSpotId;
-        PREFFERED_POOL_ID = ICore(CORE).getPreferredPool();
         MODIFY_PERMISSION = "PERPS_MODIFY_COLLATERAL";
         BURN_PERMISSION = "BURN";
         USDX_ID = 0;
@@ -74,7 +72,8 @@ contract Zap is Reentrancy, Errors {
         REFERRAL_CODE = 0;
 
         /// @custom:uniswap
-        UNISWAP = _uniswap;
+        ROUTER = _router;
+        QUOTER = _quoter;
         FEE_TIER = 3000;
     }
 
@@ -370,6 +369,7 @@ contract Zap is Reentrancy, Errors {
     /// @param _accountId synthetix perp market account id
     /// @param _collateralId synthetix market id of collateral
     /// @param _collateralAmount amount of collateral to unwind
+    /// @param _collateral address of collateral to unwind
     /// @param _zapTolerance acceptable slippage for zapping
     /// @param _unwrapTolerance acceptable slippage for unwrapping
     /// @param _swapTolerance acceptable slippage for swapping
@@ -378,6 +378,7 @@ contract Zap is Reentrancy, Errors {
         uint128 _accountId,
         uint128 _collateralId,
         uint256 _collateralAmount,
+        address _collateral,
         uint256 _zapTolerance,
         uint256 _unwrapTolerance,
         uint256 _swapTolerance,
@@ -393,6 +394,7 @@ contract Zap is Reentrancy, Errors {
             _accountId,
             _collateralId,
             _collateralAmount,
+            _collateral,
             _zapTolerance,
             _unwrapTolerance,
             _swapTolerance,
@@ -434,15 +436,23 @@ contract Zap is Reentrancy, Errors {
     {
         stage = Stage.LEVEL2;
 
-        (,,,,,, address _receiver) = abi.decode(
+        (,,, address _collateral,,,, address _receiver) = abi.decode(
             _params,
-            (uint128, uint128, uint256, uint256, uint256, uint256, address)
+            (
+                uint128,
+                uint128,
+                uint256,
+                address,
+                uint256,
+                uint256,
+                uint256,
+                address
+            )
         );
 
-        (uint256 unwound, address collateral) =
-            _unwind(_flashloan, _premium, _params);
+        uint256 unwound = _unwind(_flashloan, _premium, _params);
 
-        _push(collateral, _receiver, unwound);
+        _push(_collateral, _receiver, unwound);
 
         return IERC20(USDC).approve(AAVE, _flashloan + _premium);
     }
@@ -452,7 +462,6 @@ contract Zap is Reentrancy, Errors {
     /// @param _premium amount of USDC premium owed to Aave
     /// @param _params encoded parameters for unwinding synthetix perp position
     /// @return unwound amount of collateral
-    /// @return collateral address
     function _unwind(
         uint256 _flashloan,
         uint256 _premium,
@@ -460,18 +469,29 @@ contract Zap is Reentrancy, Errors {
     )
         internal
         requireStage(Stage.LEVEL2)
-        returns (uint256 unwound, address collateral)
+        returns (uint256 unwound)
     {
         (
             uint128 _accountId,
             uint128 _collateralId,
             uint256 _collateralAmount,
+            address _collateral,
             uint256 _zapTolerance,
             uint256 _unwrapTolerance,
             uint256 _swapTolerance,
+            /* address _receiver */
         ) = abi.decode(
             _params,
-            (uint128, uint128, uint256, uint256, uint256, uint256, address)
+            (
+                uint128,
+                uint128,
+                uint256,
+                address,
+                uint256,
+                uint256,
+                uint256,
+                address
+            )
         );
 
         // zap USDC from flashloan into USDx
@@ -489,10 +509,6 @@ contract Zap is Reentrancy, Errors {
         // i.e., sETH -> WETH, sUSDe -> USDe, sUSDC -> USDC (...)
         unwound = _unwrap(_collateralId, _collateralAmount, _unwrapTolerance);
 
-        // establish unwrapped collateral address
-        // i.e., WETH, USDe, USDC (...)
-        collateral = ISpotMarket(SPOT_MARKET).getSynth(_collateralId);
-
         // establish total debt now owed to Aave;
         // i.e., # of USDC
         _flashloan += _premium;
@@ -502,9 +518,9 @@ contract Zap is Reentrancy, Errors {
         // i.e., USDe -(swap)-> USDC -(repay)-> Aave
         // i.e., USDC -(repay)-> Aave
         // whatever collateral amount is remaining is returned to the caller
-        unwound -= collateral == USDC
+        unwound -= _collateral == USDC
             ? _flashloan
-            : _swapFor(collateral, _flashloan, _swapTolerance);
+            : _swapFor(_collateral, _flashloan, _swapTolerance);
     }
 
     /// @notice approximate USDC needed to unwind synthetix perp position
@@ -523,7 +539,7 @@ contract Zap is Reentrancy, Errors {
 
         /// @custom:synthetix debt is denominated in USDx
         /// @custom:aave debt is denominated in USDC
-        /// @dev scale loan samount accordingly
+        /// @dev scale loan amount accordingly
         amount /= 10 ** (usdxDecimals - usdcDecimals);
 
         /// @dev barring exceptional circumstances,
@@ -546,7 +562,7 @@ contract Zap is Reentrancy, Errors {
         _pull(USDX, msg.sender, _amount);
         _burn(_amount, _accountId);
         uint256 remaining = IERC20(USDX).balanceOf(address(this));
-        _push(USDX, msg.sender, remaining);
+        if (remaining > 0) _push(USDX, msg.sender, remaining);
     }
 
     /// @dev allowance is assumed
@@ -605,6 +621,74 @@ contract Zap is Reentrancy, Errors {
                                 UNISWAP
     //////////////////////////////////////////////////////////////*/
 
+    /// @notice query amount required to receive a specific amount of token
+    /// @dev quoting is NOT gas efficient and should NOT be called on chain
+    /// @custom:integrator quoting function inclusion is for QoL purposes
+    /// @param _tokenIn address of token being swapped in
+    /// @param _tokenOut address of token being swapped out
+    /// @param _amountOut is the desired output amount
+    /// @param _fee of the token pool to consider for the pair
+    /// @param _sqrtPriceLimitX96 of the pool; cannot be exceeded for swap
+    /// @return amountIn required as the input for the swap in order
+    /// @return sqrtPriceX96After of the pool after the swap
+    /// @return initializedTicksCrossed during the quoted swap
+    /// @return gasEstimate of gas that the swap will consume
+    function quoteSwapFor(
+        address _tokenIn,
+        address _tokenOut,
+        uint256 _amountOut,
+        uint24 _fee,
+        uint160 _sqrtPriceLimitX96
+    )
+        external
+        returns (
+            uint256 amountIn,
+            uint160 sqrtPriceX96After,
+            uint32 initializedTicksCrossed,
+            uint256 gasEstimate
+        )
+    {
+        return IQuoter(QUOTER).quoteExactOutputSingle(
+            IQuoter.QuoteExactOutputSingleParams(
+                _tokenIn, _tokenOut, _amountOut, _fee, _sqrtPriceLimitX96
+            )
+        );
+    }
+
+    /// @notice query amount received for a specific amount of token to spend
+    /// @dev quoting is NOT gas efficient and should NOT be called on chain
+    /// @custom:integrator quoting function inclusion is for QoL purposes
+    /// @param _tokenIn address of token being swapped in
+    /// @param _tokenOut address of token being swapped out
+    /// @param _amountIn is the input amount to spend
+    /// @param _fee of the token pool to consider for the pair
+    /// @param _sqrtPriceLimitX96 of the pool; cannot be exceeded for swap
+    /// @return amountOut received as the output for the swap in order
+    /// @return sqrtPriceX96After of the pool after the swap
+    /// @return initializedTicksCrossed during the quoted swap
+    /// @return gasEstimate of gas that the swap will consume
+    function quoteSwapWith(
+        address _tokenIn,
+        address _tokenOut,
+        uint256 _amountIn,
+        uint24 _fee,
+        uint160 _sqrtPriceLimitX96
+    )
+        external
+        returns (
+            uint256 amountOut,
+            uint160 sqrtPriceX96After,
+            uint32 initializedTicksCrossed,
+            uint256 gasEstimate
+        )
+    {
+        return IQuoter(QUOTER).quoteExactInputSingle(
+            IQuoter.QuoteExactInputSingleParams(
+                _tokenIn, _tokenOut, _amountIn, _fee, _sqrtPriceLimitX96
+            )
+        );
+    }
+
     /// @notice swap a tolerable amount of tokens for a specific amount of USDC
     /// @dev caller must grant token allowance to this contract
     /// @dev any excess token not spent will be returned to the caller
@@ -641,9 +725,9 @@ contract Zap is Reentrancy, Errors {
         internal
         returns (uint256 deducted)
     {
-        IERC20(_from).approve(UNISWAP, _tolerance);
+        IERC20(_from).approve(ROUTER, _tolerance);
 
-        IUniswap.ExactOutputSingleParams memory params = IUniswap
+        IRouter.ExactOutputSingleParams memory params = IRouter
             .ExactOutputSingleParams({
             tokenIn: _from,
             tokenOut: USDC,
@@ -654,9 +738,8 @@ contract Zap is Reentrancy, Errors {
             sqrtPriceLimitX96: 0
         });
 
-        try IUniswap(UNISWAP).exactOutputSingle(params) returns (
-            uint256 amountIn
-        ) {
+        try IRouter(ROUTER).exactOutputSingle(params) returns (uint256 amountIn)
+        {
             deducted = amountIn;
         } catch Error(string memory reason) {
             revert SwapFailed(reason);
@@ -695,9 +778,9 @@ contract Zap is Reentrancy, Errors {
         internal
         returns (uint256 received)
     {
-        IERC20(_from).approve(UNISWAP, _amount);
+        IERC20(_from).approve(ROUTER, _amount);
 
-        IUniswap.ExactInputSingleParams memory params = IUniswap
+        IRouter.ExactInputSingleParams memory params = IRouter
             .ExactInputSingleParams({
             tokenIn: _from,
             tokenOut: USDC,
@@ -708,9 +791,8 @@ contract Zap is Reentrancy, Errors {
             sqrtPriceLimitX96: 0
         });
 
-        try IUniswap(UNISWAP).exactInputSingle(params) returns (
-            uint256 amountOut
-        ) {
+        try IRouter(ROUTER).exactInputSingle(params) returns (uint256 amountOut)
+        {
             received = amountOut;
         } catch Error(string memory reason) {
             revert SwapFailed(reason);
