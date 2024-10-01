@@ -3,20 +3,20 @@ pragma solidity 0.8.27;
 
 import {IPool} from "./interfaces/IAave.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
-import {ICore, IPerpsMarket, ISpotMarket} from "./interfaces/ISynthetix.sol";
+import {IPerpsMarket, ISpotMarket} from "./interfaces/ISynthetix.sol";
 import {IQuoter, IRouter} from "./interfaces/IUniswap.sol";
 import {Errors} from "./utils/Errors.sol";
 import {Reentrancy} from "./utils/Reentrancy.sol";
 
-/// @title Zap
-/// @custom:synthetix Zap USDC into and out of USDx
-/// @custom:aave Flashloan USDC to unwind synthetix collateral
-/// @custom:uniswap Swap unwound collateral for USDC to repay flashloan
-/// @dev Idle token balances are not safe
-/// @dev Intended for standalone use; do not inherit
+/// @title zap
+/// @custom:synthetix zap USDC into and out of USDx
+/// @custom:aave flash loan USDC to unwind synthetix collateral
+/// @custom:uniswap swap unwound collateral for USDC to repay flashloan
+/// @dev idle token balances are not safe
+/// @dev intended for standalone use; do not inherit
 /// @author @jaredborders
+/// @author @flocqst
 /// @author @barrasso
-/// @author @Flocqst
 /// @author @moss-eth
 contract Zap is Reentrancy, Errors {
 
@@ -30,7 +30,6 @@ contract Zap is Reentrancy, Errors {
     address public immutable CORE;
     address public immutable REFERRER;
     uint128 public immutable SUSDC_SPOT_ID;
-    uint128 public immutable PREFFERED_POOL_ID;
     bytes32 public immutable MODIFY_PERMISSION;
     bytes32 public immutable BURN_PERMISSION;
     uint128 public immutable USDX_ID;
@@ -49,7 +48,6 @@ contract Zap is Reentrancy, Errors {
         address _usdx,
         address _spotMarket,
         address _perpsMarket,
-        address _core,
         address _referrer,
         uint128 _susdcSpotId,
         address _aave,
@@ -63,10 +61,8 @@ contract Zap is Reentrancy, Errors {
         USDX = _usdx;
         SPOT_MARKET = _spotMarket;
         PERPS_MARKET = _perpsMarket;
-        CORE = _core;
         REFERRER = _referrer;
         SUSDC_SPOT_ID = _susdcSpotId;
-        PREFFERED_POOL_ID = ICore(CORE).getPreferredPool();
         MODIFY_PERMISSION = "PERPS_MODIFY_COLLATERAL";
         BURN_PERMISSION = "BURN";
         USDX_ID = 0;
