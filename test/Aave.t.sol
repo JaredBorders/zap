@@ -5,7 +5,6 @@ import {
     Bootstrap,
     Constants,
     Errors,
-    ICore,
     IERC20,
     IPerpsMarket,
     IPool,
@@ -16,7 +15,7 @@ import {
 
 contract AaveTest is Bootstrap, Errors {
 
-    function test_only_aave_arbitrum(
+    function test_executeOperation_only_aave(
         address caller,
         address a,
         uint256 b,
@@ -25,23 +24,6 @@ contract AaveTest is Bootstrap, Errors {
     )
         public
         arbitrum
-    {
-        if (caller != zap.AAVE()) {
-            vm.prank(caller);
-            vm.expectRevert(abi.encodeWithSelector(OnlyAave.selector, caller));
-            zap.executeOperation(a, b, c, a, d);
-        }
-    }
-
-    function test_only_aave_base(
-        address caller,
-        address a,
-        uint256 b,
-        uint256 c,
-        bytes calldata d
-    )
-        public
-        base
     {
         if (caller != zap.AAVE()) {
             vm.prank(caller);
