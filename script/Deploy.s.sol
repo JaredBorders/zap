@@ -6,10 +6,10 @@ import {Zap} from "../src/Zap.sol";
 import {Arbitrum, ArbitrumSepolia, Base} from "./utils/Parameters.sol";
 
 /// @title Zap deployment script
-/// @author JaredBorders (jaredborders@pm.me)
+/// @author @jaredborders
+/// @author @Flocqst
 contract Setup is Script {
 
-    /// @custom:todo
     function deploySystem(
         address usdc,
         address usdx,
@@ -19,7 +19,8 @@ contract Setup is Script {
         address referrer,
         uint128 susdcSpotId,
         address aave,
-        address uniswap
+        address router,
+        address quoter
     )
         public
         returns (Zap zap)
@@ -33,7 +34,8 @@ contract Setup is Script {
             _referrer: referrer,
             _susdcSpotId: susdcSpotId,
             _aave: aave,
-            _uniswap: uniswap
+            _router: router,
+            _quoter: quoter
         });
     }
 
@@ -58,7 +60,8 @@ contract DeployBase is Setup, Base {
             referrer: BASE_REFERRER,
             susdcSpotId: BASE_SUSDC_SPOT_MARKET_ID,
             aave: BASE_AAVE_POOL,
-            uniswap: BASE_UNISWAP
+            router: BASE_ROUTER,
+            quoter: BASE_QUOTER
         });
 
         vm.stopBroadcast();
@@ -86,7 +89,8 @@ contract DeployArbitrum is Setup, Arbitrum {
             referrer: ARBITRUM_REFERRER,
             susdcSpotId: ARBITRUM_SUSDC_SPOT_MARKET_ID,
             aave: ARBITRUM_AAVE_POOL,
-            uniswap: ARBITRUM_UNISWAP
+            router: ARBITRUM_ROUTER,
+            quoter: ARBITRUM_QUOTER
         });
 
         vm.stopBroadcast();
@@ -114,7 +118,8 @@ contract DeployArbitrumSepolia is Setup, ArbitrumSepolia {
             referrer: ARBITRUM_SEPOLIA_REFERRER,
             susdcSpotId: ARBITRUM_SEPOLIAS_USDC_SPOT_MARKET_ID,
             aave: ARBITRUM_SEPOLIA_AAVE_POOL,
-            uniswap: ARBITRUM_SEPOLIA_UNISWAP
+            router: ARBITRUM_SEPOLIA_ROUTER,
+            quoter: ARBITRUM_SEPOLIA_QUOTER
         });
 
         vm.stopBroadcast();
