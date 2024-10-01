@@ -5,17 +5,23 @@ import {Script} from "../lib/forge-std/src/Script.sol";
 import {Zap} from "../src/Zap.sol";
 import {Arbitrum, ArbitrumSepolia, Base} from "./utils/Parameters.sol";
 
-/// @title Zap deployment script
+/// @title zap deployment script
 /// @author @jaredborders
-/// @author @Flocqst
-contract Setup is Script {
+/// @author @flocqst
+contract Deploy is Script {
+
+    modifier broadcast() {
+        uint256 privateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(privateKey);
+        _;
+        vm.stopBroadcast();
+    }
 
     function deploySystem(
         address usdc,
         address usdx,
         address spotMarket,
         address perpsMarket,
-        address core,
         address referrer,
         uint128 susdcSpotId,
         address aave,
@@ -30,7 +36,6 @@ contract Setup is Script {
             _usdx: usdx,
             _spotMarket: spotMarket,
             _perpsMarket: perpsMarket,
-            _core: core,
             _referrer: referrer,
             _susdcSpotId: susdcSpotId,
             _aave: aave,
@@ -45,26 +50,20 @@ contract Setup is Script {
 /// (1) load the variables in the .env file via `source .env`
 /// (2) run `forge script script/Deploy.s.sol:DeployBase --rpc-url $BASE_RPC_URL
 /// --etherscan-api-key $BASESCAN_API_KEY --broadcast --verify -vvvv`
-contract DeployBase is Setup, Base {
+contract DeployBase is Deploy, Base {
 
-    function run() public {
-        uint256 privateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(privateKey);
-
-        Setup.deploySystem({
+    function run() public broadcast {
+        deploySystem({
             usdc: BASE_USDC,
             usdx: BASE_USDX,
             spotMarket: BASE_SPOT_MARKET,
             perpsMarket: BASE_PERPS_MARKET,
-            core: BASE_CORE,
             referrer: BASE_REFERRER,
             susdcSpotId: BASE_SUSDC_SPOT_MARKET_ID,
             aave: BASE_AAVE_POOL,
             router: BASE_ROUTER,
             quoter: BASE_QUOTER
         });
-
-        vm.stopBroadcast();
     }
 
 }
@@ -74,26 +73,20 @@ contract DeployBase is Setup, Base {
 /// (2) run `forge script script/Deploy.s.sol:DeployArbitrum --rpc-url
 /// $ARBITRUM_RPC_URL
 /// --etherscan-api-key $ARBITRUM_RPC_URL --broadcast --verify -vvvv`
-contract DeployArbitrum is Setup, Arbitrum {
+contract DeployArbitrum is Deploy, Arbitrum {
 
-    function run() public {
-        uint256 privateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(privateKey);
-
-        Setup.deploySystem({
+    function run() public broadcast {
+        deploySystem({
             usdc: ARBITRUM_USDC,
             usdx: ARBITRUM_USDX,
             spotMarket: ARBITRUM_SPOT_MARKET,
             perpsMarket: ARBITRUM_PERPS_MARKET,
-            core: ARBITRUM_CORE,
             referrer: ARBITRUM_REFERRER,
             susdcSpotId: ARBITRUM_SUSDC_SPOT_MARKET_ID,
             aave: ARBITRUM_AAVE_POOL,
             router: ARBITRUM_ROUTER,
             quoter: ARBITRUM_QUOTER
         });
-
-        vm.stopBroadcast();
     }
 
 }
@@ -103,26 +96,20 @@ contract DeployArbitrum is Setup, Arbitrum {
 /// (2) run `forge script script/Deploy.s.sol:DeployArbitrumSepolia --rpc-url
 /// $ARBITRUM_SEPOLIA_RPC_URL
 /// --etherscan-api-key $ARBITRUM_RPC_URL --broadcast --verify -vvvv`
-contract DeployArbitrumSepolia is Setup, ArbitrumSepolia {
+contract DeployArbitrumSepolia is Deploy, ArbitrumSepolia {
 
-    function run() public {
-        uint256 privateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(privateKey);
-
-        Setup.deploySystem({
+    function run() public broadcast {
+        deploySystem({
             usdc: ARBITRUM_SEPOLIA_USDC,
             usdx: ARBITRUM_SEPOLIA_USDX,
             spotMarket: ARBITRUM_SEPOLIA_SPOT_MARKET,
             perpsMarket: ARBITRUM_SEPOLIA_PERPS_MARKET,
-            core: ARBITRUM_SEPOLIA_CORE,
             referrer: ARBITRUM_SEPOLIA_REFERRER,
-            susdcSpotId: ARBITRUM_SEPOLIAS_USDC_SPOT_MARKET_ID,
+            susdcSpotId: ARBITRUM_SEPOLIA_SUSDC_SPOT_MARKET_ID,
             aave: ARBITRUM_SEPOLIA_AAVE_POOL,
             router: ARBITRUM_SEPOLIA_ROUTER,
             quoter: ARBITRUM_SEPOLIA_QUOTER
         });
-
-        vm.stopBroadcast();
     }
 
 }
