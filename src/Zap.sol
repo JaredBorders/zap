@@ -692,12 +692,14 @@ contract Zap is Reentrancy, Errors {
     /// @notice swap a tolerable amount of tokens for a specific amount of USDC
     /// @dev caller must grant token allowance to this contract
     /// @dev any excess token not spent will be returned to the caller
-    /// @param _from address of token to swap
+    /// @param _token address of token to swap
+    /// @param _from address of sender
     /// @param _amount amount of USDC to receive in return
     /// @param _tolerance or tolerable amount of token to spend
     /// @param _receiver address to receive USDC
     /// @return deducted amount of incoming token; i.e., amount spent
     function swapFor(
+        address _token,
         address _from,
         uint256 _amount,
         uint256 _tolerance,
@@ -706,30 +708,30 @@ contract Zap is Reentrancy, Errors {
         external
         returns (uint256 deducted)
     {
-        _pull(_from, msg.sender, _tolerance);
-        deducted = _swapFor(_from, _amount, _tolerance);
+        _pull(_token, _from, _amount);
+        deducted = _swapFor(_token, _amount, _tolerance);
         _push(USDC, _receiver, _amount);
 
         if (deducted < _tolerance) {
-            _push(_from, msg.sender, _tolerance - deducted);
+            _push(_token, msg.sender, _tolerance - deducted);
         }
     }
 
     /// @dev allowance is assumed
     /// @dev following execution, this contract will hold the swapped USDC
     function _swapFor(
-        address _from,
+        address _token,
         uint256 _amount,
         uint256 _tolerance
     )
         internal
         returns (uint256 deducted)
     {
-        IERC20(_from).approve(ROUTER, _tolerance);
+        IERC20(_token).approve(ROUTER, _tolerance);
 
         IRouter.ExactOutputSingleParams memory params = IRouter
             .ExactOutputSingleParams({
-            tokenIn: _from,
+            tokenIn: _token,
             tokenOut: USDC,
             fee: FEE_TIER,
             recipient: address(this),
