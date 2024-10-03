@@ -31,4 +31,10 @@ contract Errors {
     /// @notice Unauthorized reentrant call.
     error ReentrancyGuardReentrantCall();
 
+    /// @notice thrown when transferFrom fails
+    error PullFailed(bytes reason);
+
+    /// @notice thrown when transfer fails
+    error PushFailed(bytes reason);
+
 }

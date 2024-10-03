@@ -705,8 +705,11 @@ contract Zap is Enums, Errors {
         returns (bool)
     {
         IERC20 token = IERC20(_token);
-        token.safeTransferFrom(token, _from, address(this), _amount);
-        return true;
+        try token.transferFrom(_from, address(this), _amount) {
+            return true;
+        } catch (bytes memory reason) {
+            revert PullFailed(reason);
+        }
     }
 
     /// @dev push tokens to a receiver
@@ -720,11 +723,14 @@ contract Zap is Enums, Errors {
         uint256 _amount
     )
         internal
-        returns (bool success)
+        returns (bool)
     {
         IERC20 token = IERC20(_token);
-        token.safeTransfer(token, _receiver, _amount);
-        return true;
+        try token.transfer(_receiver, _amount) {
+            return true;
+        } catch (bytes memory reason) {
+            revert PushFailed(reason);
+        }
     }
 
 }

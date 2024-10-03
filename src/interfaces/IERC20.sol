@@ -95,24 +95,4 @@ interface IERC20 {
         external
         returns (bool);
 
-    /**
-     * @dev Transfer `value` amount of `token` from the calling contract to
-     * `to`. If `token` returns no value,
-     * non-reverting calls are assumed to be successful.
-     */
-    function safeTransfer(IERC20 token, address to, uint256 value) external;
-    /**
-     * @dev Transfer `value` amount of `token` from `from` to `to`, spending the
-     * approval given by `from` to the
-     * calling contract. If `token` returns no value, non-reverting calls are
-     * assumed to be successful.
-     */
-    function safeTransferFrom(
-        IERC20 token,
-        address from,
-        address to,
-        uint256 value
-    )
-        external;
-
 }
