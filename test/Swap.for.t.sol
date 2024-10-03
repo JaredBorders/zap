@@ -15,15 +15,32 @@ import {
 contract SwapForTest is Bootstrap {
 
     /// @custom:todo
-    function test_swap_for_base(uint256 _amount, uint256 _tolerance, address _eoa, address _receiver) public base {
+    function test_swap_for_base(
+        uint256 _amount,
+        uint256 _tolerance,
+        address _eoa,
+        address _receiver
+    )
+        public
+        base
+    {
         vm.assume(_amount > 0);
+        vm.assume(_tolerance > _amount);
         _spin(_eoa, weth, _amount, address(zap));
 
         uint256 usdcBalanceBefore = usdc.balanceOf(_receiver);
         uint256 wethBalanceBefore = weth.balanceOf(_receiver);
 
+        (
+            uint256 amountIn,
+            uint160 sqrtPriceX96After,
+            uint32 initializedTicksCrossed,
+            uint256 gasEstimate
+        ) = zap.quoteSwapFor(address(weth), address(usdc), _amount, 0, 0);
+
         vm.prank(_eoa);
-        uint256 deducted = zap.swapFor(address(weth), _eoa, _amount, _amount / 2, _receiver);
+        uint256 deducted =
+            zap.swapFor(address(weth), _eoa, _amount, _tolerance, _receiver);
 
         uint256 usdcBalanceAfter = usdc.balanceOf(_receiver);
         uint256 wethBalanceAfter = weth.balanceOf(_receiver);
