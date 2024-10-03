@@ -205,7 +205,7 @@ contract Zap is Reentrancy, Errors {
         returns (uint256 wrapped)
     {
         IERC20(_token).approve(SPOT_MARKET, _amount);
-        (wrapped, ) =  ISpotMarket(SPOT_MARKET).wrap({
+        (wrapped,) = ISpotMarket(SPOT_MARKET).wrap({
             marketId: _synthId,
             wrapAmount: _amount,
             minAmountReceived: _tolerance
@@ -249,7 +249,7 @@ contract Zap is Reentrancy, Errors {
     {
         address synth = ISpotMarket(SPOT_MARKET).getSynth(_synthId);
         IERC20(synth).approve(SPOT_MARKET, _amount);
-        (unwrapped, ) = ISpotMarket(SPOT_MARKET).unwrap({
+        (unwrapped,) = ISpotMarket(SPOT_MARKET).unwrap({
             marketId: _synthId,
             unwrapAmount: _amount,
             minAmountReceived: _tolerance
@@ -292,7 +292,7 @@ contract Zap is Reentrancy, Errors {
         returns (uint256 received, address synth)
     {
         IERC20(USDX).approve(SPOT_MARKET, _amount);
-        (received, ) = ISpotMarket(SPOT_MARKET).buy({
+        (received,) = ISpotMarket(SPOT_MARKET).buy({
             marketId: _synthId,
             usdAmount: _amount,
             minAmountReceived: _tolerance,
