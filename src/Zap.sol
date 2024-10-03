@@ -284,8 +284,9 @@ contract Zap is Reentrancy, Errors {
         external
         returns (uint256 received, address synth)
     {
+        synth = ISpotMarket(SPOT_MARKET).getSynth(_synthId);
         _pull(USDX, msg.sender, _amount);
-        (received, synth) = _buy(_synthId, _amount, _tolerance);
+        received = _buy(_synthId, _amount, _tolerance);
         _push(synth, _receiver, received);
     }
 
@@ -297,7 +298,7 @@ contract Zap is Reentrancy, Errors {
         uint256 _tolerance
     )
         internal
-        returns (uint256 received, address synth)
+        returns (uint256 received)
     {
         IERC20(USDX).approve(SPOT_MARKET, _amount);
         try ISpotMarket(SPOT_MARKET).buy({
@@ -307,7 +308,6 @@ contract Zap is Reentrancy, Errors {
             referrer: REFERRER
         }) returns (uint256 amount, ISpotMarket.Data memory) {
             received = amount;
-            synth = ISpotMarket(SPOT_MARKET).getSynth(_synthId);
         } catch Error(string memory reason) {
             revert BuyFailed(reason);
         }
