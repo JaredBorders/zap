@@ -4,7 +4,6 @@ pragma solidity 0.8.27;
 import {
     Bootstrap,
     Constants,
-    ICore,
     IERC20,
     IPerpsMarket,
     IPool,

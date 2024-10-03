@@ -1,8 +1,8 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.27;
 
-/// @title Cosolidated Errors from Synthetix v3 contracts
-/// @author JaredBorders (jaredborders@pm.me)
+/// @title cosolidated custom errors from synthetix v3 contracts
+/// @dev helps with debugging errors thrown by synthetix v3
 contract SynthetixV3Errors {
 
     enum SettlementStrategyType {

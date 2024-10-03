@@ -4,7 +4,6 @@ pragma solidity 0.8.27;
 import {
     Bootstrap,
     Constants,
-    ICore,
     IERC20,
     IPerpsMarket,
     IPool,
@@ -13,18 +12,15 @@ import {
     Zap
 } from "./utils/Bootstrap.sol";
 
-contract SwapTest is Bootstrap {
+contract SwapForTest is Bootstrap {
 
     /// @custom:todo
     function test_swap_for_base() public base {}
 
     /// @custom:todo
-    function test_swap_with_base() public base {}
-
-    /// @custom:todo
     function test_swap_for_arbitrum() public arbitrum {}
 
     /// @custom:todo
-    function test_swap_with_arbitrum() public arbitrum {}
+    function test_swap_for_arbitrum_sepolia() public arbitrum_sepolia {}
 
 }
