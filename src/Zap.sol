@@ -388,8 +388,6 @@ contract Zap is Reentrancy, Errors {
         isAuthorized(_accountId)
         requireStage(Stage.UNSET)
     {
-        stage = Stage.LEVEL1;
-
         bytes memory params = abi.encode(
             _accountId,
             _collateralId,
@@ -411,8 +409,6 @@ contract Zap is Reentrancy, Errors {
             params: params,
             referralCode: REFERRAL_CODE
         });
-
-        stage = Stage.UNSET;
     }
 
     /// @notice flashloan callback function
@@ -434,8 +430,6 @@ contract Zap is Reentrancy, Errors {
         requireStage(Stage.LEVEL1)
         returns (bool)
     {
-        stage = Stage.LEVEL2;
-
         (,,, address _collateral,,,, address _receiver) = abi.decode(
             _params,
             (

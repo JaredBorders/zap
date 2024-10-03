@@ -26,7 +26,13 @@ contract Reentrancy {
     /// @param expected stage of execution
     modifier requireStage(Stage expected) {
         _requireStage(expected);
+        if (expected == Stage.UNSET) {
+            stage = Stage.LEVEL1;
+        } else if (expected == Stage.LEVEL1) {
+            stage = Stage.LEVEL2;
+        }
         _;
+        stage = Stage.UNSET;
     }
 
     function _requireStage(Stage _expected) internal view {
