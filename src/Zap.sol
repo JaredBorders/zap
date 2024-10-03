@@ -205,15 +205,11 @@ contract Zap is Reentrancy, Errors {
         returns (uint256 wrapped)
     {
         IERC20(_token).approve(SPOT_MARKET, _amount);
-        try ISpotMarket(SPOT_MARKET).wrap({
+        (wrapped, ) =  ISpotMarket(SPOT_MARKET).wrap({
             marketId: _synthId,
             wrapAmount: _amount,
             minAmountReceived: _tolerance
-        }) returns (uint256 amount, ISpotMarket.Data memory) {
-            wrapped = amount;
-        } catch Error(string memory reason) {
-            revert WrapFailed(reason);
-        }
+        });
     }
 
     /// @notice unwrap collateral via synthetix spot market
@@ -253,15 +249,11 @@ contract Zap is Reentrancy, Errors {
     {
         address synth = ISpotMarket(SPOT_MARKET).getSynth(_synthId);
         IERC20(synth).approve(SPOT_MARKET, _amount);
-        try ISpotMarket(SPOT_MARKET).unwrap({
+        (unwrapped, ) = ISpotMarket(SPOT_MARKET).unwrap({
             marketId: _synthId,
             unwrapAmount: _amount,
             minAmountReceived: _tolerance
-        }) returns (uint256 amount, ISpotMarket.Data memory) {
-            unwrapped = amount;
-        } catch Error(string memory reason) {
-            revert UnwrapFailed(reason);
-        }
+        });
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -300,17 +292,13 @@ contract Zap is Reentrancy, Errors {
         returns (uint256 received, address synth)
     {
         IERC20(USDX).approve(SPOT_MARKET, _amount);
-        try ISpotMarket(SPOT_MARKET).buy({
+        (received, ) = ISpotMarket(SPOT_MARKET).buy({
             marketId: _synthId,
             usdAmount: _amount,
             minAmountReceived: _tolerance,
             referrer: REFERRER
-        }) returns (uint256 amount, ISpotMarket.Data memory) {
-            received = amount;
-            synth = ISpotMarket(SPOT_MARKET).getSynth(_synthId);
-        } catch Error(string memory reason) {
-            revert BuyFailed(reason);
-        }
+        });
+        synth = ISpotMarket(SPOT_MARKET).getSynth(_synthId);
     }
 
     /// @notice sell synth via synthetix spot market
@@ -347,16 +335,12 @@ contract Zap is Reentrancy, Errors {
     {
         address synth = ISpotMarket(SPOT_MARKET).getSynth(_synthId);
         IERC20(synth).approve(SPOT_MARKET, _amount);
-        try ISpotMarket(SPOT_MARKET).sell({
+        (received,) = ISpotMarket(SPOT_MARKET).sell({
             marketId: _synthId,
             synthAmount: _amount,
             minUsdAmount: _tolerance,
             referrer: REFERRER
-        }) returns (uint256 amount, ISpotMarket.Data memory) {
-            received = amount;
-        } catch Error(string memory reason) {
-            revert SellFailed(reason);
-        }
+        });
     }
 
     /*//////////////////////////////////////////////////////////////
