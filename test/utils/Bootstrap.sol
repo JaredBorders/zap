@@ -7,6 +7,8 @@ import {
 } from "../../script/utils/Parameters.sol";
 import {Errors, IERC20, IPool, Reentrancy, Zap} from "../../src/Zap.sol";
 import {IPerpsMarket, ISpotMarket} from "../interfaces/ISynthetix.sol";
+
+import {IFactory, IRouter} from "../interfaces/IUniswap.sol";
 import {Constants} from "../utils/Constants.sol";
 import {Test} from "forge-std/Test.sol";
 
