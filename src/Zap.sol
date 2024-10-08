@@ -814,18 +814,14 @@ contract Zap is Reentrancy, Errors {
         uint256 _amount
     )
         internal
-        returns (bool success)
+        returns (bool)
     {
         IERC20 token = IERC20(_token);
 
         try token.transferFrom(_from, address(this), _amount) returns (
             bool result
         ) {
-            success = result;
-            require(
-                success,
-                PullFailed(abi.encodePacked(address(token), _from, _amount))
-            );
+            return result;
         } catch Error(string memory reason) {
             revert PullFailed(bytes(reason));
         }
@@ -842,16 +838,12 @@ contract Zap is Reentrancy, Errors {
         uint256 _amount
     )
         internal
-        returns (bool success)
+        returns (bool)
     {
         IERC20 token = IERC20(_token);
 
         try token.transfer(_receiver, _amount) returns (bool result) {
-            success = result;
-            require(
-                success,
-                PushFailed(abi.encodePacked(address(token), _receiver, _amount))
-            );
+            return result;
         } catch Error(string memory reason) {
             revert PushFailed(bytes(reason));
         }
