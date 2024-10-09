@@ -556,6 +556,7 @@ contract Zap is Reentrancy, Errors {
     function _burn(uint256 _amount, uint128 _accountId) internal {
         IERC20(USDX).approve(PERPS_MARKET, _amount);
         IPerpsMarket(PERPS_MARKET).payDebt(_accountId, _amount);
+        IERC20(USDX).approve(PERPS_MARKET, 0);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -730,6 +731,8 @@ contract Zap is Reentrancy, Errors {
         } catch Error(string memory reason) {
             revert SwapFailed(reason);
         }
+
+        IERC20(_from).approve(ROUTER, 0);
     }
 
     /// @notice swap a specific amount of tokens for a tolerable amount of USDC
