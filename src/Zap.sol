@@ -24,24 +24,27 @@ contract Zap is Reentrancy, Errors {
     address public immutable USDC;
 
     /// @custom:synthetix
+    bytes32 public constant MODIFY_PERMISSION = "PERPS_MODIFY_COLLATERAL";
+    bytes32 public constant BURN_PERMISSION = "BURN";
+    uint128 public constant USDX_ID = 0;
+
     address public immutable USDX;
     address public immutable SPOT_MARKET;
     address public immutable PERPS_MARKET;
     address public immutable CORE;
     address public immutable REFERRER;
     uint128 public immutable SUSDC_SPOT_ID;
-    bytes32 public immutable MODIFY_PERMISSION;
-    bytes32 public immutable BURN_PERMISSION;
-    uint128 public immutable USDX_ID;
 
     /// @custom:aave
+    uint16 public constant REFERRAL_CODE = 0;
+
     address public immutable AAVE;
-    uint16 public immutable REFERRAL_CODE;
 
     /// @custom:uniswap
+    uint24 public constant FEE_TIER = 3000;
+
     address public immutable ROUTER;
     address public immutable QUOTER;
-    uint24 public immutable FEE_TIER;
 
     constructor(
         address _usdc,
@@ -63,18 +66,13 @@ contract Zap is Reentrancy, Errors {
         PERPS_MARKET = _perpsMarket;
         REFERRER = _referrer;
         SUSDC_SPOT_ID = _susdcSpotId;
-        MODIFY_PERMISSION = "PERPS_MODIFY_COLLATERAL";
-        BURN_PERMISSION = "BURN";
-        USDX_ID = 0;
 
         /// @custom:aave
         AAVE = _aave;
-        REFERRAL_CODE = 0;
 
         /// @custom:uniswap
         ROUTER = _router;
         QUOTER = _quoter;
-        FEE_TIER = 3000;
     }
 
     /*//////////////////////////////////////////////////////////////
