@@ -32,6 +32,7 @@ contract SwapForTest is Bootstrap {
         });
         assertGt(usdc.balanceOf(ACTOR), 0);
         assertLt(weth.balanceOf(ACTOR), tolerance);
+        assertEq(weth.allowance(address(zap), zap.ROUTER()), 0);
         vm.stopPrank();
     }
 
@@ -69,6 +70,7 @@ contract SwapForTest is Bootstrap {
                 : usdc.balanceOf(ACTOR) == 0
         );
         assertLe(weth.balanceOf(ACTOR), tolerance);
+        assertEq(weth.allowance(address(zap), zap.ROUTER()), 0);
 
         vm.stopPrank();
     }
