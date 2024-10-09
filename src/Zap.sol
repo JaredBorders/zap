@@ -24,24 +24,27 @@ contract Zap is Reentrancy, Errors {
     address public immutable USDC;
 
     /// @custom:synthetix
+    bytes32 public constant MODIFY_PERMISSION = "PERPS_MODIFY_COLLATERAL";
+    bytes32 public constant BURN_PERMISSION = "BURN";
+    uint128 public constant USDX_ID = 0;
+
     address public immutable USDX;
     address public immutable SPOT_MARKET;
     address public immutable PERPS_MARKET;
     address public immutable CORE;
     address public immutable REFERRER;
     uint128 public immutable SUSDC_SPOT_ID;
-    bytes32 public immutable MODIFY_PERMISSION;
-    bytes32 public immutable BURN_PERMISSION;
-    uint128 public immutable USDX_ID;
 
     /// @custom:aave
+    uint16 public constant REFERRAL_CODE = 0;
+
     address public immutable AAVE;
-    uint16 public immutable REFERRAL_CODE;
 
     /// @custom:uniswap
+    uint24 public constant FEE_TIER = 3000;
+
     address public immutable ROUTER;
     address public immutable QUOTER;
-    uint24 public immutable FEE_TIER;
 
     constructor(
         address _usdc,
@@ -63,18 +66,13 @@ contract Zap is Reentrancy, Errors {
         PERPS_MARKET = _perpsMarket;
         REFERRER = _referrer;
         SUSDC_SPOT_ID = _susdcSpotId;
-        MODIFY_PERMISSION = "PERPS_MODIFY_COLLATERAL";
-        BURN_PERMISSION = "BURN";
-        USDX_ID = 0;
 
         /// @custom:aave
         AAVE = _aave;
-        REFERRAL_CODE = 0;
 
         /// @custom:uniswap
         ROUTER = _router;
         QUOTER = _quoter;
-        FEE_TIER = 3000;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -205,15 +203,11 @@ contract Zap is Reentrancy, Errors {
         returns (uint256 wrapped)
     {
         IERC20(_token).approve(SPOT_MARKET, _amount);
-        try ISpotMarket(SPOT_MARKET).wrap({
+        (wrapped,) = ISpotMarket(SPOT_MARKET).wrap({
             marketId: _synthId,
             wrapAmount: _amount,
             minAmountReceived: _tolerance
-        }) returns (uint256 amount, ISpotMarket.Data memory) {
-            wrapped = amount;
-        } catch Error(string memory reason) {
-            revert WrapFailed(reason);
-        }
+        });
     }
 
     /// @notice unwrap collateral via synthetix spot market
@@ -253,15 +247,11 @@ contract Zap is Reentrancy, Errors {
     {
         address synth = ISpotMarket(SPOT_MARKET).getSynth(_synthId);
         IERC20(synth).approve(SPOT_MARKET, _amount);
-        try ISpotMarket(SPOT_MARKET).unwrap({
+        (unwrapped,) = ISpotMarket(SPOT_MARKET).unwrap({
             marketId: _synthId,
             unwrapAmount: _amount,
             minAmountReceived: _tolerance
-        }) returns (uint256 amount, ISpotMarket.Data memory) {
-            unwrapped = amount;
-        } catch Error(string memory reason) {
-            revert UnwrapFailed(reason);
-        }
+        });
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -284,8 +274,9 @@ contract Zap is Reentrancy, Errors {
         external
         returns (uint256 received, address synth)
     {
+        synth = ISpotMarket(SPOT_MARKET).getSynth(_synthId);
         _pull(USDX, msg.sender, _amount);
-        (received, synth) = _buy(_synthId, _amount, _tolerance);
+        received = _buy(_synthId, _amount, _tolerance);
         _push(synth, _receiver, received);
     }
 
@@ -297,7 +288,7 @@ contract Zap is Reentrancy, Errors {
         uint256 _tolerance
     )
         internal
-        returns (uint256 received, address synth)
+        returns (uint256 received)
     {
         IERC20(USDX).approve(SPOT_MARKET, _amount);
         try ISpotMarket(SPOT_MARKET).buy({
@@ -307,7 +298,6 @@ contract Zap is Reentrancy, Errors {
             referrer: REFERRER
         }) returns (uint256 amount, ISpotMarket.Data memory) {
             received = amount;
-            synth = ISpotMarket(SPOT_MARKET).getSynth(_synthId);
         } catch Error(string memory reason) {
             revert BuyFailed(reason);
         }
@@ -347,16 +337,12 @@ contract Zap is Reentrancy, Errors {
     {
         address synth = ISpotMarket(SPOT_MARKET).getSynth(_synthId);
         IERC20(synth).approve(SPOT_MARKET, _amount);
-        try ISpotMarket(SPOT_MARKET).sell({
+        (received,) = ISpotMarket(SPOT_MARKET).sell({
             marketId: _synthId,
             synthAmount: _amount,
             minUsdAmount: _tolerance,
             referrer: REFERRER
-        }) returns (uint256 amount, ISpotMarket.Data memory) {
-            received = amount;
-        } catch Error(string memory reason) {
-            revert SellFailed(reason);
-        }
+        });
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -570,6 +556,7 @@ contract Zap is Reentrancy, Errors {
     function _burn(uint256 _amount, uint128 _accountId) internal {
         IERC20(USDX).approve(PERPS_MARKET, _amount);
         IPerpsMarket(PERPS_MARKET).payDebt(_accountId, _amount);
+        IERC20(USDX).approve(PERPS_MARKET, 0);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -744,6 +731,8 @@ contract Zap is Reentrancy, Errors {
         } catch Error(string memory reason) {
             revert SwapFailed(reason);
         }
+
+        IERC20(_from).approve(ROUTER, 0);
     }
 
     /// @notice swap a specific amount of tokens for a tolerable amount of USDC
@@ -814,18 +803,14 @@ contract Zap is Reentrancy, Errors {
         uint256 _amount
     )
         internal
-        returns (bool success)
+        returns (bool)
     {
         IERC20 token = IERC20(_token);
 
         try token.transferFrom(_from, address(this), _amount) returns (
             bool result
         ) {
-            success = result;
-            require(
-                success,
-                PullFailed(abi.encodePacked(address(token), _from, _amount))
-            );
+            return result;
         } catch Error(string memory reason) {
             revert PullFailed(bytes(reason));
         }
@@ -842,16 +827,13 @@ contract Zap is Reentrancy, Errors {
         uint256 _amount
     )
         internal
-        returns (bool success)
+        returns (bool)
     {
+        require(_receiver != address(0), PushFailed("Zero Address"));
         IERC20 token = IERC20(_token);
 
         try token.transfer(_receiver, _amount) returns (bool result) {
-            success = result;
-            require(
-                success,
-                PushFailed(abi.encodePacked(address(token), _receiver, _amount))
-            );
+            return result;
         } catch Error(string memory reason) {
             revert PushFailed(bytes(reason));
         }
