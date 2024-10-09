@@ -840,6 +840,7 @@ contract Zap is Reentrancy, Errors {
         internal
         returns (bool)
     {
+        require(_receiver != address(0), PushFailed("Zero Address"));
         IERC20 token = IERC20(_token);
 
         try token.transfer(_receiver, _amount) returns (bool result) {
