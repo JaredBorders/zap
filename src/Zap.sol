@@ -288,16 +288,12 @@ contract Zap is Reentrancy, Errors {
         returns (uint256 received)
     {
         IERC20(USDX).approve(SPOT_MARKET, _amount);
-        try ISpotMarket(SPOT_MARKET).buy({
+        (received,) = ISpotMarket(SPOT_MARKET).buy({
             marketId: _synthId,
             usdAmount: _amount,
             minAmountReceived: _tolerance,
             referrer: REFERRER
-        }) returns (uint256 amount, ISpotMarket.Data memory) {
-            received = amount;
-        } catch Error(string memory reason) {
-            revert BuyFailed(reason);
-        }
+        });
     }
 
     /// @notice sell synth via synthetix spot market
