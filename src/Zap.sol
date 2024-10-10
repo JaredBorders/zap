@@ -26,7 +26,7 @@ contract Zap is Reentrancy, Errors {
     /// @custom:synthetix
     bytes32 public constant MODIFY_PERMISSION = "PERPS_MODIFY_COLLATERAL";
     bytes32 public constant BURN_PERMISSION = "BURN";
-    uint128 public constant USDX_ID = 0;
+    uint128 public constant USDX_ID;
 
     address public immutable USDX;
     address public immutable SPOT_MARKET;
