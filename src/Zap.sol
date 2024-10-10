@@ -26,23 +26,19 @@ contract Zap is Reentrancy, Errors {
     /// @custom:synthetix
     bytes32 public constant MODIFY_PERMISSION = "PERPS_MODIFY_COLLATERAL";
     bytes32 public constant BURN_PERMISSION = "BURN";
-    uint128 public constant USDX_ID;
-
+    uint128 public immutable USDX_ID;
     address public immutable USDX;
     address public immutable SPOT_MARKET;
     address public immutable PERPS_MARKET;
-    address public immutable CORE;
     address public immutable REFERRER;
     uint128 public immutable SUSDC_SPOT_ID;
 
     /// @custom:aave
     uint16 public constant REFERRAL_CODE = 0;
-
     address public immutable AAVE;
 
     /// @custom:uniswap
     uint24 public constant FEE_TIER = 3000;
-
     address public immutable ROUTER;
     address public immutable QUOTER;
 
@@ -480,12 +476,17 @@ contract Zap is Reentrancy, Errors {
             )
         );
 
-        // zap USDC from flashloan into USDx
+        // zap USDC from flashloan into USDx;
+        // ALL USDC flashloaned from Aave is zapped into USDx
         uint256 usdxAmount = _zapIn(_flashloan, _zapTolerance);
 
         // burn USDx to pay off synthetix perp position debt;
         // debt is denominated in USD and thus repaid with USDx
         _burn(usdxAmount, _accountId);
+
+        /// @dev given the USDC buffer, an amount of USDx
+        /// necessarily less than the buffer will remain (<$1);
+        /// this amount is captured by the protocol
 
         // withdraw synthetix perp position collateral to this contract;
         // i.e., # of sETH, # of sUSDe, # of sUSDC (...)
