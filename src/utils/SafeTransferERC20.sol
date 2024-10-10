@@ -25,13 +25,6 @@ library SafeERC20 {
     error SafeERC20FailedOperation(address token);
 
     /**
-     * @dev Indicates a failed `decreaseAllowance` request.
-     */
-    error SafeERC20FailedDecreaseAllowance(
-        address spender, uint256 currentAllowance, uint256 requestedDecrease
-    );
-
-    /**
      * @dev Transfer `value` amount of `token` from the calling contract to
      * `to`. If `token` returns no value,
      * non-reverting calls are assumed to be successful.
@@ -92,38 +85,6 @@ library SafeERC20 {
         ) {
             revert SafeERC20FailedOperation(address(token));
         }
-    }
-
-    /**
-     * @dev Imitates a Solidity high-level call (i.e. a regular function call to
-     * a contract), relaxing the requirement
-     * on the return value: the return value is optional (but if data is
-     * returned, it must not be false).
-     * @param token The token targeted by the call.
-     * @param data The call data (encoded using abi.encode or one of its
-     * variants).
-     *
-     * This is a variant of {_callOptionalReturn} that silently catches all
-     * reverts and returns a bool instead.
-     */
-    function _callOptionalReturnBool(
-        IERC20 token,
-        bytes memory data
-    )
-        private
-        returns (bool)
-    {
-        bool success;
-        uint256 returnSize;
-        uint256 returnValue;
-        assembly ("memory-safe") {
-            success :=
-                call(gas(), token, 0, add(data, 0x20), mload(data), 0, 0x20)
-            returnSize := returndatasize()
-            returnValue := mload(0)
-        }
-        return success
-            && (returnSize == 0 ? address(token).code.length > 0 : returnValue == 1);
     }
 
 }
