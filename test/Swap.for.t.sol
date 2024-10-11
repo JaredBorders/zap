@@ -26,6 +26,7 @@ contract SwapForTest is Bootstrap {
         vm.startPrank(ACTOR);
         zap.swapFor({
             _from: address(weth),
+            _path: "", //TODO
             _amount: amount,
             _tolerance: tolerance,
             _receiver: ACTOR
@@ -59,6 +60,7 @@ contract SwapForTest is Bootstrap {
 
         zap.swapFor({
             _from: address(weth),
+            _path: "", //TODO
             _amount: amount,
             _tolerance: tolerance,
             _receiver: ACTOR

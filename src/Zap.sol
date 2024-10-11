@@ -361,6 +361,7 @@ contract Zap is Reentrancy, Errors {
         uint128 _collateralId,
         uint256 _collateralAmount,
         address _collateral,
+        bytes memory _path,
         uint256 _zapTolerance,
         uint256 _unwrapTolerance,
         uint256 _swapTolerance,
@@ -377,6 +378,7 @@ contract Zap is Reentrancy, Errors {
             _collateralId,
             _collateralAmount,
             _collateral,
+            _path,
             _zapTolerance,
             _unwrapTolerance,
             _swapTolerance,
@@ -453,52 +455,71 @@ contract Zap is Reentrancy, Errors {
         requireStage(Stage.LEVEL2)
         returns (uint256 unwound)
     {
-        (
-            uint128 _accountId,
-            uint128 _collateralId,
-            uint256 _collateralAmount,
-            address _collateral,
-            uint256 _zapTolerance,
-            uint256 _unwrapTolerance,
-            uint256 _swapTolerance,
-            /* address _receiver */
-        ) = abi.decode(
+        {
+            (
+                uint128 _accountId,
+                uint128 _collateralId,
+                uint256 _collateralAmount,
+                ,
+                ,
+                uint256 _zapTolerance,
+                uint256 _unwrapTolerance,
+                ,
+            ) = abi.decode(
+                _params,
+                (
+                    uint128,
+                    uint128,
+                    uint256,
+                    address,
+                    bytes,
+                    uint256,
+                    uint256,
+                    uint256,
+                    address
+                )
+            );
+
+            // zap USDC from flashloan into USDx;
+            // ALL USDC flashloaned from Aave is zapped into USDx
+            uint256 usdxAmount = _zapIn(_flashloan, _zapTolerance);
+            // burn USDx to pay off synthetix perp position debt;
+            // debt is denominated in USD and thus repaid with USDx
+            _burn(usdxAmount, _accountId);
+
+            /// @dev given the USDC buffer, an amount of USDx
+            /// necessarily less than the buffer will remain (<$1);
+            /// this amount is captured by the protocol
+
+            // withdraw synthetix perp position collateral to this contract;
+            // i.e., # of sETH, # of sUSDe, # of sUSDC (...)
+            _withdraw(_collateralId, _collateralAmount, _accountId);
+
+            // unwrap withdrawn synthetix perp position collateral;
+            // i.e., sETH -> WETH, sUSDe -> USDe, sUSDC -> USDC (...)
+            unwound =
+                _unwrap(_collateralId, _collateralAmount, _unwrapTolerance);
+
+            // establish total debt now owed to Aave;
+            // i.e., # of USDC
+            _flashloan += _premium;
+        }
+
+        (,,, address _collateral, bytes memory _path,,, uint256 _swapTolerance,)
+        = abi.decode(
             _params,
             (
                 uint128,
                 uint128,
                 uint256,
                 address,
+                bytes,
                 uint256,
                 uint256,
                 uint256,
                 address
             )
         );
-
-        // zap USDC from flashloan into USDx;
-        // ALL USDC flashloaned from Aave is zapped into USDx
-        uint256 usdxAmount = _zapIn(_flashloan, _zapTolerance);
-
-        // burn USDx to pay off synthetix perp position debt;
-        // debt is denominated in USD and thus repaid with USDx
-        _burn(usdxAmount, _accountId);
-
-        /// @dev given the USDC buffer, an amount of USDx
-        /// necessarily less than the buffer will remain (<$1);
-        /// this amount is captured by the protocol
-
-        // withdraw synthetix perp position collateral to this contract;
-        // i.e., # of sETH, # of sUSDe, # of sUSDC (...)
-        _withdraw(_collateralId, _collateralAmount, _accountId);
-
-        // unwrap withdrawn synthetix perp position collateral;
-        // i.e., sETH -> WETH, sUSDe -> USDe, sUSDC -> USDC (...)
-        unwound = _unwrap(_collateralId, _collateralAmount, _unwrapTolerance);
-
-        // establish total debt now owed to Aave;
-        // i.e., # of USDC
-        _flashloan += _premium;
 
         // swap as much (or little) as necessary to repay Aave flashloan;
         // i.e., WETH -(swap)-> USDC -(repay)-> Aave
@@ -507,7 +528,7 @@ contract Zap is Reentrancy, Errors {
         // whatever collateral amount is remaining is returned to the caller
         unwound -= _collateral == USDC
             ? _flashloan
-            : _swapFor(_collateral, _flashloan, _swapTolerance);
+            : _swapFor(_collateral, _path, _flashloan, _swapTolerance);
     }
 
     /// @notice approximate USDC needed to unwind synthetix perp position
@@ -609,84 +630,76 @@ contract Zap is Reentrancy, Errors {
                                 UNISWAP
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice query amount required to receive a specific amount of token
-    /// @dev quoting is NOT gas efficient and should NOT be called on chain
-    /// @custom:integrator quoting function inclusion is for QoL purposes
-    /// @param _tokenIn address of token being swapped in
-    /// @param _tokenOut address of token being swapped out
-    /// @param _amountOut is the desired output amount
-    /// @param _fee of the token pool to consider for the pair
-    /// @param _sqrtPriceLimitX96 of the pool; cannot be exceeded for swap
-    /// @return amountIn required as the input for the swap in order
-    /// @return sqrtPriceX96After of the pool after the swap
-    /// @return initializedTicksCrossed during the quoted swap
-    /// @return gasEstimate of gas that the swap will consume
-    function quoteSwapFor(
-        address _tokenIn,
-        address _tokenOut,
-        uint256 _amountOut,
-        uint24 _fee,
-        uint160 _sqrtPriceLimitX96
-    )
-        external
-        returns (
-            uint256 amountIn,
-            uint160 sqrtPriceX96After,
-            uint32 initializedTicksCrossed,
-            uint256 gasEstimate
-        )
-    {
-        return IQuoter(QUOTER).quoteExactOutputSingle(
-            IQuoter.QuoteExactOutputSingleParams(
-                _tokenIn, _tokenOut, _amountOut, _fee, _sqrtPriceLimitX96
-            )
-        );
-    }
+    // /// @notice query amount required to receive a specific amount of token
+    // /// @dev quoting is NOT gas efficient and should NOT be called on chain
+    // /// @custom:integrator quoting function inclusion is for QoL purposes
+    // /// @param _tokenIn address of token being swapped in
+    // /// @param _tokenOut address of token being swapped out
+    // /// @param _amountOut is the desired output amount
+    // /// @param _fee of the token pool to consider for the pair
+    // /// @param _sqrtPriceLimitX96 of the pool; cannot be exceeded for swap
+    // /// @return amountIn required as the input for the swap in order
+    // /// @return sqrtPriceX96After of the pool after the swap
+    // /// @return initializedTicksCrossed during the quoted swap
+    // /// @return gasEstimate of gas that the swap will consume
+    // function quoteSwapFor(
+    //     bytes path,
+    //     uint256 _amountOut,
+    // )
+    //     external
+    //     returns (
+    //         uint256 amountIn
+    //     )
+    // {
+    //     return IQuoter(QUOTER).quoteExactOutput(_path, _amountOut);
+    // }
 
-    /// @notice query amount received for a specific amount of token to spend
-    /// @dev quoting is NOT gas efficient and should NOT be called on chain
-    /// @custom:integrator quoting function inclusion is for QoL purposes
-    /// @param _tokenIn address of token being swapped in
-    /// @param _tokenOut address of token being swapped out
-    /// @param _amountIn is the input amount to spend
-    /// @param _fee of the token pool to consider for the pair
-    /// @param _sqrtPriceLimitX96 of the pool; cannot be exceeded for swap
-    /// @return amountOut received as the output for the swap in order
-    /// @return sqrtPriceX96After of the pool after the swap
-    /// @return initializedTicksCrossed during the quoted swap
-    /// @return gasEstimate of gas that the swap will consume
-    function quoteSwapWith(
-        address _tokenIn,
-        address _tokenOut,
-        uint256 _amountIn,
-        uint24 _fee,
-        uint160 _sqrtPriceLimitX96
-    )
-        external
-        returns (
-            uint256 amountOut,
-            uint160 sqrtPriceX96After,
-            uint32 initializedTicksCrossed,
-            uint256 gasEstimate
-        )
-    {
-        return IQuoter(QUOTER).quoteExactInputSingle(
-            IQuoter.QuoteExactInputSingleParams(
-                _tokenIn, _tokenOut, _amountIn, _fee, _sqrtPriceLimitX96
-            )
-        );
-    }
+    // /// @notice query amount received for a specific amount of token to spend
+    // /// @dev quoting is NOT gas efficient and should NOT be called on chain
+    // /// @custom:integrator quoting function inclusion is for QoL purposes
+    // /// @param _tokenIn address of token being swapped in
+    // /// @param _tokenOut address of token being swapped out
+    // /// @param _amountIn is the input amount to spend
+    // /// @param _fee of the token pool to consider for the pair
+    // /// @param _sqrtPriceLimitX96 of the pool; cannot be exceeded for swap
+    // /// @return amountOut received as the output for the swap in order
+    // /// @return sqrtPriceX96After of the pool after the swap
+    // /// @return initializedTicksCrossed during the quoted swap
+    // /// @return gasEstimate of gas that the swap will consume
+    // function quoteSwapWith(
+    //     address _tokenIn,
+    //     address _tokenOut,
+    //     uint256 _amountIn,
+    //     uint24 _fee,
+    //     uint160 _sqrtPriceLimitX96
+    // )
+    //     external
+    //     returns (
+    //         uint256 amountOut,
+    //         uint160 sqrtPriceX96After,
+    //         uint32 initializedTicksCrossed,
+    //         uint256 gasEstimate
+    //     )
+    // {
+    //     return IQuoter(QUOTER).quoteExactInputSingle(
+    //         IQuoter.QuoteExactInputSingleParams(
+    //             _tokenIn, _tokenOut, _amountIn, _fee, _sqrtPriceLimitX96
+    //         )
+    //     );
+    // }
 
     /// @notice swap a tolerable amount of tokens for a specific amount of USDC
     /// @dev caller must grant token allowance to this contract
     /// @dev any excess token not spent will be returned to the caller
     /// @param _from address of token to swap
+    /// @param _path uniswap encoded swap path
     /// @param _amount amount of USDC to receive in return
     /// @param _tolerance or tolerable amount of token to spend
     /// @param _receiver address to receive USDC
     /// @return deducted amount of incoming token; i.e., amount spent
     function swapFor(
         address _from,
+        bytes memory _path,
         uint256 _amount,
         uint256 _tolerance,
         address _receiver
@@ -695,7 +708,7 @@ contract Zap is Reentrancy, Errors {
         returns (uint256 deducted)
     {
         _pull(_from, msg.sender, _tolerance);
-        deducted = _swapFor(_from, _amount, _tolerance);
+        deducted = _swapFor(_from, _path, _amount, _tolerance);
         _push(USDC, _receiver, _amount);
 
         if (deducted < _tolerance) {
@@ -707,6 +720,7 @@ contract Zap is Reentrancy, Errors {
     /// @dev following execution, this contract will hold the swapped USDC
     function _swapFor(
         address _from,
+        bytes memory _path,
         uint256 _amount,
         uint256 _tolerance
     )
@@ -715,19 +729,15 @@ contract Zap is Reentrancy, Errors {
     {
         IERC20(_from).approve(ROUTER, _tolerance);
 
-        IRouter.ExactOutputSingleParams memory params = IRouter
-            .ExactOutputSingleParams({
-            tokenIn: _from,
-            tokenOut: USDC,
-            fee: FEE_TIER,
+        IRouter.ExactOutputParams memory params = IRouter.ExactOutputParams({
+            path: _path,
             recipient: address(this),
+            deadline: block.timestamp,
             amountOut: _amount,
-            amountInMaximum: _tolerance,
-            sqrtPriceLimitX96: 0
+            amountInMaximum: _tolerance
         });
 
-        try IRouter(ROUTER).exactOutputSingle(params) returns (uint256 amountIn)
-        {
+        try IRouter(ROUTER).exactOutput(params) returns (uint256 amountIn) {
             deducted = amountIn;
         } catch Error(string memory reason) {
             revert SwapFailed(reason);
@@ -739,6 +749,7 @@ contract Zap is Reentrancy, Errors {
     /// @notice swap a specific amount of tokens for a tolerable amount of USDC
     /// @dev caller must grant token allowance to this contract
     /// @param _from address of token to swap
+    /// @param _path uniswap encoded swap path
     /// @param _amount of token to swap
     /// @param _tolerance tolerable amount of USDC to receive specified with 6
     /// decimals
@@ -746,6 +757,7 @@ contract Zap is Reentrancy, Errors {
     /// @return received amount of USDC
     function swapWith(
         address _from,
+        bytes memory _path,
         uint256 _amount,
         uint256 _tolerance,
         address _receiver
@@ -754,7 +766,7 @@ contract Zap is Reentrancy, Errors {
         returns (uint256 received)
     {
         _pull(_from, msg.sender, _amount);
-        received = _swapWith(_from, _amount, _tolerance);
+        received = _swapWith(_from, _path, _amount, _tolerance);
         _push(USDC, _receiver, received);
     }
 
@@ -762,6 +774,7 @@ contract Zap is Reentrancy, Errors {
     /// @dev following execution, this contract will hold the swapped USDC
     function _swapWith(
         address _from,
+        bytes memory _path,
         uint256 _amount,
         uint256 _tolerance
     )
@@ -770,19 +783,15 @@ contract Zap is Reentrancy, Errors {
     {
         IERC20(_from).approve(ROUTER, _amount);
 
-        IRouter.ExactInputSingleParams memory params = IRouter
-            .ExactInputSingleParams({
-            tokenIn: _from,
-            tokenOut: USDC,
-            fee: FEE_TIER,
+        IRouter.ExactInputParams memory params = IRouter.ExactInputParams({
+            path: _path,
             recipient: address(this),
+            deadline: block.timestamp,
             amountIn: _amount,
-            amountOutMinimum: _tolerance,
-            sqrtPriceLimitX96: 0
+            amountOutMinimum: _tolerance
         });
 
-        try IRouter(ROUTER).exactInputSingle(params) returns (uint256 amountOut)
-        {
+        try IRouter(ROUTER).exactInput(params) returns (uint256 amountOut) {
             received = amountOut;
         } catch Error(string memory reason) {
             revert SwapFailed(reason);
