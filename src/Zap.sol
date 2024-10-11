@@ -630,63 +630,41 @@ contract Zap is Reentrancy, Errors {
                                 UNISWAP
     //////////////////////////////////////////////////////////////*/
 
-    // /// @notice query amount required to receive a specific amount of token
-    // /// @dev quoting is NOT gas efficient and should NOT be called on chain
-    // /// @custom:integrator quoting function inclusion is for QoL purposes
-    // /// @param _tokenIn address of token being swapped in
-    // /// @param _tokenOut address of token being swapped out
-    // /// @param _amountOut is the desired output amount
-    // /// @param _fee of the token pool to consider for the pair
-    // /// @param _sqrtPriceLimitX96 of the pool; cannot be exceeded for swap
-    // /// @return amountIn required as the input for the swap in order
-    // /// @return sqrtPriceX96After of the pool after the swap
-    // /// @return initializedTicksCrossed during the quoted swap
-    // /// @return gasEstimate of gas that the swap will consume
-    // function quoteSwapFor(
-    //     bytes path,
-    //     uint256 _amountOut,
-    // )
-    //     external
-    //     returns (
-    //         uint256 amountIn
-    //     )
-    // {
-    //     return IQuoter(QUOTER).quoteExactOutput(_path, _amountOut);
-    // }
+    /// @notice query amount required to receive a specific amount of token
+    /// @dev this is the QuoterV1 interface
+    /// @dev _path MUST be encoded backwards for `exactOutput`
+    /// @dev quoting is NOT gas efficient and should NOT be called on chain
+    /// @custom:integrator quoting function inclusion is for QoL purposes
+    /// @param _path Uniswap swap path encoded in reverse order
+    /// @param _amountOut is the desired output amount
+    /// @return amountIn required as the input for the swap in order
+    function quoteSwapFor(
+        bytes memory _path,
+        uint256 _amountOut
+    )
+        external
+        returns (uint256 amountIn)
+    {
+        return IQuoter(QUOTER).quoteExactOutput(_path, _amountOut);
+    }
 
-    // /// @notice query amount received for a specific amount of token to spend
-    // /// @dev quoting is NOT gas efficient and should NOT be called on chain
-    // /// @custom:integrator quoting function inclusion is for QoL purposes
-    // /// @param _tokenIn address of token being swapped in
-    // /// @param _tokenOut address of token being swapped out
-    // /// @param _amountIn is the input amount to spend
-    // /// @param _fee of the token pool to consider for the pair
-    // /// @param _sqrtPriceLimitX96 of the pool; cannot be exceeded for swap
-    // /// @return amountOut received as the output for the swap in order
-    // /// @return sqrtPriceX96After of the pool after the swap
-    // /// @return initializedTicksCrossed during the quoted swap
-    // /// @return gasEstimate of gas that the swap will consume
-    // function quoteSwapWith(
-    //     address _tokenIn,
-    //     address _tokenOut,
-    //     uint256 _amountIn,
-    //     uint24 _fee,
-    //     uint160 _sqrtPriceLimitX96
-    // )
-    //     external
-    //     returns (
-    //         uint256 amountOut,
-    //         uint160 sqrtPriceX96After,
-    //         uint32 initializedTicksCrossed,
-    //         uint256 gasEstimate
-    //     )
-    // {
-    //     return IQuoter(QUOTER).quoteExactInputSingle(
-    //         IQuoter.QuoteExactInputSingleParams(
-    //             _tokenIn, _tokenOut, _amountIn, _fee, _sqrtPriceLimitX96
-    //         )
-    //     );
-    // }
+    /// @notice query amount received for a specific amount of token to spend
+    /// @dev this is the QuoterV1 interface
+    /// @dev _path MUST be encoded in order for `exactInput`
+    /// @dev quoting is NOT gas efficient and should NOT be called on chain
+    /// @custom:integrator quoting function inclusion is for QoL purposes
+    /// @param _path Uniswap swap path encoded in order
+    /// @param _amountIn is the input amount to spendp
+    /// @return amountOut received as the output for the swap in order
+    function quoteSwapWith(
+        bytes memory _path,
+        uint256 _amountIn
+    )
+        external
+        returns (uint256 amountOut)
+    {
+        return IQuoter(QUOTER).quoteExactInput(_path, _amountIn);
+    }
 
     /// @notice swap a tolerable amount of tokens for a specific amount of USDC
     /// @dev _path MUST be encoded backwards for `exactOutput`
