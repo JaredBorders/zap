@@ -732,7 +732,6 @@ contract Zap is Reentrancy, Errors {
         IRouter.ExactOutputParams memory params = IRouter.ExactOutputParams({
             path: _path,
             recipient: address(this),
-            deadline: block.timestamp,
             amountOut: _amount,
             amountInMaximum: _tolerance
         });
@@ -786,7 +785,6 @@ contract Zap is Reentrancy, Errors {
         IRouter.ExactInputParams memory params = IRouter.ExactInputParams({
             path: _path,
             recipient: address(this),
-            deadline: block.timestamp,
             amountIn: _amount,
             amountOutMinimum: _tolerance
         });

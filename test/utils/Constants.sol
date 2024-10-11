@@ -20,6 +20,9 @@ contract Constants {
     address constant ARBITRUM_SEPOLIA_WETH = address(0);
     address constant BASE_WETH = 0x4200000000000000000000000000000000000006;
 
+    uint24 constant FEE_30 = 3000;
+    uint24 constant FEE_100 = 10_000;
+
     /// @custom:synthetix
     bytes32 constant _ADMIN_PERMISSION = "ADMIN";
     bytes32 constant _WITHDRAW_PERMISSION = "WITHDRAW";

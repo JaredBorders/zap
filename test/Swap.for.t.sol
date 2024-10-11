@@ -17,7 +17,7 @@ import {
 
 contract SwapForTest is Bootstrap {
 
-    function test_swap_for_base() public base {
+    function test_swap_for_single_base() public base {
         uint256 amount = 100e6;
         uint256 tolerance = type(uint256).max / 4;
         _spin(ACTOR, weth, tolerance, address(zap));
@@ -26,7 +26,7 @@ contract SwapForTest is Bootstrap {
         vm.startPrank(ACTOR);
         zap.swapFor({
             _from: address(weth),
-            _path: "", //TODO
+            _path: abi.encodePacked(address(usdc), FEE_30, address(weth)),
             _amount: amount,
             _tolerance: tolerance,
             _receiver: ACTOR
@@ -37,7 +37,7 @@ contract SwapForTest is Bootstrap {
         vm.stopPrank();
     }
 
-    function test_swap_for_arbitrum(uint8 percentage) public arbitrum {
+    function test_swap_for_single_arbitrum(uint8 percentage) public arbitrum {
         vm.assume(percentage < 95 && percentage > 0);
 
         uint256 tolerance = type(uint256).max;
@@ -60,7 +60,7 @@ contract SwapForTest is Bootstrap {
 
         zap.swapFor({
             _from: address(weth),
-            _path: "", //TODO
+            _path: abi.encodePacked(address(usdc), FEE_30, address(weth)),
             _amount: amount,
             _tolerance: tolerance,
             _receiver: ACTOR
@@ -78,7 +78,7 @@ contract SwapForTest is Bootstrap {
     }
 
     /// @custom:todo
-    function test_swap_for_arbitrum_sepolia() public arbitrum_sepolia {}
+    function test_swap_for_single_arbitrum_sepolia() public arbitrum_sepolia {}
 
     bytes32 internal constant POOL_INIT_CODE_HASH =
         0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
