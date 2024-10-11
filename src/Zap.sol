@@ -689,6 +689,7 @@ contract Zap is Reentrancy, Errors {
     // }
 
     /// @notice swap a tolerable amount of tokens for a specific amount of USDC
+    /// @dev _path MUST be encoded backwards for `exactOutput`
     /// @dev caller must grant token allowance to this contract
     /// @dev any excess token not spent will be returned to the caller
     /// @param _from address of token to swap
@@ -746,6 +747,7 @@ contract Zap is Reentrancy, Errors {
     }
 
     /// @notice swap a specific amount of tokens for a tolerable amount of USDC
+    /// @dev _path MUST be encoded in order for `exactInput`
     /// @dev caller must grant token allowance to this contract
     /// @param _from address of token to swap
     /// @param _path uniswap encoded swap path
