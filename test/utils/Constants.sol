@@ -17,8 +17,10 @@ contract Constants {
 
     /// @custom:tokens
     address constant ARBITRUM_WETH = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
+    address constant ARBITRUM_TBTC = 0x6c84a8f1c29108F47a79964b5Fe888D4f4D0dE40;
     address constant ARBITRUM_SEPOLIA_WETH = address(0);
     address constant BASE_WETH = 0x4200000000000000000000000000000000000006;
+    address constant BASE_TBTC = 0x236aa50979D5f3De3Bd1Eeb40E81137F22ab794b;
 
     uint24 constant FEE_30 = 3000;
     uint24 constant FEE_100 = 10_000;

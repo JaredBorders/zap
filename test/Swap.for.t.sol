@@ -80,6 +80,66 @@ contract SwapForTest is Bootstrap {
     /// @custom:todo
     function test_swap_for_single_arbitrum_sepolia() public arbitrum_sepolia {}
 
+        function test_swap_for_multihop_base() public base {
+        uint256 amount = 100e6;
+        uint256 tolerance = type(uint256).max / 4;
+        _spin(ACTOR, weth, tolerance, address(zap));
+        assertEq(usdc.balanceOf(ACTOR), 0);
+        assertEq(weth.balanceOf(ACTOR), tolerance);
+        vm.startPrank(ACTOR);
+        zap.swapFor({
+            _from: address(weth),
+            _path: abi.encodePacked(address(usdc), FEE_30, address(weth)),
+            _amount: amount,
+            _tolerance: tolerance,
+            _receiver: ACTOR
+        });
+        assertGt(usdc.balanceOf(ACTOR), 0);
+        assertLt(weth.balanceOf(ACTOR), tolerance);
+        assertEq(weth.allowance(address(zap), zap.ROUTER()), 0);
+        vm.stopPrank();
+    }
+
+    function test_swap_for_multihop_arbitrum(uint8 percentage) public arbitrum {
+        vm.assume(percentage < 95 && percentage > 0);
+
+        uint256 tolerance = type(uint256).max;
+        _spin(ACTOR, weth, tolerance, address(zap));
+
+        address pool = IFactory(IRouter(zap.ROUTER()).factory()).getPool(
+            address(weth), address(usdc), zap.FEE_TIER()
+        );
+        uint256 depth = usdc.balanceOf(pool);
+        uint256 amount = depth * (percentage / 100);
+
+        assertEq(usdc.balanceOf(ACTOR), 0);
+        assertEq(weth.balanceOf(ACTOR), tolerance);
+
+        vm.startPrank(ACTOR);
+
+        if (amount == 0) {
+            vm.expectRevert();
+        }
+
+        zap.swapFor({
+            _from: address(weth),
+            _path: abi.encodePacked(address(usdc), FEE_30, address(weth)),
+            _amount: amount,
+            _tolerance: tolerance,
+            _receiver: ACTOR
+        });
+
+        assertTrue(
+            amount > 1e6
+                ? usdc.balanceOf(ACTOR) < 0
+                : usdc.balanceOf(ACTOR) == 0
+        );
+        assertLe(weth.balanceOf(ACTOR), tolerance);
+        assertEq(weth.allowance(address(zap), zap.ROUTER()), 0);
+
+        vm.stopPrank();
+    }
+
     bytes32 internal constant POOL_INIT_CODE_HASH =
         0xe34f199b19b2b4f47f68442619d555527d244f78a3297ea89325f843f87b8b54;
 

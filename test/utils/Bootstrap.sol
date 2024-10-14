@@ -36,6 +36,7 @@ contract Bootstrap is
     IERC20 susdc;
     IERC20 usdx;
     IERC20 weth;
+    IERC20 tbtc;
 
     function setUp() public {
         string memory BASE_RPC = vm.envString(BASE_RPC_REF);
@@ -73,6 +74,7 @@ contract Bootstrap is
         susdc = IERC20(spotMarket.getSynth(zap.SUSDC_SPOT_ID()));
         usdx = IERC20(BASE_USDX);
         weth = IERC20(BASE_WETH);
+        tbtc = IERC20(BASE_TBTC);
 
         _;
     }
@@ -101,7 +103,7 @@ contract Bootstrap is
         susdc = IERC20(spotMarket.getSynth(zap.SUSDC_SPOT_ID()));
         usdx = IERC20(ARBITRUM_USDX);
         weth = IERC20(ARBITRUM_WETH);
-
+        tbtc = IERC20(ARBITRUM_TBTC);
         _;
     }
 
