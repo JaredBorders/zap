@@ -458,8 +458,7 @@ contract Zap is Reentrancy, Errors {
             uint256 _zapTolerance,
             uint256 _unwrapTolerance,
             uint256 _swapTolerance,
-            /* address _receiver */
-        ) = abi.decode(
+        ) = /* address _receiver */ abi.decode(
             _params,
             (
                 uint128,
@@ -795,6 +794,7 @@ contract Zap is Reentrancy, Errors {
     /// @param _from address of sender
     /// @param _amount amount of token to pull
     function _pull(address _token, address _from, uint256 _amount) internal {
+        require(_amount > 0, PullFailed("Zero Amount"));
         IERC20 token = IERC20(_token);
 
         SafeERC20.safeTransferFrom(token, _from, address(this), _amount);
@@ -812,6 +812,7 @@ contract Zap is Reentrancy, Errors {
         internal
     {
         require(_receiver != address(0), PushFailed("Zero Address"));
+        require(_amount > 0, PushFailed("Zero Amount"));
         IERC20 token = IERC20(_token);
 
         SafeERC20.safeTransfer(token, _receiver, _amount);
