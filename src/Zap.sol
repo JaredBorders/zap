@@ -643,7 +643,12 @@ contract Zap is Reentrancy, Errors {
         uint256 _amountOut
     )
         external
-        returns (uint256 amountIn)
+        returns (
+            uint256 amountIn,
+            uint160[] memory sqrtPriceX96AfterList,
+            uint32[] memory initializedTicksCrossedList,
+            uint256 gasEstimate
+        )
     {
         return IQuoter(QUOTER).quoteExactOutput(_path, _amountOut);
     }
@@ -661,7 +666,12 @@ contract Zap is Reentrancy, Errors {
         uint256 _amountIn
     )
         external
-        returns (uint256 amountOut)
+        returns (
+            uint256 amountOut,
+            uint160[] memory sqrtPriceX96AfterList,
+            uint32[] memory initializedTicksCrossedList,
+            uint256 gasEstimate
+        )
     {
         return IQuoter(QUOTER).quoteExactInput(_path, _amountIn);
     }
