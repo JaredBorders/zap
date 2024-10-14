@@ -80,7 +80,7 @@ contract SwapForTest is Bootstrap {
     /// @custom:todo
     function test_swap_for_single_arbitrum_sepolia() public arbitrum_sepolia {}
 
-        function test_swap_for_multihop_base() public base {
+    function test_swap_for_multihop_base() public base {
         uint256 amount = 100e6;
         uint256 tolerance = type(uint256).max / 4;
         _spin(ACTOR, weth, tolerance, address(zap));
@@ -100,7 +100,10 @@ contract SwapForTest is Bootstrap {
         vm.stopPrank();
     }
 
-    function test_swap_for_multihop_arbitrum(uint8 percentage) public arbitrum {
+    function test_swap_for_multihop_arbitrum(uint8 percentage)
+        public
+        arbitrum
+    {
         vm.assume(percentage < 95 && percentage > 0);
 
         uint256 tolerance = type(uint256).max;
