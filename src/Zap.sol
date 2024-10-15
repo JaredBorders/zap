@@ -418,13 +418,14 @@ contract Zap is Reentrancy, Errors {
     {
         stage = Stage.LEVEL2;
 
-        (,,, address _collateral,,,, address _receiver) = abi.decode(
+        (,,, address _collateral,,,,, address _receiver) = abi.decode(
             _params,
             (
                 uint128,
                 uint128,
                 uint256,
                 address,
+                bytes,
                 uint256,
                 uint256,
                 uint256,
