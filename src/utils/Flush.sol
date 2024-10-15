@@ -13,6 +13,9 @@ contract Flush {
     /// @notice thrown when caller is not the plumber
     error OnlyPlumber();
 
+    ///@notice emitted when a new plumber is designated
+    event PlumberDesignated(address plumber);
+
     constructor(address _plumber) {
         PLUMBER = _plumber;
     }
@@ -34,6 +37,7 @@ contract Flush {
     function designatePlumber(address _newPlumber) external {
         require(msg.sender == PLUMBER, OnlyPlumber());
         PLUMBER = _newPlumber;
+        emit PlumberDesignated(_newPlumber);
     }
 
 }
