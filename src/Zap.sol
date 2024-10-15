@@ -352,6 +352,7 @@ contract Zap is Reentrancy, Errors {
     /// @param _collateralId synthetix market id of collateral
     /// @param _collateralAmount amount of collateral to unwind
     /// @param _collateral address of collateral to unwind
+    /// @param _path Uniswap swap path encoded in reverse order
     /// @param _zapTolerance acceptable slippage for zapping
     /// @param _unwrapTolerance acceptable slippage for unwrapping
     /// @param _swapTolerance acceptable slippage for swapping
@@ -483,6 +484,7 @@ contract Zap is Reentrancy, Errors {
             // zap USDC from flashloan into USDx;
             // ALL USDC flashloaned from Aave is zapped into USDx
             uint256 usdxAmount = _zapIn(_flashloan, _zapTolerance);
+
             // burn USDx to pay off synthetix perp position debt;
             // debt is denominated in USD and thus repaid with USDx
             _burn(usdxAmount, _accountId);
@@ -490,7 +492,6 @@ contract Zap is Reentrancy, Errors {
             /// @dev given the USDC buffer, an amount of USDx
             /// necessarily less than the buffer will remain (<$1);
             /// this amount is captured by the protocol
-
             // withdraw synthetix perp position collateral to this contract;
             // i.e., # of sETH, # of sUSDe, # of sUSDC (...)
             _withdraw(_collateralId, _collateralAmount, _accountId);
@@ -681,7 +682,7 @@ contract Zap is Reentrancy, Errors {
     /// @dev caller must grant token allowance to this contract
     /// @dev any excess token not spent will be returned to the caller
     /// @param _from address of token to swap
-    /// @param _path uniswap encoded swap path
+    /// @param _path uniswap swap path encoded in reverse order
     /// @param _amount amount of USDC to receive in return
     /// @param _tolerance or tolerable amount of token to spend
     /// @param _receiver address to receive USDC
@@ -738,7 +739,7 @@ contract Zap is Reentrancy, Errors {
     /// @dev _path MUST be encoded in order for `exactInput`
     /// @dev caller must grant token allowance to this contract
     /// @param _from address of token to swap
-    /// @param _path uniswap encoded swap path
+    /// @param _path uniswap swap path encoded in order
     /// @param _amount of token to swap
     /// @param _tolerance tolerable amount of USDC to receive specified with 6
     /// decimals
