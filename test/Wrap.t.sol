@@ -23,7 +23,7 @@ contract WrapTest is Bootstrap {
             _token: address(usdc),
             _synthId: zap.SUSDC_SPOT_ID(),
             _amount: amount,
-            _tolerance: DEFAULT_TOLERANCE,
+            _minAmountOut: DEFAULT_TOLERANCE,
             _receiver: ACTOR
         });
         vm.stopPrank();
@@ -41,7 +41,7 @@ contract WrapTest is Bootstrap {
             _token: address(usdc),
             _synthId: zap.SUSDC_SPOT_ID(),
             _amount: amount,
-            _tolerance: DEFAULT_TOLERANCE,
+            _minAmountOut: DEFAULT_TOLERANCE,
             _receiver: ACTOR
         });
         vm.stopPrank();

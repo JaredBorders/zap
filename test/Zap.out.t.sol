@@ -21,7 +21,7 @@ contract ZapOutTest is Bootstrap {
         vm.startPrank(ACTOR);
         uint256 zapped = zap.zapOut({
             _amount: amount,
-            _tolerance: DEFAULT_TOLERANCE,
+            _minAmountOut: DEFAULT_TOLERANCE,
             _receiver: ACTOR
         });
         vm.stopPrank();
@@ -37,7 +37,7 @@ contract ZapOutTest is Bootstrap {
         vm.startPrank(ACTOR);
         uint256 zapped = zap.zapOut({
             _amount: amount,
-            _tolerance: DEFAULT_TOLERANCE,
+            _minAmountOut: DEFAULT_TOLERANCE,
             _receiver: ACTOR
         });
         vm.stopPrank();
