@@ -7,6 +7,7 @@ import {IPerpsMarket, ISpotMarket} from "./interfaces/ISynthetix.sol";
 import {IQuoter, IRouter} from "./interfaces/IUniswap.sol";
 import {Errors} from "./utils/Errors.sol";
 import {Reentrancy} from "./utils/Reentrancy.sol";
+import {SafeERC20} from "./utils/SafeTransferERC20.sol";
 
 /// @title zap
 /// @custom:synthetix zap USDC into and out of USDx
@@ -287,16 +288,12 @@ contract Zap is Reentrancy, Errors {
         returns (uint256 received)
     {
         IERC20(USDX).approve(SPOT_MARKET, _amount);
-        try ISpotMarket(SPOT_MARKET).buy({
+        (received,) = ISpotMarket(SPOT_MARKET).buy({
             marketId: _synthId,
             usdAmount: _amount,
             minAmountReceived: _tolerance,
             referrer: REFERRER
-        }) returns (uint256 amount, ISpotMarket.Data memory) {
-            received = amount;
-        } catch Error(string memory reason) {
-            revert BuyFailed(reason);
-        }
+        });
     }
 
     /// @notice sell synth via synthetix spot market
@@ -461,8 +458,7 @@ contract Zap is Reentrancy, Errors {
             uint256 _zapTolerance,
             uint256 _unwrapTolerance,
             uint256 _swapTolerance,
-            /* address _receiver */
-        ) = abi.decode(
+        ) = /* address _receiver */ abi.decode(
             _params,
             (
                 uint128,
@@ -804,47 +800,29 @@ contract Zap is Reentrancy, Errors {
     /// @param _token address of token to pull
     /// @param _from address of sender
     /// @param _amount amount of token to pull
-    /// @return success boolean representing execution success
-    function _pull(
-        address _token,
-        address _from,
-        uint256 _amount
-    )
-        internal
-        returns (bool)
-    {
+    function _pull(address _token, address _from, uint256 _amount) internal {
+        require(_amount > 0, PullFailed("Zero Amount"));
         IERC20 token = IERC20(_token);
 
-        try token.transferFrom(_from, address(this), _amount) returns (
-            bool result
-        ) {
-            return result;
-        } catch Error(string memory reason) {
-            revert PullFailed(bytes(reason));
-        }
+        SafeERC20.safeTransferFrom(token, _from, address(this), _amount);
     }
 
     /// @dev push tokens to a receiver
     /// @param _token address of token to push
     /// @param _receiver address of receiver
     /// @param _amount amount of token to push
-    /// @return success boolean representing execution success
     function _push(
         address _token,
         address _receiver,
         uint256 _amount
     )
         internal
-        returns (bool)
     {
         require(_receiver != address(0), PushFailed("Zero Address"));
+        require(_amount > 0, PushFailed("Zero Amount"));
         IERC20 token = IERC20(_token);
 
-        try token.transfer(_receiver, _amount) returns (bool result) {
-            return result;
-        } catch Error(string memory reason) {
-            revert PushFailed(bytes(reason));
-        }
+        SafeERC20.safeTransfer(token, _receiver, _amount);
     }
 
 }
