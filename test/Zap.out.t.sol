@@ -1,9 +1,18 @@
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.27;
 
-import {Bootstrap, Constants, IERC20, IPerpsMarket, IPool, ISpotMarket, Zap} from "./utils/Bootstrap.sol";
+import {
+    Bootstrap,
+    Constants,
+    IERC20,
+    IPerpsMarket,
+    IPool,
+    ISpotMarket,
+    Zap
+} from "./utils/Bootstrap.sol";
 
 contract ZapOutTest is Bootstrap {
+
     function test_zap_out_base(uint64 amount) public base {
         vm.assume(amount > 1e18);
         _spin(ACTOR, usdx, amount, address(zap));
@@ -37,4 +46,5 @@ contract ZapOutTest is Bootstrap {
         assertEq(usdc.balanceOf(ACTOR), zapped);
         assertEq(usdx.balanceOf(ACTOR), 0);
     }
+
 }
