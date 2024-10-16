@@ -102,10 +102,7 @@ contract SwapForTest is Bootstrap {
         vm.stopPrank();
     }
 
-    function test_swap_for_multihop_arbitrum()
-        public
-        arbitrum
-    {
+    function test_swap_for_multihop_arbitrum() public arbitrum {
         uint256 amount = 100e6;
         uint256 _maxAmountIn = type(uint256).max / 4;
         _spin(ACTOR, tbtc, _maxAmountIn, address(zap));
