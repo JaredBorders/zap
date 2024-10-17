@@ -6,7 +6,6 @@ import {
     Constants,
     IERC20,
     IFactory,
-    IFactory,
     IPerpsMarket,
     IPool,
     IRouter,
