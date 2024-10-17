@@ -1,5 +1,5 @@
 # Zap
-[Git Source](https://github.com/moss-eth/zap/blob/35e517eceade43560c1eb54d47de1fc3aa949331/src/Zap.sol)
+[Git Source](https://github.com/moss-eth/zap/blob/837dea0ecd01a90cfb6c452fb41dfd93b5be22d4/src/Zap.sol)
 
 **Inherits:**
 [Reentrancy](/src/utils/Reentrancy.sol/contract.Reentrancy.md), [Errors](/src/utils/Errors.sol/contract.Errors.md)
@@ -163,7 +163,7 @@ zap USDC into USDx
 ```solidity
 function zapIn(
     uint256 _amount,
-    uint256 _tolerance,
+    uint256 _minAmountOut,
     address _receiver
 )
     external
@@ -174,7 +174,7 @@ function zapIn(
 |Name|Type|Description|
 |----|----|-----------|
 |`_amount`|`uint256`|amount of USDC to zap|
-|`_tolerance`|`uint256`|acceptable slippage for wrapping and selling|
+|`_minAmountOut`|`uint256`|acceptable slippage for wrapping and selling|
 |`_receiver`|`address`|address to receive USDx|
 
 **Returns**
@@ -194,7 +194,7 @@ function zapIn(
 ```solidity
 function _zapIn(
     uint256 _amount,
-    uint256 _tolerance
+    uint256 _minAmountOut
 )
     internal
     returns (uint256 zapped);
@@ -210,7 +210,7 @@ zap USDx into USDC
 ```solidity
 function zapOut(
     uint256 _amount,
-    uint256 _tolerance,
+    uint256 _minAmountOut,
     address _receiver
 )
     external
@@ -221,7 +221,7 @@ function zapOut(
 |Name|Type|Description|
 |----|----|-----------|
 |`_amount`|`uint256`|amount of USDx to zap|
-|`_tolerance`|`uint256`|acceptable slippage for buying and unwrapping|
+|`_minAmountOut`|`uint256`|acceptable slippage for buying and unwrapping|
 |`_receiver`|`address`|address to receive USDC|
 
 **Returns**
@@ -241,7 +241,7 @@ function zapOut(
 ```solidity
 function _zapOut(
     uint256 _amount,
-    uint256 _tolerance
+    uint256 _minAmountOut
 )
     internal
     returns (uint256 zapped);
@@ -259,7 +259,7 @@ function wrap(
     address _token,
     uint128 _synthId,
     uint256 _amount,
-    uint256 _tolerance,
+    uint256 _minAmountOut,
     address _receiver
 )
     external
@@ -272,7 +272,7 @@ function wrap(
 |`_token`|`address`|address of token to wrap|
 |`_synthId`|`uint128`|synthetix market id of synth to wrap into|
 |`_amount`|`uint256`|amount of token to wrap|
-|`_tolerance`|`uint256`|acceptable slippage for wrapping|
+|`_minAmountOut`|`uint256`|acceptable slippage for wrapping|
 |`_receiver`|`address`|address to receive wrapped synth|
 
 **Returns**
@@ -294,7 +294,7 @@ function _wrap(
     address _token,
     uint128 _synthId,
     uint256 _amount,
-    uint256 _tolerance
+    uint256 _minAmountOut
 )
     internal
     returns (uint256 wrapped);
@@ -312,7 +312,7 @@ function unwrap(
     address _token,
     uint128 _synthId,
     uint256 _amount,
-    uint256 _tolerance,
+    uint256 _minAmountOut,
     address _receiver
 )
     external
@@ -325,7 +325,7 @@ function unwrap(
 |`_token`|`address`|address of token to unwrap into|
 |`_synthId`|`uint128`|synthetix market id of synth to unwrap|
 |`_amount`|`uint256`|amount of synth to unwrap|
-|`_tolerance`|`uint256`|acceptable slippage for unwrapping|
+|`_minAmountOut`|`uint256`|acceptable slippage for unwrapping|
 |`_receiver`|`address`|address to receive unwrapped token|
 
 **Returns**
@@ -346,7 +346,7 @@ function unwrap(
 function _unwrap(
     uint128 _synthId,
     uint256 _amount,
-    uint256 _tolerance
+    uint256 _minAmountOut
 )
     private
     returns (uint256 unwrapped);
@@ -363,7 +363,7 @@ buy synth via synthetix spot market
 function buy(
     uint128 _synthId,
     uint256 _amount,
-    uint256 _tolerance,
+    uint256 _minAmountOut,
     address _receiver
 )
     external
@@ -375,7 +375,7 @@ function buy(
 |----|----|-----------|
 |`_synthId`|`uint128`|synthetix market id of synth to buy|
 |`_amount`|`uint256`|amount of USDX to spend|
-|`_tolerance`|`uint256`|acceptable slippage for buying|
+|`_minAmountOut`|`uint256`|acceptable slippage for buying|
 |`_receiver`|`address`|address to receive synth|
 
 **Returns**
@@ -397,7 +397,7 @@ function buy(
 function _buy(
     uint128 _synthId,
     uint256 _amount,
-    uint256 _tolerance
+    uint256 _minAmountOut
 )
     internal
     returns (uint256 received);
@@ -414,7 +414,7 @@ sell synth via synthetix spot market
 function sell(
     uint128 _synthId,
     uint256 _amount,
-    uint256 _tolerance,
+    uint256 _minAmountOut,
     address _receiver
 )
     external
@@ -426,7 +426,7 @@ function sell(
 |----|----|-----------|
 |`_synthId`|`uint128`|synthetix market id of synth to sell|
 |`_amount`|`uint256`|amount of synth to sell|
-|`_tolerance`|`uint256`|acceptable slippage for selling|
+|`_minAmountOut`|`uint256`|acceptable slippage for selling|
 |`_receiver`|`address`|address to receive USDX|
 
 **Returns**
@@ -447,7 +447,7 @@ function sell(
 function _sell(
     uint128 _synthId,
     uint256 _amount,
-    uint256 _tolerance
+    uint256 _minAmountOut
 )
     internal
     returns (uint256 received);
@@ -772,7 +772,7 @@ function swapFor(
     address _from,
     bytes memory _path,
     uint256 _amount,
-    uint256 _tolerance,
+    uint256 _maxAmountIn,
     address _receiver
 )
     external
@@ -785,7 +785,7 @@ function swapFor(
 |`_from`|`address`|address of token to swap|
 |`_path`|`bytes`|uniswap swap path encoded in reverse order|
 |`_amount`|`uint256`|amount of USDC to receive in return|
-|`_tolerance`|`uint256`|or tolerable amount of token to spend|
+|`_maxAmountIn`|`uint256`|max amount of token to spend|
 |`_receiver`|`address`|address to receive USDC|
 
 **Returns**
@@ -807,7 +807,7 @@ function _swapFor(
     address _from,
     bytes memory _path,
     uint256 _amount,
-    uint256 _tolerance
+    uint256 _maxAmountIn
 )
     internal
     returns (uint256 deducted);
@@ -827,7 +827,7 @@ function swapWith(
     address _from,
     bytes memory _path,
     uint256 _amount,
-    uint256 _tolerance,
+    uint256 _amountOutMinimum,
     address _receiver
 )
     external
@@ -840,7 +840,7 @@ function swapWith(
 |`_from`|`address`|address of token to swap|
 |`_path`|`bytes`|uniswap swap path encoded in order|
 |`_amount`|`uint256`|of token to swap|
-|`_tolerance`|`uint256`|tolerable amount of USDC to receive specified with 6 decimals|
+|`_amountOutMinimum`|`uint256`|tolerable amount of USDC to receive specified with 6 decimals|
 |`_receiver`|`address`|address to receive USDC|
 
 **Returns**
@@ -862,7 +862,7 @@ function _swapWith(
     address _from,
     bytes memory _path,
     uint256 _amount,
-    uint256 _tolerance
+    uint256 _amountOutMinimum
 )
     internal
     returns (uint256 received);
