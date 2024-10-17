@@ -746,7 +746,8 @@ contract Zap is Reentrancy, Errors {
     /// @param _from address of token to swap
     /// @param _path uniswap swap path encoded in order
     /// @param _amount of token to swap
-    /// @param _tolerance tolerable amount of USDC to receive specified with 6
+    /// @param _amountOutMinimum tolerable amount of USDC to receive specified
+    /// with 6
     /// decimals
     /// @param _receiver address to receive USDC
     /// @return received amount of USDC
@@ -754,14 +755,14 @@ contract Zap is Reentrancy, Errors {
         address _from,
         bytes memory _path,
         uint256 _amount,
-        uint256 _tolerance,
+        uint256 _amountOutMinimum,
         address _receiver
     )
         external
         returns (uint256 received)
     {
         _pull(_from, msg.sender, _amount);
-        received = _swapWith(_from, _path, _amount, _tolerance);
+        received = _swapWith(_from, _path, _amount, _amountOutMinimum);
         _push(USDC, _receiver, received);
     }
 
@@ -771,7 +772,7 @@ contract Zap is Reentrancy, Errors {
         address _from,
         bytes memory _path,
         uint256 _amount,
-        uint256 _tolerance
+        uint256 _amountOutMinimum
     )
         internal
         returns (uint256 received)
@@ -782,7 +783,7 @@ contract Zap is Reentrancy, Errors {
             path: _path,
             recipient: address(this),
             amountIn: _amount,
-            amountOutMinimum: _tolerance
+            amountOutMinimum: _amountOutMinimum
         });
 
         try IRouter(ROUTER).exactInput(params) returns (uint256 amountOut) {
