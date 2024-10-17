@@ -20,7 +20,7 @@ contract SellTest is Bootstrap {
         (uint256 received,) = zap.buy({
             _synthId: zap.SUSDC_SPOT_ID(),
             _amount: amount,
-            _tolerance: DEFAULT_TOLERANCE,
+            _minAmountOut: DEFAULT_TOLERANCE,
             _receiver: ACTOR
         });
         assertEq(usdx.balanceOf(ACTOR), 0);
@@ -29,7 +29,7 @@ contract SellTest is Bootstrap {
         received = zap.sell({
             _synthId: zap.SUSDC_SPOT_ID(),
             _amount: received,
-            _tolerance: DEFAULT_TOLERANCE,
+            _minAmountOut: DEFAULT_TOLERANCE,
             _receiver: ACTOR
         });
         vm.stopPrank();
@@ -44,7 +44,7 @@ contract SellTest is Bootstrap {
         (uint256 received,) = zap.buy({
             _synthId: zap.SUSDC_SPOT_ID(),
             _amount: amount,
-            _tolerance: DEFAULT_TOLERANCE,
+            _minAmountOut: DEFAULT_TOLERANCE,
             _receiver: ACTOR
         });
         assertEq(usdx.balanceOf(ACTOR), 0);
@@ -53,7 +53,7 @@ contract SellTest is Bootstrap {
         received = zap.sell({
             _synthId: zap.SUSDC_SPOT_ID(),
             _amount: received,
-            _tolerance: DEFAULT_TOLERANCE,
+            _minAmountOut: DEFAULT_TOLERANCE,
             _receiver: ACTOR
         });
         vm.stopPrank();

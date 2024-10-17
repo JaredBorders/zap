@@ -22,7 +22,7 @@ contract BuyTest is Bootstrap {
         (uint256 received, address synth) = zap.buy({
             _synthId: zap.SUSDC_SPOT_ID(),
             _amount: amount,
-            _tolerance: DEFAULT_TOLERANCE,
+            _minAmountOut: DEFAULT_TOLERANCE,
             _receiver: ACTOR
         });
         vm.stopPrank();
@@ -40,7 +40,7 @@ contract BuyTest is Bootstrap {
         (uint256 received, address synth) = zap.buy({
             _synthId: zap.SUSDC_SPOT_ID(),
             _amount: amount,
-            _tolerance: DEFAULT_TOLERANCE,
+            _minAmountOut: DEFAULT_TOLERANCE,
             _receiver: ACTOR
         });
         vm.stopPrank();

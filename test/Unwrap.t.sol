@@ -21,7 +21,7 @@ contract UnwrapTest is Bootstrap {
             _token: address(usdc),
             _synthId: zap.SUSDC_SPOT_ID(),
             _amount: amount,
-            _tolerance: DEFAULT_TOLERANCE,
+            _minAmountOut: DEFAULT_TOLERANCE,
             _receiver: ACTOR
         });
         assertEq(usdc.balanceOf(ACTOR), 0);
@@ -31,7 +31,7 @@ contract UnwrapTest is Bootstrap {
             _token: address(usdc),
             _synthId: zap.SUSDC_SPOT_ID(),
             _amount: wrapped,
-            _tolerance: DEFAULT_TOLERANCE,
+            _minAmountOut: DEFAULT_TOLERANCE,
             _receiver: ACTOR
         });
         vm.stopPrank();
@@ -47,7 +47,7 @@ contract UnwrapTest is Bootstrap {
             _token: address(usdc),
             _synthId: zap.SUSDC_SPOT_ID(),
             _amount: amount,
-            _tolerance: DEFAULT_TOLERANCE,
+            _minAmountOut: DEFAULT_TOLERANCE,
             _receiver: ACTOR
         });
         assertEq(usdc.balanceOf(ACTOR), 0);
@@ -57,7 +57,7 @@ contract UnwrapTest is Bootstrap {
             _token: address(usdc),
             _synthId: zap.SUSDC_SPOT_ID(),
             _amount: wrapped,
-            _tolerance: DEFAULT_TOLERANCE,
+            _minAmountOut: DEFAULT_TOLERANCE,
             _receiver: ACTOR
         });
         vm.stopPrank();
