@@ -60,7 +60,7 @@ contract SwapForTest is Bootstrap {
 
         zap.swapFor({
             _from: address(weth),
-            _path: abi.encodePacked(address(usdc), FEE_30, address(weth)),
+            _path: abi.encodePacked(address(usdc), FEE_5, address(weth)),
             _amount: amount,
             _maxAmountIn: _maxAmountIn,
             _receiver: ACTOR
@@ -108,20 +108,21 @@ contract SwapForTest is Bootstrap {
         _spin(ACTOR, tbtc, _maxAmountIn, address(zap));
         assertEq(usdc.balanceOf(ACTOR), 0);
         assertEq(tbtc.balanceOf(ACTOR), _maxAmountIn);
+
         vm.startPrank(ACTOR);
         zap.swapFor({
             _from: address(tbtc),
             _path: abi.encodePacked(
-                address(usdc), FEE_30, address(weth), FEE_30, address(tbtc)
+                address(usdc), FEE_5, address(weth), FEE_5, address(tbtc)
             ),
             _amount: amount,
             _maxAmountIn: _maxAmountIn,
             _receiver: ACTOR
         });
-        // assertGt(usdc.balanceOf(ACTOR), 0);
-        // assertLt(tbtc.balanceOf(ACTOR), _maxAmountIn);
-        // assertEq(tbtc.allowance(address(zap), zap.ROUTER()), 0);
-        // vm.stopPrank();
+        assertGt(usdc.balanceOf(ACTOR), 0);
+        assertLt(tbtc.balanceOf(ACTOR), _maxAmountIn);
+        assertEq(tbtc.allowance(address(zap), zap.ROUTER()), 0);
+        vm.stopPrank();
     }
 
     bytes32 internal constant POOL_INIT_CODE_HASH =

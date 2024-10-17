@@ -22,6 +22,8 @@ contract Constants {
     address constant BASE_WETH = 0x4200000000000000000000000000000000000006;
     address constant BASE_TBTC = 0x236aa50979D5f3De3Bd1Eeb40E81137F22ab794b;
 
+    uint24 constant FEE_1 = 100;
+    uint24 constant FEE_5 = 500;
     uint24 constant FEE_30 = 3000;
     uint24 constant FEE_100 = 10_000;
 
