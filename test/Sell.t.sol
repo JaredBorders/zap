@@ -20,21 +20,21 @@ contract SellTest is Bootstrap {
         (uint256 received,) = zap.buy({
             _synthId: zap.SUSDC_SPOT_ID(),
             _amount: amount,
-            _tolerance: DEFAULT_TOLERANCE,
+            _minAmountOut: DEFAULT_MIN_AMOUNT_OUT,
             _receiver: ACTOR
         });
         assertEq(usdx.balanceOf(ACTOR), 0);
-        assertGe(susdc.balanceOf(ACTOR), DEFAULT_TOLERANCE);
+        assertGe(susdc.balanceOf(ACTOR), DEFAULT_MIN_AMOUNT_OUT);
         susdc.approve(address(zap), type(uint256).max);
         received = zap.sell({
             _synthId: zap.SUSDC_SPOT_ID(),
             _amount: received,
-            _tolerance: DEFAULT_TOLERANCE,
+            _minAmountOut: DEFAULT_MIN_AMOUNT_OUT,
             _receiver: ACTOR
         });
         vm.stopPrank();
-        assertGe(received, DEFAULT_TOLERANCE);
-        assertGe(usdx.balanceOf(ACTOR), DEFAULT_TOLERANCE);
+        assertGe(received, DEFAULT_MIN_AMOUNT_OUT);
+        assertGe(usdx.balanceOf(ACTOR), DEFAULT_MIN_AMOUNT_OUT);
         assertEq(susdc.balanceOf(ACTOR), 0);
     }
 
@@ -44,21 +44,21 @@ contract SellTest is Bootstrap {
         (uint256 received,) = zap.buy({
             _synthId: zap.SUSDC_SPOT_ID(),
             _amount: amount,
-            _tolerance: DEFAULT_TOLERANCE,
+            _minAmountOut: DEFAULT_MIN_AMOUNT_OUT,
             _receiver: ACTOR
         });
         assertEq(usdx.balanceOf(ACTOR), 0);
-        assertGe(susdc.balanceOf(ACTOR), DEFAULT_TOLERANCE);
+        assertGe(susdc.balanceOf(ACTOR), DEFAULT_MIN_AMOUNT_OUT);
         susdc.approve(address(zap), type(uint256).max);
         received = zap.sell({
             _synthId: zap.SUSDC_SPOT_ID(),
             _amount: received,
-            _tolerance: DEFAULT_TOLERANCE,
+            _minAmountOut: DEFAULT_MIN_AMOUNT_OUT,
             _receiver: ACTOR
         });
         vm.stopPrank();
-        assertGe(received, DEFAULT_TOLERANCE);
-        assertGe(usdx.balanceOf(ACTOR), DEFAULT_TOLERANCE);
+        assertGe(received, DEFAULT_MIN_AMOUNT_OUT);
+        assertGe(usdx.balanceOf(ACTOR), DEFAULT_MIN_AMOUNT_OUT);
         assertEq(susdc.balanceOf(ACTOR), 0);
     }
 

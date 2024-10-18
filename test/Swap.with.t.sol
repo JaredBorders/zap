@@ -20,8 +20,8 @@ contract SwapWithTest is Bootstrap {
     function test_swap_with_base(uint8 percentage) public base {
         vm.assume(percentage < 95 && percentage > 0);
 
-        uint256 tolerance = type(uint256).max;
-        _spin(ACTOR, weth, tolerance, address(zap));
+        uint256 amountOutMinimum = type(uint256).max;
+        _spin(ACTOR, weth, amountOutMinimum, address(zap));
 
         address pool = IFactory(IRouter(zap.ROUTER()).factory()).getPool(
             address(weth), address(usdc), zap.FEE_TIER()
@@ -30,7 +30,7 @@ contract SwapWithTest is Bootstrap {
         uint256 amount = depth * (percentage / 100);
 
         assertEq(usdc.balanceOf(ACTOR), 0);
-        assertEq(weth.balanceOf(ACTOR), tolerance);
+        assertEq(weth.balanceOf(ACTOR), amountOutMinimum);
 
         vm.startPrank(ACTOR);
 
@@ -42,7 +42,7 @@ contract SwapWithTest is Bootstrap {
             _from: address(weth),
             _path: abi.encodePacked(address(weth), FEE_30, address(usdx)),
             _amount: amount,
-            _tolerance: tolerance,
+            _amountOutMinimum: amountOutMinimum,
             _receiver: ACTOR
         });
 
@@ -51,7 +51,7 @@ contract SwapWithTest is Bootstrap {
                 ? usdc.balanceOf(ACTOR) < 0
                 : usdc.balanceOf(ACTOR) == 0
         );
-        assertLe(weth.balanceOf(ACTOR), tolerance);
+        assertLe(weth.balanceOf(ACTOR), amountOutMinimum);
         assertEq(weth.allowance(address(zap), zap.ROUTER()), 0);
 
         vm.stopPrank();
@@ -61,8 +61,8 @@ contract SwapWithTest is Bootstrap {
     function test_swap_with_arbitrum(uint8 percentage) public arbitrum {
         vm.assume(percentage < 95 && percentage > 0);
 
-        uint256 tolerance = type(uint256).max;
-        _spin(ACTOR, weth, tolerance, address(zap));
+        uint256 amountOutMinimum = type(uint256).max;
+        _spin(ACTOR, weth, amountOutMinimum, address(zap));
 
         address pool = IFactory(IRouter(zap.ROUTER()).factory()).getPool(
             address(weth), address(usdc), zap.FEE_TIER()
@@ -71,7 +71,7 @@ contract SwapWithTest is Bootstrap {
         uint256 amount = depth * (percentage / 100);
 
         assertEq(usdc.balanceOf(ACTOR), 0);
-        assertEq(weth.balanceOf(ACTOR), tolerance);
+        assertEq(weth.balanceOf(ACTOR), amountOutMinimum);
 
         vm.startPrank(ACTOR);
 
@@ -83,7 +83,7 @@ contract SwapWithTest is Bootstrap {
             _from: address(weth),
             _path: abi.encodePacked(address(weth), FEE_30, address(usdc)),
             _amount: amount,
-            _tolerance: tolerance,
+            _amountOutMinimum: amountOutMinimum,
             _receiver: ACTOR
         });
 
@@ -92,7 +92,7 @@ contract SwapWithTest is Bootstrap {
                 ? usdc.balanceOf(ACTOR) < 0
                 : usdc.balanceOf(ACTOR) == 0
         );
-        assertLe(weth.balanceOf(ACTOR), tolerance);
+        assertLe(weth.balanceOf(ACTOR), amountOutMinimum);
         assertEq(weth.allowance(address(zap), zap.ROUTER()), 0);
 
         vm.stopPrank();

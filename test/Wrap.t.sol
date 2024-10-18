@@ -23,11 +23,11 @@ contract WrapTest is Bootstrap {
             _token: address(usdc),
             _synthId: zap.SUSDC_SPOT_ID(),
             _amount: amount,
-            _tolerance: DEFAULT_TOLERANCE,
+            _minAmountOut: DEFAULT_MIN_AMOUNT_OUT,
             _receiver: ACTOR
         });
         vm.stopPrank();
-        assertGe(wrapped, DEFAULT_TOLERANCE);
+        assertGe(wrapped, DEFAULT_MIN_AMOUNT_OUT);
         assertEq(usdc.balanceOf(ACTOR), 0);
         assertEq(susdc.balanceOf(ACTOR), wrapped);
     }
@@ -41,11 +41,11 @@ contract WrapTest is Bootstrap {
             _token: address(usdc),
             _synthId: zap.SUSDC_SPOT_ID(),
             _amount: amount,
-            _tolerance: DEFAULT_TOLERANCE,
+            _minAmountOut: DEFAULT_MIN_AMOUNT_OUT,
             _receiver: ACTOR
         });
         vm.stopPrank();
-        assertGe(wrapped, DEFAULT_TOLERANCE);
+        assertGe(wrapped, DEFAULT_MIN_AMOUNT_OUT);
         assertEq(usdc.balanceOf(ACTOR), 0);
         assertEq(susdc.balanceOf(ACTOR), wrapped);
     }

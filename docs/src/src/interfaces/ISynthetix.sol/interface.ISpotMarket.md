@@ -1,5 +1,5 @@
 # ISpotMarket
-[Git Source](https://github.com/moss-eth/zap/blob/35e517eceade43560c1eb54d47de1fc3aa949331/src/interfaces/ISynthetix.sol)
+[Git Source](https://github.com/moss-eth/zap/blob/d8297745ea2933770a4e56a10de9706c3d09942b/src/interfaces/ISynthetix.sol)
 
 
 ## Functions
