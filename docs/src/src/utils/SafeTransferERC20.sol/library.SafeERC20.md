@@ -1,5 +1,5 @@
 # SafeERC20
-[Git Source](https://github.com/moss-eth/zap/blob/837dea0ecd01a90cfb6c452fb41dfd93b5be22d4/src/utils/SafeTransferERC20.sol)
+[Git Source](https://github.com/moss-eth/zap/blob/d8297745ea2933770a4e56a10de9706c3d09942b/src/utils/SafeTransferERC20.sol)
 
 *Wrappers around ERC-20 operations that throw on failure (when the token
 contract returns false). Tokens that return no value (and instead revert or

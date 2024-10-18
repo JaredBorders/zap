@@ -1,5 +1,5 @@
 # Zap
-[Git Source](https://github.com/moss-eth/zap/blob/837dea0ecd01a90cfb6c452fb41dfd93b5be22d4/src/Zap.sol)
+[Git Source](https://github.com/moss-eth/zap/blob/d8297745ea2933770a4e56a10de9706c3d09942b/src/Zap.sol)
 
 **Inherits:**
 [Reentrancy](/src/utils/Reentrancy.sol/contract.Reentrancy.md), [Errors](/src/utils/Errors.sol/contract.Errors.md)
@@ -467,9 +467,9 @@ function unwind(
     uint256 _collateralAmount,
     address _collateral,
     bytes memory _path,
-    uint256 _zapTolerance,
-    uint256 _unwrapTolerance,
-    uint256 _swapTolerance,
+    uint256 _zapMinAmountOut,
+    uint256 _unwrapMinAmountOut,
+    uint256 _swapMaxAmountIn,
     address _receiver
 )
     external
@@ -485,9 +485,9 @@ function unwind(
 |`_collateralAmount`|`uint256`|amount of collateral to unwind|
 |`_collateral`|`address`|address of collateral to unwind|
 |`_path`|`bytes`|Uniswap swap path encoded in reverse order|
-|`_zapTolerance`|`uint256`|acceptable slippage for zapping|
-|`_unwrapTolerance`|`uint256`|acceptable slippage for unwrapping|
-|`_swapTolerance`|`uint256`|acceptable slippage for swapping|
+|`_zapMinAmountOut`|`uint256`|acceptable slippage for zapping|
+|`_unwrapMinAmountOut`|`uint256`|acceptable slippage for unwrapping|
+|`_swapMaxAmountIn`|`uint256`|acceptable slippage for swapping|
 |`_receiver`|`address`|address to receive unwound collateral|
 
 

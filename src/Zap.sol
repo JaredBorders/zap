@@ -350,9 +350,9 @@ contract Zap is Reentrancy, Errors {
     /// @param _collateralAmount amount of collateral to unwind
     /// @param _collateral address of collateral to unwind
     /// @param _path Uniswap swap path encoded in reverse order
-    /// @param _zapTolerance acceptable slippage for zapping
-    /// @param _unwrapTolerance acceptable slippage for unwrapping
-    /// @param _swapTolerance acceptable slippage for swapping
+    /// @param _zapMinAmountOut acceptable slippage for zapping
+    /// @param _unwrapMinAmountOut acceptable slippage for unwrapping
+    /// @param _swapMaxAmountIn acceptable slippage for swapping
     /// @param _receiver address to receive unwound collateral
     function unwind(
         uint128 _accountId,
@@ -360,9 +360,9 @@ contract Zap is Reentrancy, Errors {
         uint256 _collateralAmount,
         address _collateral,
         bytes memory _path,
-        uint256 _zapTolerance,
-        uint256 _unwrapTolerance,
-        uint256 _swapTolerance,
+        uint256 _zapMinAmountOut,
+        uint256 _unwrapMinAmountOut,
+        uint256 _swapMaxAmountIn,
         address _receiver
     )
         external
@@ -377,9 +377,9 @@ contract Zap is Reentrancy, Errors {
             _collateralAmount,
             _collateral,
             _path,
-            _zapTolerance,
-            _unwrapTolerance,
-            _swapTolerance,
+            _zapMinAmountOut,
+            _unwrapMinAmountOut,
+            _swapMaxAmountIn,
             _receiver
         );
 
@@ -461,8 +461,8 @@ contract Zap is Reentrancy, Errors {
                 uint256 _collateralAmount,
                 ,
                 ,
-                uint256 _zapTolerance,
-                uint256 _unwrapTolerance,
+                uint256 _zapMinAmountOut,
+                uint256 _unwrapMinAmountOut,
                 ,
             ) = abi.decode(
                 _params,
@@ -481,7 +481,7 @@ contract Zap is Reentrancy, Errors {
 
             // zap USDC from flashloan into USDx;
             // ALL USDC flashloaned from Aave is zapped into USDx
-            uint256 usdxAmount = _zapIn(_flashloan, _zapTolerance);
+            uint256 usdxAmount = _zapIn(_flashloan, _zapMinAmountOut);
 
             // burn USDx to pay off synthetix perp position debt;
             // debt is denominated in USD and thus repaid with USDx
@@ -497,15 +497,23 @@ contract Zap is Reentrancy, Errors {
             // unwrap withdrawn synthetix perp position collateral;
             // i.e., sETH -> WETH, sUSDe -> USDe, sUSDC -> USDC (...)
             unwound =
-                _unwrap(_collateralId, _collateralAmount, _unwrapTolerance);
+                _unwrap(_collateralId, _collateralAmount, _unwrapMinAmountOut);
 
             // establish total debt now owed to Aave;
             // i.e., # of USDC
             _flashloan += _premium;
         }
 
-        (,,, address _collateral, bytes memory _path,,, uint256 _swapTolerance,)
-        = abi.decode(
+        (
+            ,
+            ,
+            ,
+            address _collateral,
+            bytes memory _path,
+            ,
+            ,
+            uint256 _swapMaxAmountIn,
+        ) = abi.decode(
             _params,
             (
                 uint128,
@@ -527,7 +535,7 @@ contract Zap is Reentrancy, Errors {
         // whatever collateral amount is remaining is returned to the caller
         unwound -= _collateral == USDC
             ? _flashloan
-            : _swapFor(_collateral, _path, _flashloan, _swapTolerance);
+            : _swapFor(_collateral, _path, _flashloan, _swapMaxAmountIn);
     }
 
     /// @notice approximate USDC needed to unwind synthetix perp position

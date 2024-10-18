@@ -13,7 +13,7 @@ contract Constants {
 
     /// @custom:values
     address constant ACTOR = 0x7777777777777777777777777777777777777777;
-    uint256 constant DEFAULT_TOLERANCE = 0;
+    uint256 constant DEFAULT_MIN_AMOUNT_OUT = 0;
 
     /// @custom:tokens
     address constant ARBITRUM_WETH = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
