@@ -4,14 +4,8 @@
   "license": "GPL-3.0-or-later",
   "homepage": "https://github.com/JaredBorders/zap#readme",
   "scripts": {
-    "compile": "forge build",
-    "test": "forge test --gas-report -vvv",
-    "format": "forge fmt",
-    "coverage": "forge coverage",
-    "coverage:generate-lcov": "forge coverage --report lcov",
-    "analysis:slither": "slither .",
-    "gas-snapshot": "forge snapshot",
-    "decode-custom-error": "npx @usecannon/cli decode synthetix-perps-market"
+    "coverage:generate-lcov": "forge coverage --report lcov --ir-minimum",
+    "gas-snapshot": "forge snapshot"
   },
   "repository": {
     "type": "git",
