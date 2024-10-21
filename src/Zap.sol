@@ -573,18 +573,23 @@ contract Zap is Reentrancy, Errors {
     /// @dev excess USDx will be returned to the caller
     /// @param _amount amount of USDx to burn
     /// @param _accountId synthetix perp market account id
-    /// @return remaining amount of USDx returned to the caller
+    /// @return excess amount of USDx returned to the caller
     function burn(
         uint256 _amount,
         uint128 _accountId
     )
         external
-        returns (uint256 remaining)
+        returns (uint256 excess)
     {
+        excess = IERC20(USDX).balanceOf(address(this));
+
+        // pull and burn
         _pull(USDX, msg.sender, _amount);
         _burn(_amount, _accountId);
-        remaining = IERC20(USDX).balanceOf(address(this));
-        if (remaining > 0) _push(USDX, msg.sender, remaining);
+
+        excess = IERC20(USDX).balanceOf(address(this)) - excess;
+
+        if (excess > 0) _push(USDX, msg.sender, excess);
     }
 
     /// @dev allowance is assumed
