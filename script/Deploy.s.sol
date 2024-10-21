@@ -2,7 +2,7 @@
 pragma solidity 0.8.27;
 
 import {Script} from "../lib/forge-std/src/Script.sol";
-import {Zap} from "../src/Zap.sol";
+import {Flush, Zap} from "../src/Zap.sol";
 import {Arbitrum, ArbitrumSepolia, Base} from "./utils/Parameters.sol";
 
 /// @title zap deployment script
@@ -53,7 +53,7 @@ contract Deploy is Script {
 contract DeployBase is Deploy, Base {
 
     function run() public broadcast {
-        deploySystem({
+        Zap zap = deploySystem({
             usdc: BASE_USDC,
             usdx: BASE_USDX,
             spotMarket: BASE_SPOT_MARKET,
@@ -64,6 +64,7 @@ contract DeployBase is Deploy, Base {
             router: BASE_ROUTER,
             quoter: BASE_QUOTER
         });
+        Flush(address(zap)).designatePlumber(BASE_PDAO);
     }
 
 }
@@ -76,7 +77,7 @@ contract DeployBase is Deploy, Base {
 contract DeployArbitrum is Deploy, Arbitrum {
 
     function run() public broadcast {
-        deploySystem({
+        Zap zap = deploySystem({
             usdc: ARBITRUM_USDC,
             usdx: ARBITRUM_USDX,
             spotMarket: ARBITRUM_SPOT_MARKET,
@@ -87,6 +88,7 @@ contract DeployArbitrum is Deploy, Arbitrum {
             router: ARBITRUM_ROUTER,
             quoter: ARBITRUM_QUOTER
         });
+        Flush(address(zap)).designatePlumber(ARBITRUM_PDAO);
     }
 
 }
@@ -99,7 +101,7 @@ contract DeployArbitrum is Deploy, Arbitrum {
 contract DeployArbitrumSepolia is Deploy, ArbitrumSepolia {
 
     function run() public broadcast {
-        deploySystem({
+        Zap zap = deploySystem({
             usdc: ARBITRUM_SEPOLIA_USDC,
             usdx: ARBITRUM_SEPOLIA_USDX,
             spotMarket: ARBITRUM_SEPOLIA_SPOT_MARKET,
@@ -110,6 +112,7 @@ contract DeployArbitrumSepolia is Deploy, ArbitrumSepolia {
             router: ARBITRUM_SEPOLIA_ROUTER,
             quoter: ARBITRUM_SEPOLIA_QUOTER
         });
+        Flush(address(zap)).designatePlumber(ARBITRUM_SEPOLIA_PDAO);
     }
 
 }

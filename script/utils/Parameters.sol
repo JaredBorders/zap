@@ -3,6 +3,9 @@ pragma solidity 0.8.27;
 
 contract Base {
 
+    /// @custom:pdao
+    address BASE_PDAO = 0xbb63CA5554dc4CcaCa4EDd6ECC2837d5EFe83C82;
+
     /// @custom:synthetix
     address BASE_USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
     address BASE_USDX = 0x09d51516F38980035153a554c26Df3C6f51a23C3;
@@ -22,6 +25,9 @@ contract Base {
 
 contract Arbitrum {
 
+    /// @custom:pdao
+    address ARBITRUM_PDAO = 0xD3DFa13CDc7c133b1700c243f03A8C6Df513A93b;
+
     /// @custom:synthetix
     address ARBITRUM_USDC = 0xaf88d065e77c8cC2239327C5EDb3A432268e5831;
     address ARBITRUM_USDX = 0xb2F30A7C980f052f02563fb518dcc39e6bf38175;
@@ -40,6 +46,9 @@ contract Arbitrum {
 }
 
 contract ArbitrumSepolia {
+
+    /// @custom:pdao
+    address ARBITRUM_SEPOLIA_PDAO = address(0);
 
     /// @custom:synthetix
     address ARBITRUM_SEPOLIA_USDC = 0x75faf114eafb1BDbe2F0316DF893fd58CE46AA4d;
