@@ -4,7 +4,6 @@ pragma solidity 0.8.27;
 import {
     Bootstrap,
     Constants,
-    ICore,
     IERC20,
     IPerpsMarket,
     IPool,
@@ -23,14 +22,14 @@ contract BuyTest is Bootstrap {
         (uint256 received, address synth) = zap.buy({
             _synthId: zap.SUSDC_SPOT_ID(),
             _amount: amount,
-            _tolerance: DEFAULT_TOLERANCE,
+            _minAmountOut: DEFAULT_MIN_AMOUNT_OUT,
             _receiver: ACTOR
         });
         vm.stopPrank();
         assertEq(synth, address(susdc));
-        assertGe(received, DEFAULT_TOLERANCE);
+        assertGe(received, DEFAULT_MIN_AMOUNT_OUT);
         assertEq(usdx.balanceOf(ACTOR), 0);
-        assertGe(susdc.balanceOf(ACTOR), DEFAULT_TOLERANCE);
+        assertGe(susdc.balanceOf(ACTOR), DEFAULT_MIN_AMOUNT_OUT);
     }
 
     function test_buy_arbitrum(uint32 amount) public arbitrum {
@@ -41,14 +40,14 @@ contract BuyTest is Bootstrap {
         (uint256 received, address synth) = zap.buy({
             _synthId: zap.SUSDC_SPOT_ID(),
             _amount: amount,
-            _tolerance: DEFAULT_TOLERANCE,
+            _minAmountOut: DEFAULT_MIN_AMOUNT_OUT,
             _receiver: ACTOR
         });
         vm.stopPrank();
         assertEq(synth, address(susdc));
-        assertGe(received, DEFAULT_TOLERANCE);
+        assertGe(received, DEFAULT_MIN_AMOUNT_OUT);
         assertEq(usdx.balanceOf(ACTOR), 0);
-        assertGe(susdc.balanceOf(ACTOR), DEFAULT_TOLERANCE);
+        assertGe(susdc.balanceOf(ACTOR), DEFAULT_MIN_AMOUNT_OUT);
     }
 
 }

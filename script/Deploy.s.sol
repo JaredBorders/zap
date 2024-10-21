@@ -2,24 +2,31 @@
 pragma solidity 0.8.27;
 
 import {Script} from "../lib/forge-std/src/Script.sol";
-import {Zap} from "../src/Zap.sol";
+import {Flush, Zap} from "../src/Zap.sol";
 import {Arbitrum, ArbitrumSepolia, Base} from "./utils/Parameters.sol";
 
-/// @title Zap deployment script
-/// @author JaredBorders (jaredborders@pm.me)
-contract Setup is Script {
+/// @title zap deployment script
+/// @author @jaredborders
+/// @author @flocqst
+contract Deploy is Script {
 
-    /// @custom:todo
+    modifier broadcast() {
+        uint256 privateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(privateKey);
+        _;
+        vm.stopBroadcast();
+    }
+
     function deploySystem(
         address usdc,
         address usdx,
         address spotMarket,
         address perpsMarket,
-        address core,
         address referrer,
         uint128 susdcSpotId,
         address aave,
-        address uniswap
+        address router,
+        address quoter
     )
         public
         returns (Zap zap)
@@ -29,11 +36,11 @@ contract Setup is Script {
             _usdx: usdx,
             _spotMarket: spotMarket,
             _perpsMarket: perpsMarket,
-            _core: core,
             _referrer: referrer,
             _susdcSpotId: susdcSpotId,
             _aave: aave,
-            _uniswap: uniswap
+            _router: router,
+            _quoter: quoter
         });
     }
 
@@ -43,25 +50,21 @@ contract Setup is Script {
 /// (1) load the variables in the .env file via `source .env`
 /// (2) run `forge script script/Deploy.s.sol:DeployBase --rpc-url $BASE_RPC_URL
 /// --etherscan-api-key $BASESCAN_API_KEY --broadcast --verify -vvvv`
-contract DeployBase is Setup, Base {
+contract DeployBase is Deploy, Base {
 
-    function run() public {
-        uint256 privateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(privateKey);
-
-        Setup.deploySystem({
+    function run() public broadcast {
+        Zap zap = deploySystem({
             usdc: BASE_USDC,
             usdx: BASE_USDX,
             spotMarket: BASE_SPOT_MARKET,
             perpsMarket: BASE_PERPS_MARKET,
-            core: BASE_CORE,
             referrer: BASE_REFERRER,
             susdcSpotId: BASE_SUSDC_SPOT_MARKET_ID,
             aave: BASE_AAVE_POOL,
-            uniswap: BASE_UNISWAP
+            router: BASE_ROUTER,
+            quoter: BASE_QUOTER
         });
-
-        vm.stopBroadcast();
+        Flush(address(zap)).designatePlumber(BASE_PDAO);
     }
 
 }
@@ -71,25 +74,21 @@ contract DeployBase is Setup, Base {
 /// (2) run `forge script script/Deploy.s.sol:DeployArbitrum --rpc-url
 /// $ARBITRUM_RPC_URL
 /// --etherscan-api-key $ARBITRUM_RPC_URL --broadcast --verify -vvvv`
-contract DeployArbitrum is Setup, Arbitrum {
+contract DeployArbitrum is Deploy, Arbitrum {
 
-    function run() public {
-        uint256 privateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(privateKey);
-
-        Setup.deploySystem({
+    function run() public broadcast {
+        Zap zap = deploySystem({
             usdc: ARBITRUM_USDC,
             usdx: ARBITRUM_USDX,
             spotMarket: ARBITRUM_SPOT_MARKET,
             perpsMarket: ARBITRUM_PERPS_MARKET,
-            core: ARBITRUM_CORE,
             referrer: ARBITRUM_REFERRER,
             susdcSpotId: ARBITRUM_SUSDC_SPOT_MARKET_ID,
             aave: ARBITRUM_AAVE_POOL,
-            uniswap: ARBITRUM_UNISWAP
+            router: ARBITRUM_ROUTER,
+            quoter: ARBITRUM_QUOTER
         });
-
-        vm.stopBroadcast();
+        Flush(address(zap)).designatePlumber(ARBITRUM_PDAO);
     }
 
 }
@@ -99,25 +98,21 @@ contract DeployArbitrum is Setup, Arbitrum {
 /// (2) run `forge script script/Deploy.s.sol:DeployArbitrumSepolia --rpc-url
 /// $ARBITRUM_SEPOLIA_RPC_URL
 /// --etherscan-api-key $ARBITRUM_RPC_URL --broadcast --verify -vvvv`
-contract DeployArbitrumSepolia is Setup, ArbitrumSepolia {
+contract DeployArbitrumSepolia is Deploy, ArbitrumSepolia {
 
-    function run() public {
-        uint256 privateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(privateKey);
-
-        Setup.deploySystem({
+    function run() public broadcast {
+        Zap zap = deploySystem({
             usdc: ARBITRUM_SEPOLIA_USDC,
             usdx: ARBITRUM_SEPOLIA_USDX,
             spotMarket: ARBITRUM_SEPOLIA_SPOT_MARKET,
             perpsMarket: ARBITRUM_SEPOLIA_PERPS_MARKET,
-            core: ARBITRUM_SEPOLIA_CORE,
             referrer: ARBITRUM_SEPOLIA_REFERRER,
-            susdcSpotId: ARBITRUM_SEPOLIAS_USDC_SPOT_MARKET_ID,
+            susdcSpotId: ARBITRUM_SEPOLIA_SUSDC_SPOT_MARKET_ID,
             aave: ARBITRUM_SEPOLIA_AAVE_POOL,
-            uniswap: ARBITRUM_SEPOLIA_UNISWAP
+            router: ARBITRUM_SEPOLIA_ROUTER,
+            quoter: ARBITRUM_SEPOLIA_QUOTER
         });
-
-        vm.stopBroadcast();
+        Flush(address(zap)).designatePlumber(ARBITRUM_SEPOLIA_PDAO);
     }
 
 }

@@ -4,7 +4,6 @@ pragma solidity 0.8.27;
 import {
     Bootstrap,
     Constants,
-    ICore,
     IERC20,
     IPerpsMarket,
     IPool,
@@ -21,11 +20,11 @@ contract ZapInTest is Bootstrap {
         vm.startPrank(ACTOR);
         uint256 zapped = zap.zapIn({
             _amount: amount,
-            _tolerance: DEFAULT_TOLERANCE,
+            _minAmountOut: DEFAULT_MIN_AMOUNT_OUT,
             _receiver: ACTOR
         });
         vm.stopPrank();
-        assertGe(zapped, DEFAULT_TOLERANCE);
+        assertGe(zapped, DEFAULT_MIN_AMOUNT_OUT);
         assertEq(usdc.balanceOf(ACTOR), 0);
         assertEq(usdx.balanceOf(ACTOR), zapped);
     }
@@ -37,11 +36,11 @@ contract ZapInTest is Bootstrap {
         vm.startPrank(ACTOR);
         uint256 zapped = zap.zapIn({
             _amount: amount,
-            _tolerance: DEFAULT_TOLERANCE,
+            _minAmountOut: DEFAULT_MIN_AMOUNT_OUT,
             _receiver: ACTOR
         });
         vm.stopPrank();
-        assertGe(zapped, DEFAULT_TOLERANCE);
+        assertGe(zapped, DEFAULT_MIN_AMOUNT_OUT);
         assertEq(usdc.balanceOf(ACTOR), 0);
         assertEq(usdx.balanceOf(ACTOR), zapped);
     }
