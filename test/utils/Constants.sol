@@ -13,7 +13,7 @@ contract Constants {
 
     /// @custom:values
     address constant ACTOR = 0x7777777777777777777777777777777777777777;
-    uint256 constant DEFAULT_TOLERANCE = 0;
+    uint256 constant DEFAULT_MIN_AMOUNT_OUT = 0;
 
     /// @custom:tokens
     address constant ARBITRUM_WETH = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
@@ -22,6 +22,8 @@ contract Constants {
     address constant BASE_WETH = 0x4200000000000000000000000000000000000006;
     address constant BASE_TBTC = 0x236aa50979D5f3De3Bd1Eeb40E81137F22ab794b;
 
+    uint24 constant FEE_1 = 100;
+    uint24 constant FEE_5 = 500;
     uint24 constant FEE_30 = 3000;
     uint24 constant FEE_100 = 10_000;
 

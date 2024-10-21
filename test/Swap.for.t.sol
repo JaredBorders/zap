@@ -19,20 +19,20 @@ contract SwapForTest is Bootstrap {
 
     function test_swap_for_single_base() public base {
         uint256 amount = 100e6;
-        uint256 tolerance = type(uint256).max / 4;
-        _spin(ACTOR, weth, tolerance, address(zap));
+        uint256 _maxAmountIn = type(uint256).max / 4;
+        _spin(ACTOR, weth, _maxAmountIn, address(zap));
         assertEq(usdc.balanceOf(ACTOR), 0);
-        assertEq(weth.balanceOf(ACTOR), tolerance);
+        assertEq(weth.balanceOf(ACTOR), _maxAmountIn);
         vm.startPrank(ACTOR);
         zap.swapFor({
             _from: address(weth),
             _path: abi.encodePacked(address(usdc), FEE_30, address(weth)),
             _amount: amount,
-            _tolerance: tolerance,
+            _maxAmountIn: _maxAmountIn,
             _receiver: ACTOR
         });
         assertGt(usdc.balanceOf(ACTOR), 0);
-        assertLt(weth.balanceOf(ACTOR), tolerance);
+        assertLt(weth.balanceOf(ACTOR), _maxAmountIn);
         assertEq(weth.allowance(address(zap), zap.ROUTER()), 0);
         vm.stopPrank();
     }
@@ -40,8 +40,8 @@ contract SwapForTest is Bootstrap {
     function test_swap_for_single_arbitrum(uint8 percentage) public arbitrum {
         vm.assume(percentage < 95 && percentage > 0);
 
-        uint256 tolerance = type(uint256).max;
-        _spin(ACTOR, weth, tolerance, address(zap));
+        uint256 _maxAmountIn = type(uint256).max;
+        _spin(ACTOR, weth, _maxAmountIn, address(zap));
 
         address pool = IFactory(IRouter(zap.ROUTER()).factory()).getPool(
             address(weth), address(usdc), zap.FEE_TIER()
@@ -50,7 +50,7 @@ contract SwapForTest is Bootstrap {
         uint256 amount = depth * (percentage / 100);
 
         assertEq(usdc.balanceOf(ACTOR), 0);
-        assertEq(weth.balanceOf(ACTOR), tolerance);
+        assertEq(weth.balanceOf(ACTOR), _maxAmountIn);
 
         vm.startPrank(ACTOR);
 
@@ -60,9 +60,9 @@ contract SwapForTest is Bootstrap {
 
         zap.swapFor({
             _from: address(weth),
-            _path: abi.encodePacked(address(usdc), FEE_30, address(weth)),
+            _path: abi.encodePacked(address(usdc), FEE_5, address(weth)),
             _amount: amount,
-            _tolerance: tolerance,
+            _maxAmountIn: _maxAmountIn,
             _receiver: ACTOR
         });
 
@@ -71,7 +71,7 @@ contract SwapForTest is Bootstrap {
                 ? usdc.balanceOf(ACTOR) < 0
                 : usdc.balanceOf(ACTOR) == 0
         );
-        assertLe(weth.balanceOf(ACTOR), tolerance);
+        assertLe(weth.balanceOf(ACTOR), _maxAmountIn);
         assertEq(weth.allowance(address(zap), zap.ROUTER()), 0);
 
         vm.stopPrank();
@@ -82,64 +82,46 @@ contract SwapForTest is Bootstrap {
 
     function test_swap_for_multihop_base() public base {
         uint256 amount = 100e6;
-        uint256 tolerance = type(uint256).max / 4;
-        _spin(ACTOR, weth, tolerance, address(zap));
+        uint256 _maxAmountIn = type(uint256).max / 4;
+        _spin(ACTOR, tbtc, _maxAmountIn, address(zap));
         assertEq(usdc.balanceOf(ACTOR), 0);
-        assertEq(weth.balanceOf(ACTOR), tolerance);
+        assertEq(tbtc.balanceOf(ACTOR), _maxAmountIn);
         vm.startPrank(ACTOR);
         zap.swapFor({
-            _from: address(weth),
-            _path: abi.encodePacked(address(usdc), FEE_30, address(weth)),
+            _from: address(tbtc),
+            _path: abi.encodePacked(
+                address(usdc), FEE_30, address(weth), FEE_30, address(tbtc)
+            ),
             _amount: amount,
-            _tolerance: tolerance,
+            _maxAmountIn: _maxAmountIn,
             _receiver: ACTOR
         });
         assertGt(usdc.balanceOf(ACTOR), 0);
-        assertLt(weth.balanceOf(ACTOR), tolerance);
-        assertEq(weth.allowance(address(zap), zap.ROUTER()), 0);
+        assertLt(tbtc.balanceOf(ACTOR), _maxAmountIn);
+        assertEq(tbtc.allowance(address(zap), zap.ROUTER()), 0);
         vm.stopPrank();
     }
 
-    function test_swap_for_multihop_arbitrum(uint8 percentage)
-        public
-        arbitrum
-    {
-        vm.assume(percentage < 95 && percentage > 0);
-
-        uint256 tolerance = type(uint256).max;
-        _spin(ACTOR, weth, tolerance, address(zap));
-
-        address pool = IFactory(IRouter(zap.ROUTER()).factory()).getPool(
-            address(weth), address(usdc), zap.FEE_TIER()
-        );
-        uint256 depth = usdc.balanceOf(pool);
-        uint256 amount = depth * (percentage / 100);
-
+    function test_swap_for_multihop_arbitrum() public arbitrum {
+        uint256 amount = 100e6;
+        uint256 _maxAmountIn = type(uint256).max / 4;
+        _spin(ACTOR, tbtc, _maxAmountIn, address(zap));
         assertEq(usdc.balanceOf(ACTOR), 0);
-        assertEq(weth.balanceOf(ACTOR), tolerance);
+        assertEq(tbtc.balanceOf(ACTOR), _maxAmountIn);
 
         vm.startPrank(ACTOR);
-
-        if (amount == 0) {
-            vm.expectRevert();
-        }
-
         zap.swapFor({
-            _from: address(weth),
-            _path: abi.encodePacked(address(usdc), FEE_30, address(weth)),
+            _from: address(tbtc),
+            _path: abi.encodePacked(
+                address(usdc), FEE_5, address(weth), FEE_5, address(tbtc)
+            ),
             _amount: amount,
-            _tolerance: tolerance,
+            _maxAmountIn: _maxAmountIn,
             _receiver: ACTOR
         });
-
-        assertTrue(
-            amount > 1e6
-                ? usdc.balanceOf(ACTOR) < 0
-                : usdc.balanceOf(ACTOR) == 0
-        );
-        assertLe(weth.balanceOf(ACTOR), tolerance);
-        assertEq(weth.allowance(address(zap), zap.ROUTER()), 0);
-
+        assertGt(usdc.balanceOf(ACTOR), 0);
+        assertLt(tbtc.balanceOf(ACTOR), _maxAmountIn);
+        assertEq(tbtc.allowance(address(zap), zap.ROUTER()), 0);
         vm.stopPrank();
     }
 
