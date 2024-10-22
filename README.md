@@ -49,24 +49,24 @@ USDC <--(spot market)--> sUSDC <--(spot market)--> USDx
 
 1. **Build the project**
 
-   ```bash
+   ```
    forge build
    ```
 
 2. **Run tests**
 
-   ```bash
+   ```
    forge test
    ```
 
 3. **Report Test Coverage**
 
-   ```bash
+   ```
    make coverage
    ```
 
 4. **Report Gas Snapshot**
-   ```bash
+   ```
    make snapshot
    ```
 
@@ -79,11 +79,11 @@ How to Deploy:
 1. Create a `.env` file using `.env-example` as a reference
 
 2. Deploy to Base
-   ```bash
+   ```
    make deploy_base
    ```
 3. Deploy to Arbitrum
-   ```bash
+   ```
    make deploy_arbitrum
    ```
 
