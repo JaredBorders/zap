@@ -1,7 +1,7 @@
 # Zap Flashloan Utility
 
-[![Github Actions][gha-badge]][gha] 
-[![Foundry][foundry-badge]][foundry] 
+[![Github Actions][gha-badge]][gha]
+[![Foundry][foundry-badge]][foundry]
 [![License: GPL-3.0][license-badge]][license]
 
 [gha]: https://github.com/JaredBorders/Zap/actions
@@ -16,6 +16,7 @@
 Zap is a smart contract that facilitates stablecoin "zapping" and Synthetix native collateral unwinding by integrating flash loans from Aave and Uniswap v3 swaps.
 
 ### What is a **Zap**?
+
 > ONLY USDC is supported
 
 USDC <--(spot market)--> sUSDC <--(spot market)--> USDx
@@ -42,23 +43,49 @@ USDC <--(spot market)--> sUSDC <--(spot market)--> USDx
 - Withdraw Perp Collateral via Synthetix
 - Swap via Uniswap
 
-## Build and Test
+## Development
 
-### Build and Run
+### Build, Test, Report
 
-1. **Build the project**  
+1. **Build the project**
+
    ```bash
    forge build
    ```
 
-2. **Run tests**  
+2. **Run tests**
+
    ```bash
    forge test
    ```
 
-## Deployment
+3. **Report Test Coverage**
+
+   ```bash
+   make coverage
+   ```
+
+4. **Report Gas Snapshot**
+   ```bash
+   make snapshot
+   ```
+
+## How to Deploy
 
 - See the `deployments/` folder for Arbitrum and Base deployments.
+
+How to Deploy:
+
+1. Create a `.env` file using `.env-example` as a reference
+
+2. Deploy to Base
+   ```bash
+   make deploy_base
+   ```
+3. Deploy to Arbitrum
+   ```bash
+   make deploy_arbitrum
+   ```
 
 ## Audits
 
