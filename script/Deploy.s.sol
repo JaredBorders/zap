@@ -46,10 +46,7 @@ contract Deploy is Script {
 
 }
 
-/// @dev steps to deploy and verify on Base:
-/// (1) load the variables in the .env file via `source .env`
-/// (2) run `forge script script/Deploy.s.sol:DeployBase --rpc-url $BASE_RPC_URL
-/// --etherscan-api-key $BASESCAN_API_KEY --broadcast --verify -vvvv`
+/// @custom:deploy `make deploy_base`
 contract DeployBase is Deploy, Base {
 
     function run() public broadcast {
@@ -69,11 +66,7 @@ contract DeployBase is Deploy, Base {
 
 }
 
-/// @dev steps to deploy and verify on Arbitrum:
-/// (1) load the variables in the .env file via `source .env`
-/// (2) run `forge script script/Deploy.s.sol:DeployArbitrum --rpc-url
-/// $ARBITRUM_RPC_URL
-/// --etherscan-api-key $ARBITRUM_RPC_URL --broadcast --verify -vvvv`
+/// @custom:deplo `make deploy_arbitrum`
 contract DeployArbitrum is Deploy, Arbitrum {
 
     function run() public broadcast {
@@ -93,11 +86,7 @@ contract DeployArbitrum is Deploy, Arbitrum {
 
 }
 
-/// @dev steps to deploy and verify on Arbitrum:
-/// (1) load the variables in the .env file via `source .env`
-/// (2) run `forge script script/Deploy.s.sol:DeployArbitrumSepolia --rpc-url
-/// $ARBITRUM_SEPOLIA_RPC_URL
-/// --etherscan-api-key $ARBITRUM_RPC_URL --broadcast --verify -vvvv`
+/// @custom:deploy `make deploy_arbitrum_sepolia`
 contract DeployArbitrumSepolia is Deploy, ArbitrumSepolia {
 
     function run() public broadcast {
