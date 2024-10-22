@@ -1,8 +1,8 @@
 # Zap
-[Git Source](https://github.com/moss-eth/zap/blob/d8297745ea2933770a4e56a10de9706c3d09942b/src/Zap.sol)
+[Git Source](https://github.com/moss-eth/zap/blob/70d3ea131ffe8af2f978b53f91daa0d8ac74d19a/src/Zap.sol)
 
 **Inherits:**
-[Reentrancy](/src/utils/Reentrancy.sol/contract.Reentrancy.md), [Errors](/src/utils/Errors.sol/contract.Errors.md)
+[Reentrancy](/src/utils/Reentrancy.sol/contract.Reentrancy.md), [Errors](/src/utils/Errors.sol/contract.Errors.md), [Flush](/src/utils/Flush.sol/contract.Flush.md)
 
 **Authors:**
 @jaredborders, @flocqst, @barrasso, @moss-eth
@@ -560,11 +560,20 @@ function _unwind(
 
 ### _approximateLoanNeeded
 
+the path and max amount in must take into consideration:
+(1) Aave flashloan amount
+(2) premium owed to Aave for flashloan
+(3) USDC buffer added to the approximate loan needed
+
 approximate USDC needed to unwind synthetix perp position
 
 *given the USDC buffer, an amount of USDx
 necessarily less than the buffer will remain (<$1);
 this amount is captured by the protocol*
+
+*(1) is a function of (3); buffer added to loan requested*
+
+*(2) is a function of (1); premium is a percentage of loan*
 
 
 ```solidity
@@ -607,7 +616,7 @@ function burn(
     uint128 _accountId
 )
     external
-    returns (uint256 remaining);
+    returns (uint256 excess);
 ```
 **Parameters**
 
@@ -620,7 +629,7 @@ function burn(
 
 |Name|Type|Description|
 |----|----|-----------|
-|`remaining`|`uint256`|amount of USDx returned to the caller|
+|`excess`|`uint256`|amount of USDx returned to the caller|
 
 
 ### _burn

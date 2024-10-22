@@ -1,5 +1,5 @@
 # IERC20
-[Git Source](https://github.com/moss-eth/zap/blob/d8297745ea2933770a4e56a10de9706c3d09942b/src/interfaces/IERC20.sol)
+[Git Source](https://github.com/moss-eth/zap/blob/70d3ea131ffe8af2f978b53f91daa0d8ac74d19a/src/interfaces/IERC20.sol)
 
 
 ## Functions
