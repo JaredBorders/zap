@@ -1,74 +1,158 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity 0.8.20;
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.27;
 
-import {console2} from "../../lib/forge-std/src/console2.sol";
+import {Deploy} from "../../script/Deploy.s.sol";
 import {
-    Zap,
-    BaseGoerliParameters,
-    BaseParameters,
-    Setup
-} from "../../script/Deploy.s.sol";
-import {ZapEvents} from "./../../src/ZapEvents.sol";
-import {Constants} from "./Constants.sol";
-import {MockSpotMarketProxy} from "../utils/mocks/MockSpotMarketProxy.sol";
-import {MockUSDC} from "../utils/mocks/MockUSDC.sol";
-import {MockSUSD} from "../utils/mocks/MockSUSD.sol";
-import {SynthetixV3Errors} from "./errors/SynthetixV3Errors.sol";
-import {Test} from "../../lib/forge-std/src/Test.sol";
-import {ZapExposed} from "../utils/exposed/ZapExposed.sol";
+    Arbitrum, ArbitrumSepolia, Base
+} from "../../script/utils/Parameters.sol";
+import {Errors, IERC20, IPool, Reentrancy, Zap} from "../../src/Zap.sol";
+import {IPerpsMarket, ISpotMarket} from "../interfaces/ISynthetix.sol";
 
-/// @title Bootstrap contract for setting up test environment
-/// @author JaredBorders (jaredborders@pm.me)
-contract Bootstrap is Test, ZapEvents, SynthetixV3Errors, Constants {
-    using console2 for *;
+import {IFactory, IRouter} from "../interfaces/IUniswap.sol";
+import {Constants} from "../utils/Constants.sol";
+import {Test} from "forge-std/Test.sol";
 
-    ZapExposed public zap;
+contract Bootstrap is
+    Test,
+    Deploy,
+    Base,
+    Arbitrum,
+    ArbitrumSepolia,
+    Constants
+{
 
-    function initializeLocal() internal {
-        BootstrapLocal bootstrap = new BootstrapLocal();
-        (address zapAddress) = bootstrap.init();
+    /// @custom:forks
+    uint256 BASE;
+    uint256 ARBITRUM;
+    uint256 ARBITRUM_SEPOLIA;
 
-        zap = ZapExposed(zapAddress);
+    /// @custom:target
+    Zap zap;
+
+    /// @custom:auxiliary
+    ISpotMarket spotMarket;
+    IPerpsMarket perpsMarket;
+    IERC20 usdc;
+    IERC20 susdc;
+    IERC20 usdx;
+    IERC20 weth;
+    IERC20 tbtc;
+
+    function setUp() public {
+        string memory BASE_RPC = vm.envString(BASE_RPC_REF);
+        string memory ARBITRUM_RPC = vm.envString(ARBITRUM_RPC_REF);
+        string memory ARBITRUM_SEPOLIA_RPC =
+            vm.envString(ARBITRUM_SEPOLIA_RPC_REF);
+
+        BASE = vm.createFork(BASE_RPC, BASE_FORK_BLOCK);
+        ARBITRUM = vm.createFork(ARBITRUM_RPC, ARBITRUM_FORK_BLOCK);
+        ARBITRUM_SEPOLIA =
+            vm.createFork(ARBITRUM_SEPOLIA_RPC, ARBITRUM_SEPOLIA_FORK_BLOCK);
     }
 
-    function initializeBase() internal {
-        BootstrapBase bootstrap = new BootstrapBase();
-        (address zapAddress) = bootstrap.init();
+    modifier base() {
+        /// @custom:fork
+        vm.selectFork(BASE);
 
-        zap = ZapExposed(zapAddress);
+        /// @custom:target
+        zap = deploySystem({
+            usdc: BASE_USDC,
+            usdx: BASE_USDX,
+            spotMarket: BASE_SPOT_MARKET,
+            perpsMarket: BASE_PERPS_MARKET,
+            referrer: BASE_REFERRER,
+            susdcSpotId: BASE_SUSDC_SPOT_MARKET_ID,
+            aave: BASE_AAVE_POOL,
+            router: BASE_ROUTER,
+            quoter: BASE_QUOTER
+        });
+
+        /// @custom:auxiliary
+        spotMarket = ISpotMarket(BASE_SPOT_MARKET);
+        perpsMarket = IPerpsMarket(BASE_PERPS_MARKET);
+        usdc = IERC20(BASE_USDC);
+        susdc = IERC20(spotMarket.getSynth(zap.SUSDC_SPOT_ID()));
+        usdx = IERC20(BASE_USDX);
+        weth = IERC20(BASE_WETH);
+        tbtc = IERC20(BASE_TBTC);
+
+        _;
     }
 
-    function initializeBaseGoerli() internal {
-        BootstrapBaseGoerli bootstrap = new BootstrapBaseGoerli();
-        (address zapAddress) = bootstrap.init();
+    modifier arbitrum() {
+        /// @custom:fork
+        vm.selectFork(ARBITRUM);
 
-        zap = ZapExposed(zapAddress);
-    }
-}
+        /// @custom:target
+        zap = deploySystem({
+            usdc: ARBITRUM_USDC,
+            usdx: ARBITRUM_USDX,
+            spotMarket: ARBITRUM_SPOT_MARKET,
+            perpsMarket: ARBITRUM_PERPS_MARKET,
+            referrer: ARBITRUM_REFERRER,
+            susdcSpotId: ARBITRUM_SUSDC_SPOT_MARKET_ID,
+            aave: ARBITRUM_AAVE_POOL,
+            router: ARBITRUM_ROUTER,
+            quoter: ARBITRUM_QUOTER
+        });
 
-contract BootstrapLocal is Setup, Constants {
-    function init() public returns (address zapAddress) {
-        zapAddress = Setup.deploySystem(
-            address(new MockUSDC()),
-            address(new MockSUSD()),
-            address(new MockSpotMarketProxy()),
-            type(uint128).max
-        );
+        /// @custom:auxiliary
+        spotMarket = ISpotMarket(ARBITRUM_SPOT_MARKET);
+        perpsMarket = IPerpsMarket(ARBITRUM_PERPS_MARKET);
+        usdc = IERC20(ARBITRUM_USDC);
+        susdc = IERC20(spotMarket.getSynth(zap.SUSDC_SPOT_ID()));
+        usdx = IERC20(ARBITRUM_USDX);
+        weth = IERC20(ARBITRUM_WETH);
+        tbtc = IERC20(ARBITRUM_TBTC);
+        _;
     }
-}
 
-contract BootstrapBase is Setup, BaseParameters {
-    function init() public returns (address zapAddress) {
-        zapAddress = Setup.deploySystem(
-            USDC, USD_PROXY, SPOT_MARKET_PROXY, SUSDC_SPOT_MARKET_ID
-        );
-    }
-}
+    modifier arbitrum_sepolia() {
+        /// @custom:fork
+        vm.selectFork(ARBITRUM_SEPOLIA);
 
-contract BootstrapBaseGoerli is Setup, BaseGoerliParameters {
-    function init() public returns (address zapAddress) {
-        zapAddress = Setup.deploySystem(
-            USDC, USD_PROXY, SPOT_MARKET_PROXY, SUSDC_SPOT_MARKET_ID
-        );
+        /// @custom:target
+        zap = deploySystem({
+            usdc: ARBITRUM_SEPOLIA_USDC,
+            usdx: ARBITRUM_SEPOLIA_USDX,
+            spotMarket: ARBITRUM_SEPOLIA_SPOT_MARKET,
+            perpsMarket: ARBITRUM_SEPOLIA_PERPS_MARKET,
+            referrer: ARBITRUM_SEPOLIA_REFERRER,
+            susdcSpotId: ARBITRUM_SEPOLIA_SUSDC_SPOT_MARKET_ID,
+            aave: ARBITRUM_SEPOLIA_AAVE_POOL,
+            router: ARBITRUM_SEPOLIA_ROUTER,
+            quoter: ARBITRUM_SEPOLIA_QUOTER
+        });
+
+        /// @custom:auxiliary
+        spotMarket = ISpotMarket(ARBITRUM_SEPOLIA_SPOT_MARKET);
+        perpsMarket = IPerpsMarket(ARBITRUM_SEPOLIA_PERPS_MARKET);
+        usdc = IERC20(ARBITRUM_SEPOLIA_USDC);
+        susdc = IERC20(spotMarket.getSynth(zap.SUSDC_SPOT_ID()));
+        usdx = IERC20(ARBITRUM_SEPOLIA_USDX);
+        weth = IERC20(ARBITRUM_SEPOLIA_WETH);
+
+        _;
     }
+
+    /// @notice "spin" up an EOA with some tokens and approvals
+    /// @dev "assumes" a minimum amount thereby muffling fuzzing noise
+    /// @param eoa to spin up
+    /// @param token that will be sent (i.e., dealt) to the EOA
+    /// @param amount of tken to send to the EOA
+    /// @param approved address granted max allowance by the EOA
+    function _spin(
+        address eoa,
+        IERC20 token,
+        uint256 amount,
+        address approved
+    )
+        internal
+    {
+        vm.assume(amount > 1e6);
+        deal(address(token), eoa, amount);
+        vm.prank(eoa);
+        IERC20(token).approve(approved, type(uint256).max);
+    }
+
 }

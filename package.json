@@ -4,14 +4,8 @@
   "license": "GPL-3.0-or-later",
   "homepage": "https://github.com/JaredBorders/zap#readme",
   "scripts": {
-    "compile": "forge build",
-    "test": "forge test --fork-url $(grep BASE_RPC_URL .env | cut -d '=' -f2) --etherscan-api-key $(grep BASESCAN_API_KEY .env | cut -d '=' -f2) --gas-report -vvv",
-    "format": "forge fmt",
-    "coverage": "forge coverage --fork-url $(grep BASE_RPC_URL .env | cut -d '=' -f2)",
-    "coverage:generate-lcov": "forge coverage --fork-url $(grep BASE_RPC_URL .env | cut -d '=' -f2) --report lcov",
-    "analysis:slither": "slither .",
-    "gas-snapshot": "forge snapshot --fork-url $(grep BASE_RPC_URL .env | cut -d '=' -f2)",
-    "decode-custom-error": "npx @usecannon/cli decode synthetix-perps-market"
+    "coverage:generate-lcov": "forge coverage --report lcov --ir-minimum",
+    "gas-snapshot": "forge snapshot"
   },
   "repository": {
     "type": "git",

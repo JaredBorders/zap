@@ -1,25 +1,35 @@
 name: lint
 
-on: [push]
+on:
+  push:
+  pull_request:
+  workflow_dispatch:
 
 env:
-    FOUNDRY_PROFILE: ci
+  FOUNDRY_PROFILE: ci
 
 jobs:
-    check:
-        strategy:
-            fail-fast: true
+  check:
+    strategy:
+      fail-fast: true
 
-        runs-on: ubuntu-latest
-        steps:
-            - uses: actions/checkout@v3
-              with:
-                  submodules: recursive
+    name: Foundry project
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          submodules: recursive
 
-            - name: Install Foundry
-              uses: foundry-rs/foundry-toolchain@v1
-              with:
-                  version: nightly
+      - name: Install Foundry
+        uses: foundry-rs/foundry-toolchain@v1
+        with:
+          version: nightly
 
-            - name: Lint Check
-              run: forge fmt --check
+      - name: Show Forge version
+        run: |
+          forge --version
+
+      - name: Run Forge fmt
+        run: |
+          forge fmt --check
+        id: fmt
