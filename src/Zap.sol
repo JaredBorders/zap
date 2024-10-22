@@ -789,6 +789,11 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         }
     }
 
+    function odosSwap(bytes memory data) internal payable {
+        (bool success, bytes memory result) = ROUTER.call{value: msg.value}(data);
+        require(success, SwapFailed(result));
+    }
+
     /*//////////////////////////////////////////////////////////////
                                TRANSFERS
     //////////////////////////////////////////////////////////////*/
