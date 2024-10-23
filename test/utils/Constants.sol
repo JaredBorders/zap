@@ -11,6 +11,9 @@ contract Constants {
     uint256 constant ARBITRUM_FORK_BLOCK = 256_615_000;
     uint256 constant ARBITRUM_SEPOLIA_FORK_BLOCK = 85_443_000;
 
+    uint256 constant BASE_CHAIN_ID = 8453;
+    uint256 constant ARBITRUM_CHAIN_ID = 42161;
+
     /// @custom:values
     address constant ACTOR = 0x7777777777777777777777777777777777777777;
     uint256 constant DEFAULT_MIN_AMOUNT_OUT = 0;
@@ -26,6 +29,9 @@ contract Constants {
     uint24 constant FEE_5 = 500;
     uint24 constant FEE_30 = 3000;
     uint24 constant FEE_100 = 10_000;
+
+    uint256 DEFAULT_PROPORTION = 1;
+    uint256 DEFAULT_SLIPPAGE = 1;
 
     /// @custom:synthetix
     bytes32 constant _ADMIN_PERMISSION = "ADMIN";
