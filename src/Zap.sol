@@ -42,6 +42,7 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
 
     /// @custom:uniswap
     uint24 public constant FEE_TIER = 3000;
+    address public immutable ODOSROUTER;
     address public immutable ROUTER;
     address public immutable QUOTER;
 
@@ -53,6 +54,7 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         address _referrer,
         uint128 _susdcSpotId,
         address _aave,
+        address _odosRouter,
         address _router,
         address _quoter
     ) {
@@ -70,6 +72,7 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         AAVE = _aave;
 
         /// @custom:uniswap
+        ODOSROUTER = _odosRouter;
         ROUTER = _router;
         QUOTER = _quoter;
     }
@@ -789,9 +792,10 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         }
     }
 
-    function odosSwap(bytes memory data) internal payable {
-        (bool success, bytes memory result) = ROUTER.call{value: msg.value}(data);
-        require(success, SwapFailed(result));
+    function odosSwap(bytes memory data) external payable {
+        (bool success, bytes memory result) =
+            ODOSROUTER.call{value: msg.value}(data);
+        require(success);
     }
 
     /*//////////////////////////////////////////////////////////////
