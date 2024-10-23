@@ -22,8 +22,30 @@ contract OdosSwapTest is Bootstrap {
 
     using Surl for *;
 
-    function test_odos_quote_base() public base {
-        (uint256 status,) = getOdosQuote(
+struct QuoteData {
+    uint256 blockNumber;
+    uint256 dataGasEstimate;
+    uint256 gasEstimate;
+    uint256 gasEstimateValue;
+    uint256 gweiPerGas;
+    uint256 inAmounts;
+    uint256[] inValues;
+    address inTokens;
+    uint256 netOutValue;
+    uint256 outAmounts;
+    uint256[] outValues;
+    address outTokens;
+    uint256 partnerFeePercent;
+    bytes32 pathId;
+    bytes32 pathViz;
+    uint256 percentDiff;
+    int256 priceImpact;
+}
+
+    function test_odos_swap_base() public base {
+        uint256 status;
+
+        (uint256 quoteStatus, bytes memory quoteData) = getOdosQuote(
             BASE_CHAIN_ID,
             BASE_WETH,
             1 ether,
@@ -32,10 +54,18 @@ contract OdosSwapTest is Bootstrap {
             DEFAULT_SLIPPAGE,
             address(zap)
         );
-        assertEq(status, 200);
+
+        assertEq(quoteStatus, 200);
+
+        string memory pathId = abi.decode(vm.parseJson(string(quoteData), ".pathId"), (string));
+
+        (uint256 assembleStatus, bytes memory assembleData) =
+            odosAssemble(pathId);
+
+        assertEq(assembleStatus, 200);
     }
 
-    function test_odos_quote_arbitrum() public arbitrum {
+    function test_odos_swap_arbitrum() public arbitrum {
         (uint256 status,) = getOdosQuote(
             ARBITRUM_CHAIN_ID,
             ARBITRUM_WETH,
@@ -172,6 +202,31 @@ contract OdosSwapTest is Bootstrap {
             vm.toString(userAddress),
             '"}'
         );
+
+        (status, data) = url.post(headers, params);
+    }
+
+    function odosAssemble(string memory pathId)
+        internal
+        returns (uint256 status, bytes memory data)
+    {
+        string[] memory headers = new string[](1);
+        headers[0] = "Content-Type: application/json";
+
+        string memory url = "https://api.odos.xyz/sor/assemble";
+
+        string memory params = string.concat(
+            '{"userAddr": "',
+            vm.toString(address(zap)),
+            '", "pathId": "',
+            pathId,
+            '", "simulate": ',
+            vm.toString(true),
+            '}'
+        );
+
+        console2.logString('params: ');
+        console2.logString(params);
 
         (status, data) = url.post(headers, params);
     }
