@@ -12,7 +12,7 @@ contract Constants {
     uint256 constant ARBITRUM_SEPOLIA_FORK_BLOCK = 85_443_000;
 
     uint256 constant BASE_CHAIN_ID = 8453;
-    uint256 constant ARBITRUM_CHAIN_ID = 42161;
+    uint256 constant ARBITRUM_CHAIN_ID = 42_161;
 
     /// @custom:values
     address constant ACTOR = 0x7777777777777777777777777777777777777777;

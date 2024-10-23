@@ -14,15 +14,38 @@ import {
     Test,
     Zap
 } from "./utils/Bootstrap.sol";
-import {Surl} from "surl/src/Surl.sol";
+
 import "forge-std/console2.sol";
+import {Surl} from "surl/src/Surl.sol";
 
 contract OdosSwapTest is Bootstrap {
 
     using Surl for *;
 
-    function test_odos_swap_base() public base {
-        getOdosQuote(BASE_CHAIN_ID, BASE_WETH, 1 ether, BASE_USDC, DEFAULT_PROPORTION, DEFAULT_SLIPPAGE, address(zap));
+    function test_odos_quote_base() public base {
+        (uint256 status,) = getOdosQuote(
+            BASE_CHAIN_ID,
+            BASE_WETH,
+            1 ether,
+            BASE_USDC,
+            DEFAULT_PROPORTION,
+            DEFAULT_SLIPPAGE,
+            address(zap)
+        );
+        assertEq(status, 200);
+    }
+
+    function test_odos_quote_arbitrum() public arbitrum {
+        (uint256 status,) = getOdosQuote(
+            ARBITRUM_CHAIN_ID,
+            ARBITRUM_WETH,
+            1 ether,
+            ARBITRUM_USDC,
+            DEFAULT_PROPORTION,
+            DEFAULT_SLIPPAGE,
+            address(zap)
+        );
+        assertEq(status, 200);
     }
 
     // function test_swap_for_single_arbitrum(uint8 percentage) public arbitrum
@@ -115,7 +138,15 @@ contract OdosSwapTest is Bootstrap {
     //     vm.stopPrank();
     // }
 
-    function getOdosQuote(uint256 chainId, address tokenIn, uint256 amountIn, address tokenOut, uint256 proportionOut, uint256 slippageLimitPct, address userAddress)
+    function getOdosQuote(
+        uint256 chainId,
+        address tokenIn,
+        uint256 amountIn,
+        address tokenOut,
+        uint256 proportionOut,
+        uint256 slippageLimitPct,
+        address userAddress
+    )
         internal
         returns (uint256 status, bytes memory data)
     {
@@ -141,14 +172,8 @@ contract OdosSwapTest is Bootstrap {
             vm.toString(userAddress),
             '"}'
         );
-        console2.logString(params);
 
         (status, data) = url.post(headers, params);
-
-        console2.logBytes("status: ");
-        console2.logUint(status);
-        console2.logBytes("data: ");
-        console2.logString(string(data));
     }
 
 }
