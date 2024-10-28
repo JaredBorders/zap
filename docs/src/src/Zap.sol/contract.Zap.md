@@ -1,5 +1,5 @@
 # Zap
-[Git Source](https://github.com/moss-eth/zap/blob/70d3ea131ffe8af2f978b53f91daa0d8ac74d19a/src/Zap.sol)
+[Git Source](https://github.com/moss-eth/zap/blob/633c02e3c1d55b8cd7b9a28033f9517a34a72a75/src/Zap.sol)
 
 **Inherits:**
 [Reentrancy](/src/utils/Reentrancy.sol/contract.Reentrancy.md), [Errors](/src/utils/Errors.sol/contract.Errors.md), [Flush](/src/utils/Flush.sol/contract.Flush.md)
@@ -97,6 +97,13 @@ uint24 public constant FEE_TIER = 3000;
 ```
 
 
+### ODOSROUTER
+
+```solidity
+address public immutable ODOSROUTER;
+```
+
+
 ### ROUTER
 
 ```solidity
@@ -124,6 +131,7 @@ constructor(
     address _referrer,
     uint128 _susdcSpotId,
     address _aave,
+    address _odosRouter,
     address _router,
     address _quoter
 );
@@ -469,7 +477,7 @@ function unwind(
     bytes memory _path,
     uint256 _zapMinAmountOut,
     uint256 _unwrapMinAmountOut,
-    uint256 _swapMaxAmountIn,
+    uint256 _swapAmountIn,
     address _receiver
 )
     external
@@ -484,10 +492,10 @@ function unwind(
 |`_collateralId`|`uint128`|synthetix market id of collateral|
 |`_collateralAmount`|`uint256`|amount of collateral to unwind|
 |`_collateral`|`address`|address of collateral to unwind|
-|`_path`|`bytes`|Uniswap swap path encoded in reverse order|
+|`_path`|`bytes`|odos path from the sor/assemble api endpoint|
 |`_zapMinAmountOut`|`uint256`|acceptable slippage for zapping|
 |`_unwrapMinAmountOut`|`uint256`|acceptable slippage for unwrapping|
-|`_swapMaxAmountIn`|`uint256`|acceptable slippage for swapping|
+|`_swapAmountIn`|`uint256`|acceptable slippage for swapping|
 |`_receiver`|`address`|address to receive unwound collateral|
 
 
@@ -683,88 +691,6 @@ function _withdraw(
     internal;
 ```
 
-### quoteSwapFor
-
-query amount required to receive a specific amount of token
-
-*this is the QuoterV1 interface*
-
-*_path MUST be encoded backwards for `exactOutput`*
-
-*quoting is NOT gas efficient and should NOT be called on chain*
-
-
-```solidity
-function quoteSwapFor(
-    bytes memory _path,
-    uint256 _amountOut
-)
-    external
-    returns (
-        uint256 amountIn,
-        uint160[] memory sqrtPriceX96AfterList,
-        uint32[] memory initializedTicksCrossedList,
-        uint256 gasEstimate
-    );
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_path`|`bytes`|Uniswap swap path encoded in reverse order|
-|`_amountOut`|`uint256`|is the desired output amount|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`amountIn`|`uint256`|required as the input for the swap in order|
-|`sqrtPriceX96AfterList`|`uint160[]`||
-|`initializedTicksCrossedList`|`uint32[]`||
-|`gasEstimate`|`uint256`||
-
-
-### quoteSwapWith
-
-query amount received for a specific amount of token to spend
-
-*this is the QuoterV1 interface*
-
-*_path MUST be encoded in order for `exactInput`*
-
-*quoting is NOT gas efficient and should NOT be called on chain*
-
-
-```solidity
-function quoteSwapWith(
-    bytes memory _path,
-    uint256 _amountIn
-)
-    external
-    returns (
-        uint256 amountOut,
-        uint160[] memory sqrtPriceX96AfterList,
-        uint32[] memory initializedTicksCrossedList,
-        uint256 gasEstimate
-    );
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_path`|`bytes`|Uniswap swap path encoded in order|
-|`_amountIn`|`uint256`|is the input amount to spendp|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`amountOut`|`uint256`|received as the output for the swap in order|
-|`sqrtPriceX96AfterList`|`uint160[]`||
-|`initializedTicksCrossedList`|`uint32[]`||
-|`gasEstimate`|`uint256`||
-
-
 ### swapFor
 
 swap a tolerable amount of tokens for a specific amount of USDC
@@ -780,31 +706,29 @@ swap a tolerable amount of tokens for a specific amount of USDC
 function swapFor(
     address _from,
     bytes memory _path,
-    uint256 _amount,
-    uint256 _maxAmountIn,
+    uint256 _amountIn,
     address _receiver
 )
     external
-    returns (uint256 deducted);
+    returns (uint256 amountOut);
 ```
 **Parameters**
 
 |Name|Type|Description|
 |----|----|-----------|
 |`_from`|`address`|address of token to swap|
-|`_path`|`bytes`|uniswap swap path encoded in reverse order|
-|`_amount`|`uint256`|amount of USDC to receive in return|
-|`_maxAmountIn`|`uint256`|max amount of token to spend|
+|`_path`|`bytes`|odos path from the sor/assemble api endpoint|
+|`_amountIn`|`uint256`|max amount of token to spend|
 |`_receiver`|`address`|address to receive USDC|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`deducted`|`uint256`|amount of incoming token; i.e., amount spent|
+|`amountOut`|`uint256`|amount of tokens swapped for|
 
 
-### _swapFor
+### odosSwap
 
 *allowance is assumed*
 
@@ -812,69 +736,13 @@ function swapFor(
 
 
 ```solidity
-function _swapFor(
-    address _from,
-    bytes memory _path,
-    uint256 _amount,
-    uint256 _maxAmountIn
+function odosSwap(
+    address _tokenFrom,
+    uint256 _amountIn,
+    bytes memory swapPath
 )
     internal
-    returns (uint256 deducted);
-```
-
-### swapWith
-
-swap a specific amount of tokens for a tolerable amount of USDC
-
-*_path MUST be encoded in order for `exactInput`*
-
-*caller must grant token allowance to this contract*
-
-
-```solidity
-function swapWith(
-    address _from,
-    bytes memory _path,
-    uint256 _amount,
-    uint256 _amountOutMinimum,
-    address _receiver
-)
-    external
-    returns (uint256 received);
-```
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`_from`|`address`|address of token to swap|
-|`_path`|`bytes`|uniswap swap path encoded in order|
-|`_amount`|`uint256`|of token to swap|
-|`_amountOutMinimum`|`uint256`|tolerable amount of USDC to receive specified with 6 decimals|
-|`_receiver`|`address`|address to receive USDC|
-
-**Returns**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`received`|`uint256`|amount of USDC|
-
-
-### _swapWith
-
-*allowance is assumed*
-
-*following execution, this contract will hold the swapped USDC*
-
-
-```solidity
-function _swapWith(
-    address _from,
-    bytes memory _path,
-    uint256 _amount,
-    uint256 _amountOutMinimum
-)
-    internal
-    returns (uint256 received);
+    returns (uint256 amountOut);
 ```
 
 ### _pull

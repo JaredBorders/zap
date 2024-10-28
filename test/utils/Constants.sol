@@ -4,22 +4,22 @@ pragma solidity 0.8.27;
 contract Constants {
 
     struct Transaction {
-      uint256 chainId;
-      bytes data;
-      address from;
-      uint256 gas;
-      uint256 gasPrice;
-      uint256 nonce;
-      address to;
-      uint256 value;
-   }
+        uint256 chainId;
+        bytes data;
+        address from;
+        uint256 gas;
+        uint256 gasPrice;
+        uint256 nonce;
+        address to;
+        uint256 value;
+    }
 
     /// @custom:forks
     string constant BASE_RPC_REF = "BASE_RPC";
     string constant ARBITRUM_RPC_REF = "ARBITRUM_RPC";
     string constant ARBITRUM_SEPOLIA_RPC_REF = "ARBITRUM_SEPOLIA_RPC";
     uint256 constant BASE_FORK_BLOCK = 21_676_153;
-    uint256 constant ARBITRUM_FORK_BLOCK = 256_615_000;
+    uint256 constant ARBITRUM_FORK_BLOCK = 268_633_908;
     uint256 constant ARBITRUM_SEPOLIA_FORK_BLOCK = 85_443_000;
 
     uint256 constant BASE_CHAIN_ID = 8453;

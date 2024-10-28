@@ -11,11 +11,9 @@ import {IPerpsMarket, ISpotMarket} from "../interfaces/ISynthetix.sol";
 import {IFactory, IRouter} from "../interfaces/IUniswap.sol";
 import {Constants} from "../utils/Constants.sol";
 
+import {stdJson} from "forge-std/StdJson.sol";
 import {Test} from "forge-std/Test.sol";
 import {Surl} from "surl/src/Surl.sol";
-import {stdJson} from "forge-std/StdJson.sol";
-
-import "forge-std/Console2.sol";
 
 contract Bootstrap is
     Test,
@@ -58,7 +56,7 @@ contract Bootstrap is
         ARBITRUM = vm.createFork(ARBITRUM_RPC, ARBITRUM_FORK_BLOCK);
         ARBITRUM_SEPOLIA =
             vm.createFork(ARBITRUM_SEPOLIA_RPC, ARBITRUM_SEPOLIA_FORK_BLOCK);
-        
+
         headers.push("Content-Type: application/json");
     }
 
