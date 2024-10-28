@@ -354,10 +354,10 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
     /// @param _collateralId synthetix market id of collateral
     /// @param _collateralAmount amount of collateral to unwind
     /// @param _collateral address of collateral to unwind
-    /// @param _path Uniswap swap path encoded in reverse order
+    /// @param _path odos path from the sor/assemble api endpoint
     /// @param _zapMinAmountOut acceptable slippage for zapping
     /// @param _unwrapMinAmountOut acceptable slippage for unwrapping
-    /// @param _swapMaxAmountIn acceptable slippage for swapping
+    /// @param _swapAmountIn acceptable slippage for swapping
     /// @param _receiver address to receive unwound collateral
     function unwind(
         uint128 _accountId,
@@ -367,7 +367,7 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         bytes memory _path,
         uint256 _zapMinAmountOut,
         uint256 _unwrapMinAmountOut,
-        uint256 _swapMaxAmountIn,
+        uint256 _swapAmountIn,
         address _receiver
     )
         external
@@ -384,7 +384,7 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
             _path,
             _zapMinAmountOut,
             _unwrapMinAmountOut,
-            _swapMaxAmountIn,
+            _swapAmountIn,
             _receiver
         );
 
@@ -467,7 +467,7 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
             bytes memory _path,
             uint256 _zapMinAmountOut,
             uint256 _unwrapMinAmountOut,
-            uint256 _swapMaxAmountIn,
+            uint256 _swapAmountIn,
         ) = abi.decode(
             _params,
             (
@@ -511,9 +511,12 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         // i.e., USDe -(swap)-> USDC -(repay)-> Aave
         // i.e., USDC -(repay)-> Aave
         // whatever collateral amount is remaining is returned to the caller
-        unwound -= _collateral == USDC
-            ? _flashloan
-            : _swapFor(_collateral, _path, _flashloan, _swapMaxAmountIn);
+        if (_collateral == USDC) {
+            unwound -= _flashloan;
+        } else {
+            unwound -= _swapAmountIn;
+            odosSwap(_collateral, _swapAmountIn, _path);
+        }
 
         /// @notice the path and max amount in must take into consideration:
         ///     (1) Aave flashloan amount
@@ -632,170 +635,53 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
     }
 
     /*//////////////////////////////////////////////////////////////
-                                UNISWAP
+                                ODOS
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice query amount required to receive a specific amount of token
-    /// @dev this is the QuoterV1 interface
-    /// @dev _path MUST be encoded backwards for `exactOutput`
-    /// @dev quoting is NOT gas efficient and should NOT be called on chain
-    /// @custom:integrator quoting function inclusion is for QoL purposes
-    /// @param _path Uniswap swap path encoded in reverse order
-    /// @param _amountOut is the desired output amount
-    /// @return amountIn required as the input for the swap in order
-    function quoteSwapFor(
-        bytes memory _path,
-        uint256 _amountOut
-    )
-        external
-        returns (
-            uint256 amountIn,
-            uint160[] memory sqrtPriceX96AfterList,
-            uint32[] memory initializedTicksCrossedList,
-            uint256 gasEstimate
-        )
-    {
-        return IQuoter(QUOTER).quoteExactOutput(_path, _amountOut);
-    }
+    // /// @notice swap a tolerable amount of tokens for a specific amount of USDC
+    // /// @dev _path MUST be encoded backwards for `exactOutput`
+    // /// @dev caller must grant token allowance to this contract
+    // /// @dev any excess token not spent will be returned to the caller
+    // /// @param _from address of token to swap
+    // /// @param _path odos path from the sor/assemble api endpoint
+    // /// @param _amount amount of USDC to receive in return
+    // /// @param _maxAmountIn max amount of token to spend
+    // /// @param _receiver address to receive USDC
+    // function swapFor(
+    //     address _from,
+    //     bytes memory _path,
+    //     uint256 _amount,
+    //     uint256 _maxAmountIn,
+    //     address _receiver
+    // )
+    //     external /*uint256 deducted*/
+    // {
+    //     _pull(_from, msg.sender, _maxAmountIn);
+    //     odosSwap(_from, _maxAmountIn, _path);
+    //     _push(USDC, _receiver, _amount);
 
-    /// @notice query amount received for a specific amount of token to spend
-    /// @dev this is the QuoterV1 interface
-    /// @dev _path MUST be encoded in order for `exactInput`
-    /// @dev quoting is NOT gas efficient and should NOT be called on chain
-    /// @custom:integrator quoting function inclusion is for QoL purposes
-    /// @param _path Uniswap swap path encoded in order
-    /// @param _amountIn is the input amount to spendp
-    /// @return amountOut received as the output for the swap in order
-    function quoteSwapWith(
-        bytes memory _path,
-        uint256 _amountIn
-    )
-        external
-        returns (
-            uint256 amountOut,
-            uint160[] memory sqrtPriceX96AfterList,
-            uint32[] memory initializedTicksCrossedList,
-            uint256 gasEstimate
-        )
-    {
-        return IQuoter(QUOTER).quoteExactInput(_path, _amountIn);
-    }
-
-    /// @notice swap a tolerable amount of tokens for a specific amount of USDC
-    /// @dev _path MUST be encoded backwards for `exactOutput`
-    /// @dev caller must grant token allowance to this contract
-    /// @dev any excess token not spent will be returned to the caller
-    /// @param _from address of token to swap
-    /// @param _path uniswap swap path encoded in reverse order
-    /// @param _amount amount of USDC to receive in return
-    /// @param _maxAmountIn max amount of token to spend
-    /// @param _receiver address to receive USDC
-    /// @return deducted amount of incoming token; i.e., amount spent
-    function swapFor(
-        address _from,
-        bytes memory _path,
-        uint256 _amount,
-        uint256 _maxAmountIn,
-        address _receiver
-    )
-        external
-        returns (uint256 deducted)
-    {
-        _pull(_from, msg.sender, _maxAmountIn);
-        deducted = _swapFor(_from, _path, _amount, _maxAmountIn);
-        _push(USDC, _receiver, _amount);
-
-        if (deducted < _maxAmountIn) {
-            _push(_from, msg.sender, _maxAmountIn - deducted);
-        }
-    }
+    //     //TODO
+    //     // if (deducted < _maxAmountIn) {
+    //     //     _push(_from, msg.sender, _maxAmountIn - deducted);
+    //     // }
+    // }
 
     /// @dev allowance is assumed
     /// @dev following execution, this contract will hold the swapped USDC
-    function _swapFor(
-        address _from,
-        bytes memory _path,
-        uint256 _amount,
-        uint256 _maxAmountIn
+    function odosSwap(
+        address _tokenFrom,
+        uint256 _amountIn,
+        bytes memory swapPath
     )
         internal
-        returns (uint256 deducted)
     {
-        IERC20(_from).approve(ROUTER, _maxAmountIn);
+        IERC20(_tokenFrom).approve(ODOSROUTER, _amountIn);
 
-        IRouter.ExactOutputParams memory params = IRouter.ExactOutputParams({
-            path: _path,
-            recipient: address(this),
-            amountOut: _amount,
-            amountInMaximum: _maxAmountIn
-        });
-
-        try IRouter(ROUTER).exactOutput(params) returns (uint256 amountIn) {
-            deducted = amountIn;
-        } catch Error(string memory reason) {
-            revert SwapFailed(reason);
-        }
-
-        IERC20(_from).approve(ROUTER, 0);
-    }
-
-    /// @notice swap a specific amount of tokens for a tolerable amount of USDC
-    /// @dev _path MUST be encoded in order for `exactInput`
-    /// @dev caller must grant token allowance to this contract
-    /// @param _from address of token to swap
-    /// @param _path uniswap swap path encoded in order
-    /// @param _amount of token to swap
-    /// @param _amountOutMinimum tolerable amount of USDC to receive specified
-    /// with 6
-    /// decimals
-    /// @param _receiver address to receive USDC
-    /// @return received amount of USDC
-    function swapWith(
-        address _from,
-        bytes memory _path,
-        uint256 _amount,
-        uint256 _amountOutMinimum,
-        address _receiver
-    )
-        external
-        returns (uint256 received)
-    {
-        _pull(_from, msg.sender, _amount);
-        received = _swapWith(_from, _path, _amount, _amountOutMinimum);
-        _push(USDC, _receiver, received);
-    }
-
-    /// @dev allowance is assumed
-    /// @dev following execution, this contract will hold the swapped USDC
-    function _swapWith(
-        address _from,
-        bytes memory _path,
-        uint256 _amount,
-        uint256 _amountOutMinimum
-    )
-        internal
-        returns (uint256 received)
-    {
-        IERC20(_from).approve(ROUTER, _amount);
-
-        IRouter.ExactInputParams memory params = IRouter.ExactInputParams({
-            path: _path,
-            recipient: address(this),
-            amountIn: _amount,
-            amountOutMinimum: _amountOutMinimum
-        });
-
-        try IRouter(ROUTER).exactInput(params) returns (uint256 amountOut) {
-            received = amountOut;
-        } catch Error(string memory reason) {
-            revert SwapFailed(reason);
-        }
-    }
-
-    function odosSwap(bytes memory data) external payable {
         (bool success, bytes memory result) =
-            ODOSROUTER.call{value: msg.value}(data);
-        require(success);
+            ODOSROUTER.call( /*{value: msg.value}*/ swapPath);
+        require(success, SwapFailed(string(result)));
+
+        IERC20(_tokenFrom).approve(ODOSROUTER, 0);
     }
 
     /*//////////////////////////////////////////////////////////////

@@ -10,7 +10,9 @@ import {IPerpsMarket, ISpotMarket} from "../interfaces/ISynthetix.sol";
 
 import {IFactory, IRouter} from "../interfaces/IUniswap.sol";
 import {Constants} from "../utils/Constants.sol";
+
 import {Test} from "forge-std/Test.sol";
+import {Surl} from "surl/src/Surl.sol";
 
 contract Bootstrap is
     Test,
@@ -20,6 +22,8 @@ contract Bootstrap is
     ArbitrumSepolia,
     Constants
 {
+
+    using Surl for *;
 
     /// @custom:forks
     uint256 BASE;
@@ -156,6 +160,66 @@ contract Bootstrap is
         deal(address(token), eoa, amount);
         vm.prank(eoa);
         IERC20(token).approve(approved, type(uint256).max);
+    }
+
+    function getOdosQuote(
+        uint256 chainId,
+        address tokenIn,
+        uint256 amountIn,
+        address tokenOut,
+        uint256 proportionOut,
+        uint256 slippageLimitPct,
+        address userAddress
+    )
+        internal
+        returns (uint256 status, bytes memory data)
+    {
+        // Perform a post request with headers and JSON body
+        string[] memory headers = new string[](1);
+        headers[0] = "Content-Type: application/json";
+
+        string memory url = "https://api.odos.xyz/sor/quote/v2";
+        string memory params = string.concat(
+            '{"chainId": ',
+            vm.toString(chainId),
+            ', "inputTokens": [{"tokenAddress": "',
+            vm.toString(tokenIn),
+            '", "amount": "',
+            vm.toString(amountIn),
+            '"}],"outputTokens": [{"tokenAddress": "',
+            vm.toString(tokenOut),
+            '", "proportion": ',
+            vm.toString(proportionOut),
+            '}], "slippageLimitPercent": ',
+            vm.toString(slippageLimitPct),
+            ', "userAddr": "',
+            vm.toString(userAddress),
+            '"}'
+        );
+
+        (status, data) = url.post(headers, params);
+    }
+
+    function odosAssemble(string memory pathId)
+        internal
+        returns (uint256 status, bytes memory data)
+    {
+        string[] memory headers = new string[](1);
+        headers[0] = "Content-Type: application/json";
+
+        string memory url = "https://api.odos.xyz/sor/assemble";
+
+        string memory params = string.concat(
+            '{"userAddr": "',
+            vm.toString(address(zap)),
+            '", "pathId": "',
+            pathId,
+            '", "simulate": ',
+            vm.toString(false),
+            "}"
+        );
+
+        (status, data) = url.post(headers, params);
     }
 
 }
