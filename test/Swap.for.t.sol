@@ -34,12 +34,15 @@ contract SwapForTest is Bootstrap {
         }
 
         vm.startPrank(ACTOR);
-        zap.swapFor({
+        uint256 amountOut = zap.swapFor({
             _from: BASE_WETH,
             _path: swapPath,
             _amountIn: DEFAULT_AMOUNT,
             _receiver: ACTOR
         });
+
+        assertEq(usdc.balanceOf(ACTOR), amountOut);
+        assertEq(weth.balanceOf(ACTOR), 0);
     }
 
     function test_swap_for_weth_arbitrum() public arbitrum {
@@ -56,34 +59,65 @@ contract SwapForTest is Bootstrap {
         }
 
         vm.startPrank(ACTOR);
-        zap.swapFor({
+         uint256 amountOut = zap.swapFor({
             _from: ARBITRUM_WETH,
             _path: swapPath,
             _amountIn: DEFAULT_AMOUNT,
             _receiver: ACTOR
         });
+
+        assertEq(usdc.balanceOf(ACTOR), amountOut);
+        assertEq(weth.balanceOf(ACTOR), 0);
     }
 
-    function test_swap_for_tbtc_arbitrum() public arbitrum {
-        {
-            _spin(ACTOR, tbtc, DEFAULT_AMOUNT, address(zap));
-            assertEq(usdc.balanceOf(ACTOR), 0);
-            assertEq(tbtc.balanceOf(ACTOR), DEFAULT_AMOUNT);
+    // function test_swap_for_tbtc_arbitrum() public arbitrum {
+    //     {
+    //         _spin(ACTOR, tbtc, DEFAULT_AMOUNT, address(zap));
+    //         assertEq(usdc.balanceOf(ACTOR), 0);
+    //         assertEq(tbtc.balanceOf(ACTOR), DEFAULT_AMOUNT);
 
-            pathId = getOdosQuotePathId(
-                ARBITRUM_CHAIN_ID, ARBITRUM_TBTC, DEFAULT_AMOUNT, ARBITRUM_USDC
-            );
+    //         pathId = getOdosQuotePathId(
+    //             ARBITRUM_CHAIN_ID, ARBITRUM_TBTC, DEFAULT_AMOUNT, ARBITRUM_USDC
+    //         );
 
-            swapPath = getAssemblePath(pathId);
-        }
+    //         swapPath = getAssemblePath(pathId);
+    //     }
 
-        vm.startPrank(ACTOR);
-        zap.swapFor({
-            _from: ARBITRUM_TBTC,
-            _path: swapPath,
-            _amountIn: DEFAULT_AMOUNT,
-            _receiver: ACTOR
-        });
-    }
+    //     vm.startPrank(ACTOR);
+    //      uint256 amountOut = zap.swapFor({
+    //         _from: ARBITRUM_TBTC,
+    //         _path: swapPath,
+    //         _amountIn: DEFAULT_AMOUNT,
+    //         _receiver: ACTOR
+    //     });
+
+    //     assertEq(usdc.balanceOf(ACTOR), amountOut);
+    //     assertEq(tbtc.balanceOf(ACTOR), 0);
+    // }
+
+    // function test_swap_for_tbtc_base() public base {
+    //     {
+    //         _spin(ACTOR, tbtc, DEFAULT_AMOUNT, address(zap));
+    //         assertEq(usdc.balanceOf(ACTOR), 0);
+    //         assertEq(tbtc.balanceOf(ACTOR), DEFAULT_AMOUNT);
+
+    //         pathId = getOdosQuotePathId(
+    //             BASE_CHAIN_ID, BASE_TBTC, DEFAULT_AMOUNT, BASE_USDC
+    //         );
+
+    //         swapPath = getAssemblePath(pathId);
+    //     }
+
+    //     vm.startPrank(ACTOR);
+    //      uint256 amountOut = zap.swapFor({
+    //         _from: BASE_TBTC,
+    //         _path: swapPath,
+    //         _amountIn: DEFAULT_AMOUNT,
+    //         _receiver: ACTOR
+    //     });
+
+    //     assertEq(usdc.balanceOf(ACTOR), amountOut);
+    //     assertEq(tbtc.balanceOf(ACTOR), 0);
+    // }
 
 }

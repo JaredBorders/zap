@@ -666,12 +666,14 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         // }
     }
 
-    /// @dev allowance is assumed
     /// @dev following execution, this contract will hold the swapped USDC
+    /// @param _tokenFrom address of token being swapped
+    /// @param _amountIn amount of token being swapped
+    /// @param _swapPath bytes from odos assemble api containing the swap details
     function odosSwap(
         address _tokenFrom,
         uint256 _amountIn,
-        bytes memory swapPath
+        bytes memory _swapPath
     )
         internal
         returns (uint256 amountOut)
@@ -679,7 +681,7 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         IERC20(_tokenFrom).approve(ODOSROUTER, _amountIn);
 
         (bool success, bytes memory result) =
-            ODOSROUTER.call{value: 0}(swapPath);
+            ODOSROUTER.call{value: 0}(_swapPath);
         require(success, SwapFailed(string(result)));
         amountOut = abi.decode(result, (uint256));
 
