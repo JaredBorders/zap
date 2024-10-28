@@ -3,6 +3,17 @@ pragma solidity 0.8.27;
 
 contract Constants {
 
+    struct Transaction {
+      uint256 chainId;
+      bytes data;
+      address from;
+      uint256 gas;
+      uint256 gasPrice;
+      uint256 nonce;
+      address to;
+      uint256 value;
+   }
+
     /// @custom:forks
     string constant BASE_RPC_REF = "BASE_RPC";
     string constant ARBITRUM_RPC_REF = "ARBITRUM_RPC";

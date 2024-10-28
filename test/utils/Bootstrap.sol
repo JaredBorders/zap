@@ -13,6 +13,7 @@ import {Constants} from "../utils/Constants.sol";
 
 import {Test} from "forge-std/Test.sol";
 import {Surl} from "surl/src/Surl.sol";
+import {stdJson} from "forge-std/StdJson.sol";
 
 import "forge-std/Console2.sol";
 
@@ -26,6 +27,7 @@ contract Bootstrap is
 {
 
     using Surl for *;
+    using stdJson for string;
 
     /// @custom:forks
     uint256 BASE;
@@ -275,7 +277,9 @@ contract Bootstrap is
         {
             (, assembleData) = odosAssemble(pathId);
         }
-        swapPath = vm.parseJson(string(assembleData), ".transaction.data");
+        bytes memory transaction = string(assembleData).parseRaw(".transaction");
+        Transaction memory rawTxDetail = abi.decode(transaction, (Transaction));
+        return rawTxDetail.data;
     }
 
 }
