@@ -30,6 +30,7 @@ contract Constants {
     uint24 constant FEE_30 = 3000;
     uint24 constant FEE_100 = 10_000;
 
+    uint256 DEFAULT_AMOUNT = 1e18;
     uint256 DEFAULT_PROPORTION = 1;
     uint256 DEFAULT_SLIPPAGE = 1;
 
@@ -47,5 +48,8 @@ contract Constants {
     bytes32 constant _BFP_PERPS_PAY_DEBT_PERMISSION = "BFP_PERPS_PAY_DEBT";
     bytes32 constant _BFP_PERPS_SPLIT_ACCOUNT_PERMISSION =
         "BFP_PERPS_SPLIT_ACCOUNT";
+
+    string constant ODOS_ASSEMBLE_URL = "https://api.odos.xyz/sor/assemble";
+    string constant ODOS_QUOTE_URL = "https://api.odos.xyz/sor/quote/v2";
 
 }

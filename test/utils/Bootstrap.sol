@@ -14,6 +14,8 @@ import {Constants} from "../utils/Constants.sol";
 import {Test} from "forge-std/Test.sol";
 import {Surl} from "surl/src/Surl.sol";
 
+import "forge-std/Console2.sol";
+
 contract Bootstrap is
     Test,
     Deploy,
@@ -42,6 +44,8 @@ contract Bootstrap is
     IERC20 weth;
     IERC20 tbtc;
 
+    string[] headers;
+
     function setUp() public {
         string memory BASE_RPC = vm.envString(BASE_RPC_REF);
         string memory ARBITRUM_RPC = vm.envString(ARBITRUM_RPC_REF);
@@ -52,6 +56,8 @@ contract Bootstrap is
         ARBITRUM = vm.createFork(ARBITRUM_RPC, ARBITRUM_FORK_BLOCK);
         ARBITRUM_SEPOLIA =
             vm.createFork(ARBITRUM_SEPOLIA_RPC, ARBITRUM_SEPOLIA_FORK_BLOCK);
+        
+        headers.push("Content-Type: application/json");
     }
 
     modifier base() {
@@ -162,7 +168,7 @@ contract Bootstrap is
         IERC20(token).approve(approved, type(uint256).max);
     }
 
-    function getOdosQuote(
+    function getOdosQuoteParams(
         uint256 chainId,
         address tokenIn,
         uint256 amountIn,
@@ -172,14 +178,9 @@ contract Bootstrap is
         address userAddress
     )
         internal
-        returns (uint256 status, bytes memory data)
+        returns (string memory)
     {
-        // Perform a post request with headers and JSON body
-        string[] memory headers = new string[](1);
-        headers[0] = "Content-Type: application/json";
-
-        string memory url = "https://api.odos.xyz/sor/quote/v2";
-        string memory params = string.concat(
+        return string.concat(
             '{"chainId": ',
             vm.toString(chainId),
             ', "inputTokens": [{"tokenAddress": "',
@@ -196,30 +197,85 @@ contract Bootstrap is
             vm.toString(userAddress),
             '"}'
         );
+    }
 
-        (status, data) = url.post(headers, params);
+    function getOdosQuote(
+        uint256 chainId,
+        address tokenIn,
+        uint256 amountIn,
+        address tokenOut,
+        uint256 proportionOut,
+        uint256 slippageLimitPct,
+        address userAddress
+    )
+        internal
+        returns (uint256 status, bytes memory data)
+    {
+        string memory params = getOdosQuoteParams(
+            chainId,
+            tokenIn,
+            amountIn,
+            tokenOut,
+            proportionOut,
+            slippageLimitPct,
+            userAddress
+        );
+
+        (status, data) = ODOS_QUOTE_URL.post(headers, params);
+    }
+
+    function getOdosQuotePathId(
+        uint256 chainId,
+        address tokenIn,
+        uint256 amountIn,
+        address tokenOut
+    )
+        internal
+        returns (string memory pathId)
+    {
+        (, bytes memory data) = getOdosQuote(
+            chainId,
+            tokenIn,
+            amountIn,
+            tokenOut,
+            DEFAULT_PROPORTION,
+            DEFAULT_SLIPPAGE,
+            address(zap)
+        );
+        pathId = abi.decode(vm.parseJson(string(data), ".pathId"), (string));
+    }
+
+    function getOdosAssembleParams(string memory pathId)
+        internal
+        returns (string memory)
+    {
+        return string.concat(
+            '{"userAddr": "',
+            vm.toString(address(zap)),
+            '", "pathId": "',
+            pathId,
+            '"}'
+        );
     }
 
     function odosAssemble(string memory pathId)
         internal
         returns (uint256 status, bytes memory data)
     {
-        string[] memory headers = new string[](1);
-        headers[0] = "Content-Type: application/json";
+        string memory params = getOdosAssembleParams(pathId);
 
-        string memory url = "https://api.odos.xyz/sor/assemble";
+        (status, data) = ODOS_ASSEMBLE_URL.post(headers, params);
+    }
 
-        string memory params = string.concat(
-            '{"userAddr": "',
-            vm.toString(address(zap)),
-            '", "pathId": "',
-            pathId,
-            '", "simulate": ',
-            vm.toString(false),
-            "}"
-        );
-
-        (status, data) = url.post(headers, params);
+    function getAssemblePath(string memory pathId)
+        internal
+        returns (bytes memory swapPath)
+    {
+        bytes memory assembleData;
+        {
+            (, assembleData) = odosAssemble(pathId);
+        }
+        swapPath = vm.parseJson(string(assembleData), ".transaction.data");
     }
 
 }

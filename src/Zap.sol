@@ -638,34 +638,33 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
                                 ODOS
     //////////////////////////////////////////////////////////////*/
 
-    // /// @notice swap a tolerable amount of tokens for a specific amount of
-    // USDC
-    // /// @dev _path MUST be encoded backwards for `exactOutput`
-    // /// @dev caller must grant token allowance to this contract
-    // /// @dev any excess token not spent will be returned to the caller
-    // /// @param _from address of token to swap
-    // /// @param _path odos path from the sor/assemble api endpoint
-    // /// @param _amount amount of USDC to receive in return
-    // /// @param _maxAmountIn max amount of token to spend
-    // /// @param _receiver address to receive USDC
-    // function swapFor(
-    //     address _from,
-    //     bytes memory _path,
-    //     uint256 _amount,
-    //     uint256 _maxAmountIn,
-    //     address _receiver
-    // )
-    //     external /*uint256 deducted*/
-    // {
-    //     _pull(_from, msg.sender, _maxAmountIn);
-    //     odosSwap(_from, _maxAmountIn, _path);
-    //     _push(USDC, _receiver, _amount);
+    /// @notice swap a tolerable amount of tokens for a specific amount of USDC
+    /// @dev _path MUST be encoded backwards for `exactOutput`
+    /// @dev caller must grant token allowance to this contract
+    /// @dev any excess token not spent will be returned to the caller
+    /// @param _from address of token to swap
+    /// @param _path odos path from the sor/assemble api endpoint
+    /// @param _amountIn max amount of token to spend
+    /// @param _receiver address to receive USDC
+    /// @return amountOut amount of tokens swapped for
+    function swapFor(
+        address _from,
+        bytes memory _path,
+        uint256 _amountIn,
+        address _receiver
+    )
+        external
+        returns (uint256 amountOut)
+    {
+        _pull(_from, msg.sender, _amountIn);
+        amountOut = odosSwap(_from, _amountIn, _path);
+        _push(USDC, _receiver, amountOut);
 
-    //     //TODO
-    //     // if (deducted < _maxAmountIn) {
-    //     //     _push(_from, msg.sender, _maxAmountIn - deducted);
-    //     // }
-    // }
+        //TODO
+        // if (deducted < _maxAmountIn) {
+        //     _push(_from, msg.sender, _maxAmountIn - deducted);
+        // }
+    }
 
     /// @dev allowance is assumed
     /// @dev following execution, this contract will hold the swapped USDC
@@ -675,12 +674,14 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         bytes memory swapPath
     )
         internal
+        returns (uint256 amountOut)
     {
         IERC20(_tokenFrom).approve(ODOSROUTER, _amountIn);
 
         (bool success, bytes memory result) =
-            ODOSROUTER.call( /*{value: msg.value}*/ swapPath);
+            ODOSROUTER.call{value: 0}(swapPath);
         require(success, SwapFailed(string(result)));
+        amountOut = abi.decode(result, (uint256));
 
         IERC20(_tokenFrom).approve(ODOSROUTER, 0);
     }

@@ -15,9 +15,9 @@ import {
     Zap
 } from "./utils/Bootstrap.sol";
 
-contract OdosSwapTest is Bootstrap {
+contract OdosAPITest is Bootstrap {
 
-    function test_odos_swap_base() public base {
+    function test_odos_api_base() public base {
         uint256 status;
 
         (uint256 quoteStatus, bytes memory quoteData) = getOdosQuote(
@@ -44,7 +44,7 @@ contract OdosSwapTest is Bootstrap {
             vm.parseJson(string(assembleData), ".transaction.data");
     }
 
-    function test_odos_swap_arbitrum() public arbitrum {
+    function test_odos_api_arbitrum() public arbitrum {
         uint256 status;
 
         (uint256 quoteStatus, bytes memory quoteData) = getOdosQuote(
