@@ -52,10 +52,9 @@ contract Bootstrap is
         string memory ARBITRUM_SEPOLIA_RPC =
             vm.envString(ARBITRUM_SEPOLIA_RPC_REF);
 
-        BASE = vm.createFork(BASE_RPC, BASE_FORK_BLOCK);
-        ARBITRUM = vm.createFork(ARBITRUM_RPC, ARBITRUM_FORK_BLOCK);
-        ARBITRUM_SEPOLIA =
-            vm.createFork(ARBITRUM_SEPOLIA_RPC, ARBITRUM_SEPOLIA_FORK_BLOCK);
+        BASE = vm.createFork(BASE_RPC);
+        ARBITRUM = vm.createFork(ARBITRUM_RPC);
+        ARBITRUM_SEPOLIA = vm.createFork(ARBITRUM_SEPOLIA_RPC);
 
         headers.push("Content-Type: application/json");
     }
