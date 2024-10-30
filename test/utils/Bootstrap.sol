@@ -271,4 +271,5 @@ contract Bootstrap is
         Transaction memory rawTxDetail = abi.decode(transaction, (Transaction));
         return rawTxDetail.data;
     }
+
 }
