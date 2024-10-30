@@ -1,5 +1,5 @@
 # Zap
-[Git Source](https://github.com/moss-eth/zap/blob/633c02e3c1d55b8cd7b9a28033f9517a34a72a75/src/Zap.sol)
+[Git Source](https://github.com/moss-eth/zap/blob/061fdc888af929a33bd6199e327f88f4440e3090/src/Zap.sol)
 
 **Inherits:**
 [Reentrancy](/src/utils/Reentrancy.sol/contract.Reentrancy.md), [Errors](/src/utils/Errors.sol/contract.Errors.md), [Flush](/src/utils/Flush.sol/contract.Flush.md)
@@ -90,31 +90,10 @@ address public immutable AAVE;
 ```
 
 
-### FEE_TIER
-
-```solidity
-uint24 public constant FEE_TIER = 3000;
-```
-
-
-### ODOSROUTER
-
-```solidity
-address public immutable ODOSROUTER;
-```
-
-
 ### ROUTER
 
 ```solidity
 address public immutable ROUTER;
-```
-
-
-### QUOTER
-
-```solidity
-address public immutable QUOTER;
 ```
 
 
@@ -131,9 +110,7 @@ constructor(
     address _referrer,
     uint128 _susdcSpotId,
     address _aave,
-    address _odosRouter,
-    address _router,
-    address _quoter
+    address _router
 );
 ```
 
@@ -691,19 +668,18 @@ function _withdraw(
     internal;
 ```
 
-### swapFor
+### swapFrom
 
-swap a tolerable amount of tokens for a specific amount of USDC
+swap an amount of tokens for the optimal amount of USDC
 
-*_path MUST be encoded backwards for `exactOutput`*
+*_path USDC is not enforced as the output token during the swap, but
+is the expected in the call to push*
 
 *caller must grant token allowance to this contract*
 
-*any excess token not spent will be returned to the caller*
-
 
 ```solidity
-function swapFor(
+function swapFrom(
     address _from,
     bytes memory _path,
     uint256 _amountIn,
@@ -718,7 +694,7 @@ function swapFor(
 |----|----|-----------|
 |`_from`|`address`|address of token to swap|
 |`_path`|`bytes`|odos path from the sor/assemble api endpoint|
-|`_amountIn`|`uint256`|max amount of token to spend|
+|`_amountIn`|`uint256`|amount of token to spend|
 |`_receiver`|`address`|address to receive USDC|
 
 **Returns**
@@ -730,8 +706,6 @@ function swapFor(
 
 ### odosSwap
 
-*allowance is assumed*
-
 *following execution, this contract will hold the swapped USDC*
 
 
@@ -739,11 +713,19 @@ function swapFor(
 function odosSwap(
     address _tokenFrom,
     uint256 _amountIn,
-    bytes memory swapPath
+    bytes memory _swapPath
 )
     internal
     returns (uint256 amountOut);
 ```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_tokenFrom`|`address`|address of token being swapped|
+|`_amountIn`|`uint256`|amount of token being swapped|
+|`_swapPath`|`bytes`|bytes from odos assemble api containing the swap details|
+
 
 ### _pull
 

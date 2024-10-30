@@ -5,11 +5,8 @@ import {
     Bootstrap,
     Constants,
     IERC20,
-    IFactory,
-    IFactory,
     IPerpsMarket,
     IPool,
-    IRouter,
     ISpotMarket,
     Test,
     Zap
@@ -18,8 +15,6 @@ import {
 contract OdosAPITest is Bootstrap {
 
     function test_odos_api_base() public base {
-        uint256 status;
-
         (uint256 quoteStatus, bytes memory quoteData) = getOdosQuote(
             BASE_CHAIN_ID,
             BASE_WETH,
@@ -35,18 +30,12 @@ contract OdosAPITest is Bootstrap {
         string memory pathId =
             abi.decode(vm.parseJson(string(quoteData), ".pathId"), (string));
 
-        (uint256 assembleStatus, bytes memory assembleData) =
-            odosAssemble(pathId);
+        (uint256 assembleStatus,) = odosAssemble(pathId);
 
         assertEq(assembleStatus, 200);
-
-        bytes memory swapData =
-            vm.parseJson(string(assembleData), ".transaction.data");
     }
 
     function test_odos_api_arbitrum() public arbitrum {
-        uint256 status;
-
         (uint256 quoteStatus, bytes memory quoteData) = getOdosQuote(
             ARBITRUM_CHAIN_ID,
             ARBITRUM_WETH,
@@ -62,13 +51,9 @@ contract OdosAPITest is Bootstrap {
         string memory pathId =
             abi.decode(vm.parseJson(string(quoteData), ".pathId"), (string));
 
-        (uint256 assembleStatus, bytes memory assembleData) =
-            odosAssemble(pathId);
+        (uint256 assembleStatus,) = odosAssemble(pathId);
 
         assertEq(assembleStatus, 200);
-
-        bytes memory swapData =
-            vm.parseJson(string(assembleData), ".transaction.data");
     }
 
 }

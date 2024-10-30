@@ -4,7 +4,6 @@ pragma solidity 0.8.27;
 import {IPool} from "./interfaces/IAave.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
 import {IPerpsMarket, ISpotMarket} from "./interfaces/ISynthetix.sol";
-import {IQuoter, IRouter} from "./interfaces/IUniswap.sol";
 import {Errors} from "./utils/Errors.sol";
 
 import {Flush} from "./utils/Flush.sol";
@@ -14,7 +13,7 @@ import {SafeERC20} from "./utils/SafeTransferERC20.sol";
 /// @title zap
 /// @custom:synthetix zap USDC into and out of USDx
 /// @custom:aave flash loan USDC to unwind synthetix collateral
-/// @custom:uniswap swap unwound collateral for USDC to repay flashloan
+/// @custom:odos swap unwound collateral for USDC to repay flashloan
 /// @dev idle token balances are not safe
 /// @dev intended for standalone use; do not inherit
 /// @author @jaredborders
@@ -40,11 +39,8 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
     uint16 public constant REFERRAL_CODE = 0;
     address public immutable AAVE;
 
-    /// @custom:uniswap
-    uint24 public constant FEE_TIER = 3000;
-    address public immutable ODOSROUTER;
+    /// @custom:odos
     address public immutable ROUTER;
-    address public immutable QUOTER;
 
     constructor(
         address _usdc,
@@ -54,9 +50,7 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         address _referrer,
         uint128 _susdcSpotId,
         address _aave,
-        address _odosRouter,
-        address _router,
-        address _quoter
+        address _router
     ) {
         /// @custom:circle
         USDC = _usdc;
@@ -71,10 +65,8 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         /// @custom:aave
         AAVE = _aave;
 
-        /// @custom:uniswap
-        ODOSROUTER = _odosRouter;
+        /// @custom:odos
         ROUTER = _router;
-        QUOTER = _quoter;
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -638,16 +630,16 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
                                 ODOS
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice swap a tolerable amount of tokens for a specific amount of USDC
-    /// @dev _path MUST be encoded backwards for `exactOutput`
+    /// @notice swap an amount of tokens for the optimal amount of USDC
+    /// @dev _path USDC is not enforced as the output token during the swap, but
+    /// is the expected in the call to push
     /// @dev caller must grant token allowance to this contract
-    /// @dev any excess token not spent will be returned to the caller
     /// @param _from address of token to swap
     /// @param _path odos path from the sor/assemble api endpoint
-    /// @param _amountIn max amount of token to spend
+    /// @param _amountIn amount of token to spend
     /// @param _receiver address to receive USDC
     /// @return amountOut amount of tokens swapped for
-    function swapFor(
+    function swapFrom(
         address _from,
         bytes memory _path,
         uint256 _amountIn,
@@ -659,11 +651,6 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         _pull(_from, msg.sender, _amountIn);
         amountOut = odosSwap(_from, _amountIn, _path);
         _push(USDC, _receiver, amountOut);
-
-        //TODO
-        // if (deducted < _maxAmountIn) {
-        //     _push(_from, msg.sender, _maxAmountIn - deducted);
-        // }
     }
 
     /// @dev following execution, this contract will hold the swapped USDC
@@ -679,14 +666,13 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         internal
         returns (uint256 amountOut)
     {
-        IERC20(_tokenFrom).approve(ODOSROUTER, _amountIn);
+        IERC20(_tokenFrom).approve(ROUTER, _amountIn);
 
-        (bool success, bytes memory result) =
-            ODOSROUTER.call{value: 0}(_swapPath);
+        (bool success, bytes memory result) = ROUTER.call{value: 0}(_swapPath);
         require(success, SwapFailed());
         amountOut = abi.decode(result, (uint256));
 
-        IERC20(_tokenFrom).approve(ODOSROUTER, 0);
+        IERC20(_tokenFrom).approve(ROUTER, 0);
     }
 
     /*//////////////////////////////////////////////////////////////

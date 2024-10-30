@@ -1,5 +1,5 @@
 # Errors
-[Git Source](https://github.com/moss-eth/zap/blob/633c02e3c1d55b8cd7b9a28033f9517a34a72a75/src/utils/Errors.sol)
+[Git Source](https://github.com/moss-eth/zap/blob/061fdc888af929a33bd6199e327f88f4440e3090/src/utils/Errors.sol)
 
 **Author:**
 @jaredborders
@@ -67,14 +67,8 @@ thrown when a swap operation fails
 
 
 ```solidity
-error SwapFailed(string reason);
+error SwapFailed();
 ```
-
-**Parameters**
-
-|Name|Type|Description|
-|----|----|-----------|
-|`reason`|`string`|string for the failure|
 
 ### NotPermitted
 thrown when operation is not permitted

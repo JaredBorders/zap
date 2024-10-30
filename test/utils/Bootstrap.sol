@@ -8,7 +8,6 @@ import {
 import {Errors, IERC20, IPool, Reentrancy, Zap} from "../../src/Zap.sol";
 import {IPerpsMarket, ISpotMarket} from "../interfaces/ISynthetix.sol";
 
-import {IFactory, IRouter} from "../interfaces/IUniswap.sol";
 import {Constants} from "../utils/Constants.sol";
 
 import {stdJson} from "forge-std/StdJson.sol";
@@ -72,9 +71,7 @@ contract Bootstrap is
             referrer: BASE_REFERRER,
             susdcSpotId: BASE_SUSDC_SPOT_MARKET_ID,
             aave: BASE_AAVE_POOL,
-            odosRouter: BASE_ODOS_ROUTER,
-            router: BASE_ROUTER,
-            quoter: BASE_QUOTER
+            router: BASE_ROUTER
         });
 
         /// @custom:auxiliary
@@ -102,9 +99,7 @@ contract Bootstrap is
             referrer: ARBITRUM_REFERRER,
             susdcSpotId: ARBITRUM_SUSDC_SPOT_MARKET_ID,
             aave: ARBITRUM_AAVE_POOL,
-            odosRouter: ARBITRUM_ODOS_ROUTER,
-            router: ARBITRUM_ROUTER,
-            quoter: ARBITRUM_QUOTER
+            router: ARBITRUM_ROUTER
         });
 
         /// @custom:auxiliary
@@ -131,9 +126,7 @@ contract Bootstrap is
             referrer: ARBITRUM_SEPOLIA_REFERRER,
             susdcSpotId: ARBITRUM_SEPOLIA_SUSDC_SPOT_MARKET_ID,
             aave: ARBITRUM_SEPOLIA_AAVE_POOL,
-            odosRouter: ARBITRUM_SEPOLIA_ODOS_ROUTER,
-            router: ARBITRUM_SEPOLIA_ROUTER,
-            quoter: ARBITRUM_SEPOLIA_QUOTER
+            router: ARBITRUM_SEPOLIA_ROUTER
         });
 
         /// @custom:auxiliary

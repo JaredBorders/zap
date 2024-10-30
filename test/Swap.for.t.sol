@@ -5,17 +5,14 @@ import {
     Bootstrap,
     Constants,
     IERC20,
-    IFactory,
-    IFactory,
     IPerpsMarket,
     IPool,
-    IRouter,
     ISpotMarket,
     Test,
     Zap
 } from "./utils/Bootstrap.sol";
 
-contract SwapForTest is Bootstrap {
+contract SwapFromTest is Bootstrap {
 
     bytes swapPath;
     string pathId;
@@ -25,6 +22,8 @@ contract SwapForTest is Bootstrap {
             _spin(ACTOR, weth, DEFAULT_AMOUNT, address(zap));
             assertEq(usdc.balanceOf(ACTOR), 0);
             assertEq(weth.balanceOf(ACTOR), DEFAULT_AMOUNT);
+            assertEq(usdc.balanceOf(address(zap)), 0);
+            assertEq(weth.balanceOf(address(zap)), 0);
 
             pathId = getOdosQuotePathId(
                 BASE_CHAIN_ID, BASE_WETH, DEFAULT_AMOUNT, BASE_USDC
@@ -34,7 +33,7 @@ contract SwapForTest is Bootstrap {
         }
 
         vm.startPrank(ACTOR);
-        uint256 amountOut = zap.swapFor({
+        uint256 amountOut = zap.swapFrom({
             _from: BASE_WETH,
             _path: swapPath,
             _amountIn: DEFAULT_AMOUNT,
@@ -43,6 +42,8 @@ contract SwapForTest is Bootstrap {
 
         assertEq(usdc.balanceOf(ACTOR), amountOut);
         assertEq(weth.balanceOf(ACTOR), 0);
+        assertEq(usdc.balanceOf(address(zap)), 0);
+        assertEq(weth.balanceOf(address(zap)), 0);
     }
 
     function test_swap_for_weth_arbitrum() public arbitrum {
@@ -50,6 +51,8 @@ contract SwapForTest is Bootstrap {
             _spin(ACTOR, weth, DEFAULT_AMOUNT, address(zap));
             assertEq(usdc.balanceOf(ACTOR), 0);
             assertEq(weth.balanceOf(ACTOR), DEFAULT_AMOUNT);
+            assertEq(usdc.balanceOf(address(zap)), 0);
+            assertEq(weth.balanceOf(address(zap)), 0);
 
             pathId = getOdosQuotePathId(
                 ARBITRUM_CHAIN_ID, ARBITRUM_WETH, DEFAULT_AMOUNT, ARBITRUM_USDC
@@ -59,7 +62,7 @@ contract SwapForTest is Bootstrap {
         }
 
         vm.startPrank(ACTOR);
-        uint256 amountOut = zap.swapFor({
+        uint256 amountOut = zap.swapFrom({
             _from: ARBITRUM_WETH,
             _path: swapPath,
             _amountIn: DEFAULT_AMOUNT,
@@ -68,6 +71,8 @@ contract SwapForTest is Bootstrap {
 
         assertEq(usdc.balanceOf(ACTOR), amountOut);
         assertEq(weth.balanceOf(ACTOR), 0);
+        assertEq(usdc.balanceOf(address(zap)), 0);
+        assertEq(weth.balanceOf(address(zap)), 0);
     }
 
     function test_swap_for_tbtc_arbitrum() public arbitrum {
@@ -75,6 +80,8 @@ contract SwapForTest is Bootstrap {
             _spin(ACTOR, tbtc, DEFAULT_AMOUNT, address(zap));
             assertEq(usdc.balanceOf(ACTOR), 0);
             assertEq(tbtc.balanceOf(ACTOR), DEFAULT_AMOUNT);
+            assertEq(usdc.balanceOf(address(zap)), 0);
+            assertEq(tbtc.balanceOf(address(zap)), 0);
 
             pathId = getOdosQuotePathId(
                 ARBITRUM_CHAIN_ID, ARBITRUM_TBTC, DEFAULT_AMOUNT, ARBITRUM_USDC
@@ -84,7 +91,7 @@ contract SwapForTest is Bootstrap {
         }
 
         vm.startPrank(ACTOR);
-        uint256 amountOut = zap.swapFor({
+        uint256 amountOut = zap.swapFrom({
             _from: ARBITRUM_TBTC,
             _path: swapPath,
             _amountIn: DEFAULT_AMOUNT,
@@ -93,6 +100,8 @@ contract SwapForTest is Bootstrap {
 
         assertEq(usdc.balanceOf(ACTOR), amountOut);
         assertEq(tbtc.balanceOf(ACTOR), 0);
+        assertEq(usdc.balanceOf(address(zap)), 0);
+        assertEq(tbtc.balanceOf(address(zap)), 0);
     }
 
     function test_swap_for_tbtc_base() public base {
@@ -100,6 +109,8 @@ contract SwapForTest is Bootstrap {
             _spin(ACTOR, tbtc, DEFAULT_AMOUNT, address(zap));
             assertEq(usdc.balanceOf(ACTOR), 0);
             assertEq(tbtc.balanceOf(ACTOR), DEFAULT_AMOUNT);
+            assertEq(usdc.balanceOf(address(zap)), 0);
+            assertEq(tbtc.balanceOf(address(zap)), 0);
 
             pathId = getOdosQuotePathId(
                 BASE_CHAIN_ID, BASE_TBTC, DEFAULT_AMOUNT, BASE_USDC
@@ -109,7 +120,7 @@ contract SwapForTest is Bootstrap {
         }
 
         vm.startPrank(ACTOR);
-        uint256 amountOut = zap.swapFor({
+        uint256 amountOut = zap.swapFrom({
             _from: BASE_TBTC,
             _path: swapPath,
             _amountIn: DEFAULT_AMOUNT,
@@ -118,6 +129,8 @@ contract SwapForTest is Bootstrap {
 
         assertEq(usdc.balanceOf(ACTOR), amountOut);
         assertEq(tbtc.balanceOf(ACTOR), 0);
+        assertEq(usdc.balanceOf(address(zap)), 0);
+        assertEq(tbtc.balanceOf(address(zap)), 0);
     }
 
 }
