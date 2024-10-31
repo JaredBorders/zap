@@ -13,7 +13,6 @@ import {Constants} from "../utils/Constants.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 import {Test} from "forge-std/Test.sol";
 import {Surl} from "surl/src/Surl.sol";
-
 contract Bootstrap is
     Test,
     Deploy,
@@ -45,15 +44,16 @@ contract Bootstrap is
 
     string[] headers;
 
-    function setUp() public {
+    function setUp() public virtual  {
         string memory BASE_RPC = vm.envString(BASE_RPC_REF);
         string memory ARBITRUM_RPC = vm.envString(ARBITRUM_RPC_REF);
         string memory ARBITRUM_SEPOLIA_RPC =
             vm.envString(ARBITRUM_SEPOLIA_RPC_REF);
 
-        BASE = vm.createFork(BASE_RPC);
-        ARBITRUM = vm.createFork(ARBITRUM_RPC);
-        ARBITRUM_SEPOLIA = vm.createFork(ARBITRUM_SEPOLIA_RPC);
+        BASE = vm.createFork(BASE_RPC, BASE_FORK_BLOCK);
+        ARBITRUM = vm.createFork(ARBITRUM_RPC, ARBITRUM_FORK_BLOCK);
+        ARBITRUM_SEPOLIA =
+            vm.createFork(ARBITRUM_SEPOLIA_RPC, ARBITRUM_SEPOLIA_FORK_BLOCK);
 
         headers.push("Content-Type: application/json");
     }

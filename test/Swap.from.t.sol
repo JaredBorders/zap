@@ -2,7 +2,6 @@
 pragma solidity 0.8.27;
 
 import {
-    Bootstrap,
     Constants,
     IERC20,
     IPerpsMarket,
@@ -11,8 +10,9 @@ import {
     Test,
     Zap
 } from "./utils/Bootstrap.sol";
+import {BootstrapWithCurrentBlock} from "./utils/BootstrapWithCurrentBlock.sol";
 
-contract SwapFromTest is Bootstrap {
+contract SwapFromTest is BootstrapWithCurrentBlock {
 
     bytes swapPath;
     string pathId;
