@@ -13,6 +13,7 @@ import {Constants} from "../utils/Constants.sol";
 import {stdJson} from "forge-std/StdJson.sol";
 import {Test} from "forge-std/Test.sol";
 import {Surl} from "surl/src/Surl.sol";
+
 contract Bootstrap is
     Test,
     Deploy,
@@ -44,7 +45,7 @@ contract Bootstrap is
 
     string[] headers;
 
-    function setUp() public virtual  {
+    function setUp() public virtual {
         string memory BASE_RPC = vm.envString(BASE_RPC_REF);
         string memory ARBITRUM_RPC = vm.envString(ARBITRUM_RPC_REF);
         string memory ARBITRUM_SEPOLIA_RPC =
