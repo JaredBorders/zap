@@ -100,4 +100,12 @@ interface IPerpsMarket {
     )
         external;
 
+    function getAvailableMargin(uint128 accountId)
+        external
+        returns (int256 availableMargin);
+
+    function getWithdrawableMargin(uint128 accountId)
+        external
+        returns (int256 withdrawableMargin);
+
 }
