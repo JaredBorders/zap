@@ -503,9 +503,12 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         // i.e., USDe -(swap)-> USDC -(repay)-> Aave
         // i.e., USDC -(repay)-> Aave
         // whatever collateral amount is remaining is returned to the caller
-        unwound -= _collateral == USDC
-            ? _flashloan
-            : odosSwapForUnwind(_collateral, _swapAmountIn, _path);
+        if (_collateral == USDC) {
+             unwound -= _flashloan;
+        } else {
+            odosSwap(_collateral, _swapAmountIn, _path);
+            unwound -= _swapAmountIn
+        }
 
         /// @notice the path and max amount in must take into consideration:
         ///     (1) Aave flashloan amount
@@ -670,23 +673,6 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         amountOut = abi.decode(result, (uint256));
 
         IERC20(_tokenFrom).approve(ROUTER, 0);
-    }
-
-    /// @dev wrapper around odosSwap that returns input amount instead of output
-    /// amount
-    /// @param _tokenFrom address of token being swapped
-    /// @param _amountIn amount of token being swapped
-    /// @param _swapPath bytes from odos assemble api containing the swap
-    function odosSwapForUnwind(
-        address _tokenFrom,
-        uint256 _amountIn,
-        bytes memory _swapPath
-    )
-        internal
-        returns (uint256)
-    {
-        odosSwap(_tokenFrom, _amountIn, _swapPath);
-        return _amountIn;
     }
 
     /*//////////////////////////////////////////////////////////////
