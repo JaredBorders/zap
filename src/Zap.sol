@@ -460,6 +460,7 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
             uint256 _zapMinAmountOut,
             uint256 _unwrapMinAmountOut,
             uint256 _swapAmountIn,
+            address _receiver
         ) = abi.decode(
             _params,
             (
@@ -508,6 +509,8 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         } else {
             odosSwap(_collateral, _swapAmountIn, _path);
             unwound -= _swapAmountIn;
+            uint256 leftovers = IERC20(USDC).balanceOf(address(this));
+            if (leftovers > 0) _push(USDC, _receiver, leftovers);
         }
 
         /// @notice the path and max amount in must take into consideration:
