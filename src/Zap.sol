@@ -504,10 +504,10 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         // i.e., USDC -(repay)-> Aave
         // whatever collateral amount is remaining is returned to the caller
         if (_collateral == USDC) {
-             unwound -= _flashloan;
+            unwound -= _flashloan;
         } else {
             odosSwap(_collateral, _swapAmountIn, _path);
-            unwound -= _swapAmountIn
+            unwound -= _swapAmountIn;
         }
 
         /// @notice the path and max amount in must take into consideration:
