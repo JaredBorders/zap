@@ -433,7 +433,7 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
 
         uint256 unwound = _unwind(_flashloan, _premium, _params);
 
-        _push(_collateral, _receiver, unwound);
+        if (unwound > 0) _push(_collateral, _receiver, unwound);
 
         return IERC20(USDC).approve(AAVE, _flashloan + _premium);
     }
