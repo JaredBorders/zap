@@ -511,7 +511,7 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
             odosSwap(_collateral, _swapAmountIn, _path);
             unwound -= _swapAmountIn;
             uint256 leftovers = IERC20(USDC).balanceOf(address(this));
-            if (leftovers > 0) _push(USDC, _receiver, leftovers);
+            if (leftovers > _flashloan) _push(USDC, _receiver, leftovers - _flashloan);
         }
 
         /// @notice the path and max amount in must take into consideration:
