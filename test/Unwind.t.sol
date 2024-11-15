@@ -42,7 +42,7 @@ contract UnwindTest is Bootstrap, Errors {
     }
 
     /// @custom:todo
-    function test_unwind_arbitrum_sepolia() public arbitrum {
+    function test_unwind_arbitrum() public arbitrum {
         IPerpsMarket perpsMarketProxy = IPerpsMarket(zap.PERPS_MARKET());
         uint256 initialAccountDebt = perpsMarketProxy.debt(ACCOUNT_ID);
         assertEq(initialAccountDebt, INITIAL_DEBT);

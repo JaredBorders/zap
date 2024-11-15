@@ -163,7 +163,8 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
 
     /// @notice wrap collateral via synthetix spot market
     /// @dev caller must grant token allowance to this contract
-    /// @custom:synth -> synthetix token representation of wrapped collateral
+    /// @custom:synth -> synthetix token representation of an asset with an
+    /// acceptable onchain price oracle
     /// @param _token address of token to wrap
     /// @param _synthId synthetix market id of synth to wrap into
     /// @param _amount amount of token to wrap
@@ -206,7 +207,8 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
 
     /// @notice unwrap collateral via synthetix spot market
     /// @dev caller must grant synth allowance to this contract
-    /// @custom:synth -> synthetix token representation of wrapped collateral
+    /// @custom:synth -> synthetix token representation of an asset with an
+    /// acceptable onchain price oracle
     /// @param _token address of token to unwrap into
     /// @param _synthId synthetix market id of synth to unwrap
     /// @param _amount amount of synth to unwrap
@@ -340,16 +342,15 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice unwind synthetix perp position collateral
-    /// @dev caller must grant USDC allowance to this contract
     /// @custom:synthetix RBAC permission required: "PERPS_MODIFY_COLLATERAL"
     /// @param _accountId synthetix perp market account id
-    /// @param _collateralId synthetix market id of collateral
+    /// @param _collateralId synthetix spot market id or synth id
     /// @param _collateralAmount amount of collateral to unwind
     /// @param _collateral address of collateral to unwind
     /// @param _path odos path from the sor/assemble api endpoint
     /// @param _zapMinAmountOut acceptable slippage for zapping
     /// @param _unwrapMinAmountOut acceptable slippage for unwrapping
-    /// @param _swapAmountIn acceptable slippage for swapping
+    /// @param _swapAmountIn amount intended to be swapped by odos
     /// @param _receiver address to receive unwound collateral
     function unwind(
         uint128 _accountId,
@@ -432,7 +433,7 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
 
         uint256 unwound = _unwind(_flashloan, _premium, _params);
 
-        _push(_collateral, _receiver, unwound);
+        if (unwound > 0) _push(_collateral, _receiver, unwound);
 
         return IERC20(USDC).approve(AAVE, _flashloan + _premium);
     }
@@ -633,9 +634,9 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
                                 ODOS
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice swap an amount of tokens for the optimal amount of USDC
+    /// @notice swap with the input amount of USDC
     /// @dev _path USDC is not enforced as the output token during the swap, but
-    /// is the expected in the call to push
+    /// is expected in the call to push
     /// @dev caller must grant token allowance to this contract
     /// @param _from address of token to swap
     /// @param _path odos path from the sor/assemble api endpoint
