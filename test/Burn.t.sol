@@ -17,6 +17,7 @@ import "forge-std/console2.sol";
 contract BurnTest is Bootstrap {
 
     /// @custom:todo
+    ///@notice passes at block 269_610_923
     function test_burn_arbitrum(uint32 amount) public arbitrum {
         IERC20 A_USDX = IERC20(ARBITRUM_USDX);
         uint128 accountID = 170_141_183_460_469_231_731_687_303_715_884_105_766;

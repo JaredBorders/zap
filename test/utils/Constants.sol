@@ -19,8 +19,8 @@ contract Constants {
     string constant ARBITRUM_RPC_REF = "ARBITRUM_RPC";
     string constant ARBITRUM_SEPOLIA_RPC_REF = "ARBITRUM_SEPOLIA_RPC";
 
-    uint256 constant BASE_FORK_BLOCK = 21_700_780;
-    uint256 constant ARBITRUM_FORK_BLOCK = 269_610_923;
+    uint256 constant BASE_FORK_BLOCK = 20_165_000;
+    uint256 constant ARBITRUM_FORK_BLOCK = 256_615_000;
     uint256 constant ARBITRUM_SEPOLIA_FORK_BLOCK = 85_443_000;
 
     uint256 constant BASE_CHAIN_ID = 8453;

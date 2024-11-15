@@ -17,7 +17,7 @@ contract SwapFromTest is BootstrapWithCurrentBlock {
     bytes swapPath;
     string pathId;
 
-    function test_swap_for_weth_base() public base {
+    function test_swap_from_weth_base() public base {
         {
             _spin(ACTOR, weth, DEFAULT_AMOUNT, address(zap));
             assertEq(usdc.balanceOf(ACTOR), 0);
@@ -46,7 +46,7 @@ contract SwapFromTest is BootstrapWithCurrentBlock {
         assertEq(weth.balanceOf(address(zap)), 0);
     }
 
-    function test_swap_for_weth_arbitrum() public arbitrum {
+    function test_swap_from_weth_arbitrum() public arbitrum {
         {
             _spin(ACTOR, weth, DEFAULT_AMOUNT, address(zap));
             assertEq(usdc.balanceOf(ACTOR), 0);
@@ -75,7 +75,7 @@ contract SwapFromTest is BootstrapWithCurrentBlock {
         assertEq(weth.balanceOf(address(zap)), 0);
     }
 
-    function test_swap_for_tbtc_arbitrum() public arbitrum {
+    function test_swap_from_tbtc_arbitrum() public arbitrum {
         {
             _spin(ACTOR, tbtc, DEFAULT_AMOUNT, address(zap));
             assertEq(usdc.balanceOf(ACTOR), 0);
@@ -104,7 +104,7 @@ contract SwapFromTest is BootstrapWithCurrentBlock {
         assertEq(tbtc.balanceOf(address(zap)), 0);
     }
 
-    function test_swap_for_tbtc_base() public base {
+    function test_swap_from_tbtc_base() public base {
         {
             _spin(ACTOR, tbtc, DEFAULT_AMOUNT, address(zap));
             assertEq(usdc.balanceOf(ACTOR), 0);
