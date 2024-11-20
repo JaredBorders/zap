@@ -492,9 +492,14 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         // i.e., # of sETH, # of sUSDe, # of sUSDC (...)
         _withdraw(_collateralId, _collateralAmount, _accountId);
 
-        // unwrap withdrawn synthetix perp position collateral;
-        // i.e., sETH -> WETH, sUSDe -> USDe, sUSDC -> USDC (...)
-        unwound = _unwrap(_collateralId, _collateralAmount, _unwrapMinAmountOut);
+        if (_collateral == USDC) {
+            unwound = _zapOut(_collateralAmount, _collateralAmount);
+        } else {
+            // unwrap withdrawn synthetix perp position collateral;
+            // i.e., sETH -> WETH, sUSDe -> USDe, sUSDC -> USDC (...)
+            unwound =
+                _unwrap(_collateralId, _collateralAmount, _unwrapMinAmountOut);
+        }
 
         // establish total debt now owed to Aave;
         // i.e., # of USDC
