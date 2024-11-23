@@ -636,7 +636,7 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
                                 ODOS
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice swap with the input amount of USDC
+    /// @notice swap the input amount of tokens for USDC using Odos
     /// @dev _path USDC is not enforced as the output token during the swap, but
     /// is expected in the call to push
     /// @dev caller must grant token allowance to this contract
@@ -657,6 +657,10 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         _pull(_from, msg.sender, _amountIn);
         amountOut = odosSwap(_from, _amountIn, _path);
         _push(USDC, _receiver, amountOut);
+
+        // refund if there is any amount of `_from` token left
+        uint256 amountLeft = IERC20(_from).balanceOf(address(this));
+        if (amountLeft > 0) _push(_from, msg.sender, amountLeft);
     }
 
     /// @dev following execution, this contract will hold the swapped USDC

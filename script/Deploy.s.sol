@@ -58,7 +58,8 @@ contract DeployBase is Deploy, Base {
             aave: BASE_AAVE_POOL,
             router: BASE_ROUTER
         });
-        Flush(address(zap)).designatePlumber(BASE_PDAO);
+        // PDAO will have to accept Nomination
+        Flush(address(zap)).nominatePlumber(BASE_PDAO);
     }
 
 }
@@ -77,7 +78,7 @@ contract DeployArbitrum is Deploy, Arbitrum {
             aave: ARBITRUM_AAVE_POOL,
             router: ARBITRUM_ROUTER
         });
-        Flush(address(zap)).designatePlumber(ARBITRUM_PDAO);
+        Flush(address(zap)).nominatePlumber(ARBITRUM_PDAO);
     }
 
 }
@@ -96,7 +97,7 @@ contract DeployArbitrumSepolia is Deploy, ArbitrumSepolia {
             aave: ARBITRUM_SEPOLIA_AAVE_POOL,
             router: ARBITRUM_SEPOLIA_ROUTER
         });
-        Flush(address(zap)).designatePlumber(ARBITRUM_SEPOLIA_PDAO);
+        Flush(address(zap)).nominatePlumber(ARBITRUM_SEPOLIA_PDAO);
     }
 
 }

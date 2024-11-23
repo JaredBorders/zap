@@ -8,6 +8,7 @@ optimizer = true
 optimizer_runs = 500_000
 via-ir = true
 ffi = true
+evm_version = "cancun"
 
 [fmt]
 line_length = 80
