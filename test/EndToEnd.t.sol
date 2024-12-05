@@ -363,10 +363,13 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
         uint256 ethBalAfter = address(attackerContract).balance;
         uint256 usdcBalAfter = usdc.balanceOf(attacker);
 
-        assertGe(ethBalAfter, ethBalBefore + (1000 - 10) * outAmount_10_attacker / 1000);
+        assertGe(
+            ethBalAfter,
+            ethBalBefore + (1000 - 10) * outAmount_10_attacker / 1000
+        );
 
         uint256 unrefundedUsdcZap = usdc.balanceOf(address(zap));
-        assertEq(unrefundedUsdcZap, 0); 
+        assertEq(unrefundedUsdcZap, 0);
         // the final amounts are less than or equal to the amount provided
         // initially, ie no profit
         assertEq(usdcBalBefore, usdcBalAfter + inAmount_10_attacker);
