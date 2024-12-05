@@ -25,8 +25,7 @@ contract Deploy is Script {
         address referrer,
         uint128 susdcSpotId,
         address aave,
-        address router,
-        address quoter
+        address router
     )
         public
         returns (Zap zap)
@@ -39,8 +38,7 @@ contract Deploy is Script {
             _referrer: referrer,
             _susdcSpotId: susdcSpotId,
             _aave: aave,
-            _router: router,
-            _quoter: quoter
+            _router: router
         });
     }
 
@@ -58,10 +56,10 @@ contract DeployBase is Deploy, Base {
             referrer: BASE_REFERRER,
             susdcSpotId: BASE_SUSDC_SPOT_MARKET_ID,
             aave: BASE_AAVE_POOL,
-            router: BASE_ROUTER,
-            quoter: BASE_QUOTER
+            router: BASE_ROUTER
         });
-        Flush(address(zap)).designatePlumber(BASE_PDAO);
+        // PDAO will have to accept Nomination
+        Flush(address(zap)).nominatePlumber(BASE_PDAO);
     }
 
 }
@@ -78,10 +76,9 @@ contract DeployArbitrum is Deploy, Arbitrum {
             referrer: ARBITRUM_REFERRER,
             susdcSpotId: ARBITRUM_SUSDC_SPOT_MARKET_ID,
             aave: ARBITRUM_AAVE_POOL,
-            router: ARBITRUM_ROUTER,
-            quoter: ARBITRUM_QUOTER
+            router: ARBITRUM_ROUTER
         });
-        Flush(address(zap)).designatePlumber(ARBITRUM_PDAO);
+        Flush(address(zap)).nominatePlumber(ARBITRUM_PDAO);
     }
 
 }
@@ -98,10 +95,9 @@ contract DeployArbitrumSepolia is Deploy, ArbitrumSepolia {
             referrer: ARBITRUM_SEPOLIA_REFERRER,
             susdcSpotId: ARBITRUM_SEPOLIA_SUSDC_SPOT_MARKET_ID,
             aave: ARBITRUM_SEPOLIA_AAVE_POOL,
-            router: ARBITRUM_SEPOLIA_ROUTER,
-            quoter: ARBITRUM_SEPOLIA_QUOTER
+            router: ARBITRUM_SEPOLIA_ROUTER
         });
-        Flush(address(zap)).designatePlumber(ARBITRUM_SEPOLIA_PDAO);
+        Flush(address(zap)).nominatePlumber(ARBITRUM_SEPOLIA_PDAO);
     }
 
 }

@@ -10,13 +10,22 @@ contract Flush {
     /// @custom:plumber
     address public PLUMBER;
 
+    address public nominatedPlumber;
+
     /// @notice thrown when caller is not the plumber
     error OnlyPlumber();
 
-    ///@notice emitted when a new plumber is designated
-    event PlumberDesignated(address plumber);
+    /// @notice thrown when caller is not nominated to be plumber
+    error OnlyNominatedPlumber();
+
+    /// @notice emitted when a new plumber is nominated
+    event PlumberNominated(address plumber);
+
+    ///@notice emitted when a new plumber accepts nomination
+    event PlumberNominationAccepted(address plumber);
 
     constructor(address _plumber) {
+        require(_plumber != address(0));
         PLUMBER = _plumber;
     }
 
@@ -30,14 +39,21 @@ contract Flush {
         if (balance > 0) token.transfer(msg.sender, balance);
     }
 
-    /// @notice designate a new plumber
+    /// @notice nominate a new plumber
     /// @custom:plumber is the only authorized caller
     /// @dev zero address can be used to remove flush capability
     /// @param _newPlumber address of new plumber
-    function designatePlumber(address _newPlumber) external {
+    function nominatePlumber(address _newPlumber) external {
         require(msg.sender == PLUMBER, OnlyPlumber());
-        PLUMBER = _newPlumber;
-        emit PlumberDesignated(_newPlumber);
+        nominatedPlumber = _newPlumber;
+        emit PlumberNominated(_newPlumber);
+    }
+
+    function acceptPlumberNomination() external {
+        require(msg.sender == nominatedPlumber, OnlyNominatedPlumber());
+        PLUMBER = nominatedPlumber;
+        nominatedPlumber = address(0);
+        emit PlumberNominationAccepted(PLUMBER);
     }
 
 }

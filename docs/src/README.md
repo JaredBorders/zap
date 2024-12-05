@@ -13,7 +13,7 @@
 
 ## Overview
 
-Zap is a smart contract that facilitates stablecoin "zapping" and Synthetix native collateral unwinding by integrating flash loans from Aave and Uniswap v3 swaps.
+Zap is a smart contract that facilitates stablecoin "zapping" and Synthetix native collateral unwinding by integrating flash loans from Aave and Odos swaps.
 
 ### What is a **Zap**?
 
@@ -29,7 +29,7 @@ USDC <--(spot market)--> sUSDC <--(spot market)--> USDx
 2. **Zap into USDx (Synthetix Spot Market):** Use the borrowed funds to zap into USDx.
 3. **Burn USDx & Repay Debt (Synthetix Core):** Repay Synthetix debt by burning USDx.
 4. **Withdraw and Unwrap Collateral (Synthetix Spot Market):** Withdraw margin (e.g., sETH) and convert it back to underlying assets (e.g., WETH).
-5. **Swap (Uniswap):** Exchange collateral assets (like WETH) for USDC to repay the flash loan.
+5. **Swap (Odos):** Exchange collateral assets (like WETH) for USDC to repay the flash loan.
 6. **Flash Loan Repayment (Aave):** The USDC loan, including the premium, is repaid to Aave.
 7. **Send Remaining Collateral (Synthetix):** Any surplus collateral is returned to the user.
 
@@ -38,10 +38,10 @@ USDC <--(spot market)--> sUSDC <--(spot market)--> USDx
 - Zap via Synthetix
 - Wrap & Unwrap Collateral via Synthetix
 - Buy & Sell via Synthetix
-- Unwind Collateral via Synthetix, Aave, and Uniswap
+- Unwind Collateral via Synthetix, Aave, and Odos
 - Burn Debt via Synthetix
 - Withdraw Perp Collateral via Synthetix
-- Swap via Uniswap
+- Swap via Odos
 
 ## Development
 

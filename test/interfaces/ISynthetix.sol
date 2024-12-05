@@ -53,6 +53,13 @@ interface ISpotMarket {
 
 interface IPerpsMarket {
 
+    error InsufficientCollateralAvailableForWithdraw(
+        int256 withdrawableMarginUsd, uint256 requestedMarginUsd
+    );
+    error PermissionDenied(
+        uint128 accountId, bytes32 permission, address target
+    );
+
     function modifyCollateral(
         uint128 accountId,
         uint128 synthMarketId,
@@ -99,5 +106,31 @@ interface IPerpsMarket {
         address user
     )
         external;
+
+    function getAvailableMargin(uint128 accountId)
+        external
+        returns (int256 availableMargin);
+
+    function getWithdrawableMargin(uint128 accountId)
+        external
+        returns (int256 withdrawableMargin);
+
+    function totalCollateralValue(uint128 accountId)
+        external
+        view
+        returns (uint256);
+
+    function totalAccountOpenInterest(uint128 accountId)
+        external
+        view
+        returns (uint256);
+
+    function getCollateralAmount(
+        uint128 accountId,
+        uint128 collateralId
+    )
+        external
+        view
+        returns (uint256);
 
 }

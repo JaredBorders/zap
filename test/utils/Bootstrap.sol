@@ -8,9 +8,11 @@ import {
 import {Errors, IERC20, IPool, Reentrancy, Zap} from "../../src/Zap.sol";
 import {IPerpsMarket, ISpotMarket} from "../interfaces/ISynthetix.sol";
 
-import {IFactory, IRouter} from "../interfaces/IUniswap.sol";
 import {Constants} from "../utils/Constants.sol";
+
+import {stdJson} from "forge-std/StdJson.sol";
 import {Test} from "forge-std/Test.sol";
+import {Surl} from "surl/src/Surl.sol";
 
 contract Bootstrap is
     Test,
@@ -20,6 +22,9 @@ contract Bootstrap is
     ArbitrumSepolia,
     Constants
 {
+
+    using Surl for *;
+    using stdJson for string;
 
     /// @custom:forks
     uint256 BASE;
@@ -38,7 +43,9 @@ contract Bootstrap is
     IERC20 weth;
     IERC20 tbtc;
 
-    function setUp() public {
+    string[] headers;
+
+    function setUp() public virtual {
         string memory BASE_RPC = vm.envString(BASE_RPC_REF);
         string memory ARBITRUM_RPC = vm.envString(ARBITRUM_RPC_REF);
         string memory ARBITRUM_SEPOLIA_RPC =
@@ -48,6 +55,8 @@ contract Bootstrap is
         ARBITRUM = vm.createFork(ARBITRUM_RPC, ARBITRUM_FORK_BLOCK);
         ARBITRUM_SEPOLIA =
             vm.createFork(ARBITRUM_SEPOLIA_RPC, ARBITRUM_SEPOLIA_FORK_BLOCK);
+
+        headers.push("Content-Type: application/json");
     }
 
     modifier base() {
@@ -63,8 +72,7 @@ contract Bootstrap is
             referrer: BASE_REFERRER,
             susdcSpotId: BASE_SUSDC_SPOT_MARKET_ID,
             aave: BASE_AAVE_POOL,
-            router: BASE_ROUTER,
-            quoter: BASE_QUOTER
+            router: BASE_ROUTER
         });
 
         /// @custom:auxiliary
@@ -92,8 +100,7 @@ contract Bootstrap is
             referrer: ARBITRUM_REFERRER,
             susdcSpotId: ARBITRUM_SUSDC_SPOT_MARKET_ID,
             aave: ARBITRUM_AAVE_POOL,
-            router: ARBITRUM_ROUTER,
-            quoter: ARBITRUM_QUOTER
+            router: ARBITRUM_ROUTER
         });
 
         /// @custom:auxiliary
@@ -120,8 +127,7 @@ contract Bootstrap is
             referrer: ARBITRUM_SEPOLIA_REFERRER,
             susdcSpotId: ARBITRUM_SEPOLIA_SUSDC_SPOT_MARKET_ID,
             aave: ARBITRUM_SEPOLIA_AAVE_POOL,
-            router: ARBITRUM_SEPOLIA_ROUTER,
-            quoter: ARBITRUM_SEPOLIA_QUOTER
+            router: ARBITRUM_SEPOLIA_ROUTER
         });
 
         /// @custom:auxiliary
@@ -153,6 +159,118 @@ contract Bootstrap is
         deal(address(token), eoa, amount);
         vm.prank(eoa);
         IERC20(token).approve(approved, type(uint256).max);
+    }
+
+    function getOdosQuoteParams(
+        uint256 chainId,
+        address tokenIn,
+        uint256 amountIn,
+        address tokenOut,
+        uint256 proportionOut,
+        uint256 slippageLimitPct,
+        address userAddress
+    )
+        internal
+        returns (string memory)
+    {
+        return string.concat(
+            '{"chainId": ',
+            vm.toString(chainId),
+            ', "inputTokens": [{"tokenAddress": "',
+            vm.toString(tokenIn),
+            '", "amount": "',
+            vm.toString(amountIn),
+            '"}],"outputTokens": [{"tokenAddress": "',
+            vm.toString(tokenOut),
+            '", "proportion": ',
+            vm.toString(proportionOut),
+            '}], "slippageLimitPercent": ',
+            vm.toString(slippageLimitPct),
+            ', "userAddr": "',
+            vm.toString(userAddress),
+            '"}'
+        );
+    }
+
+    function getOdosQuote(
+        uint256 chainId,
+        address tokenIn,
+        uint256 amountIn,
+        address tokenOut,
+        uint256 proportionOut,
+        uint256 slippageLimitPct,
+        address userAddress
+    )
+        internal
+        returns (uint256 status, bytes memory data)
+    {
+        string memory params = getOdosQuoteParams(
+            chainId,
+            tokenIn,
+            amountIn,
+            tokenOut,
+            proportionOut,
+            slippageLimitPct,
+            userAddress
+        );
+
+        (status, data) = ODOS_QUOTE_URL.post(headers, params);
+    }
+
+    function getOdosQuotePathId(
+        uint256 chainId,
+        address tokenIn,
+        uint256 amountIn,
+        address tokenOut
+    )
+        internal
+        returns (string memory pathId)
+    {
+        (, bytes memory data) = getOdosQuote(
+            chainId,
+            tokenIn,
+            amountIn,
+            tokenOut,
+            DEFAULT_PROPORTION,
+            DEFAULT_SLIPPAGE,
+            address(zap)
+        );
+        pathId = abi.decode(vm.parseJson(string(data), ".pathId"), (string));
+    }
+
+    function getOdosAssembleParams(string memory pathId)
+        internal
+        returns (string memory)
+    {
+        return string.concat(
+            '{"userAddr": "',
+            vm.toString(address(zap)),
+            '", "pathId": "',
+            pathId,
+            '"}'
+        );
+    }
+
+    function odosAssemble(string memory pathId)
+        internal
+        returns (uint256 status, bytes memory data)
+    {
+        string memory params = getOdosAssembleParams(pathId);
+
+        (status, data) = ODOS_ASSEMBLE_URL.post(headers, params);
+    }
+
+    function getAssemblePath(string memory pathId)
+        internal
+        returns (bytes memory swapPath)
+    {
+        bytes memory assembleData;
+        {
+            (, assembleData) = odosAssemble(pathId);
+        }
+        bytes memory transaction = string(assembleData).parseRaw(".transaction");
+        Transaction memory rawTxDetail = abi.decode(transaction, (Transaction));
+        return rawTxDetail.data;
     }
 
 }

@@ -3,13 +3,28 @@ pragma solidity 0.8.27;
 
 contract Constants {
 
+    struct Transaction {
+        uint256 chainId;
+        bytes data;
+        address from;
+        uint256 gas;
+        uint256 gasPrice;
+        uint256 nonce;
+        address to;
+        uint256 value;
+    }
+
     /// @custom:forks
     string constant BASE_RPC_REF = "BASE_RPC";
     string constant ARBITRUM_RPC_REF = "ARBITRUM_RPC";
     string constant ARBITRUM_SEPOLIA_RPC_REF = "ARBITRUM_SEPOLIA_RPC";
+
     uint256 constant BASE_FORK_BLOCK = 20_165_000;
     uint256 constant ARBITRUM_FORK_BLOCK = 256_615_000;
     uint256 constant ARBITRUM_SEPOLIA_FORK_BLOCK = 85_443_000;
+
+    uint256 constant BASE_CHAIN_ID = 8453;
+    uint256 constant ARBITRUM_CHAIN_ID = 42_161;
 
     /// @custom:values
     address constant ACTOR = 0x7777777777777777777777777777777777777777;
@@ -27,6 +42,10 @@ contract Constants {
     uint24 constant FEE_30 = 3000;
     uint24 constant FEE_100 = 10_000;
 
+    uint256 DEFAULT_AMOUNT = 1e18;
+    uint256 DEFAULT_PROPORTION = 1;
+    uint256 DEFAULT_SLIPPAGE = 1;
+
     /// @custom:synthetix
     bytes32 constant _ADMIN_PERMISSION = "ADMIN";
     bytes32 constant _WITHDRAW_PERMISSION = "WITHDRAW";
@@ -41,5 +60,8 @@ contract Constants {
     bytes32 constant _BFP_PERPS_PAY_DEBT_PERMISSION = "BFP_PERPS_PAY_DEBT";
     bytes32 constant _BFP_PERPS_SPLIT_ACCOUNT_PERMISSION =
         "BFP_PERPS_SPLIT_ACCOUNT";
+
+    string constant ODOS_ASSEMBLE_URL = "https://api.odos.xyz/sor/assemble";
+    string constant ODOS_QUOTE_URL = "https://api.odos.xyz/sor/quote/v2";
 
 }

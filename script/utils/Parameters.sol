@@ -17,9 +17,8 @@ contract Base {
     /// @custom:aave
     address BASE_AAVE_POOL = 0xA238Dd80C259a72e81d7e4664a9801593F98d1c5;
 
-    /// @custom:uniswap
-    address BASE_ROUTER = 0x2626664c2603336E57B271c5C0b26F421741e481;
-    address BASE_QUOTER = 0x3d4e44Eb1374240CE5F1B871ab261CD16335B76a;
+    /// @custom:odos
+    address BASE_ROUTER = 0x19cEeAd7105607Cd444F5ad10dd51356436095a1;
 
 }
 
@@ -39,9 +38,8 @@ contract Arbitrum {
     /// @custom:aave
     address ARBITRUM_AAVE_POOL = 0x794a61358D6845594F94dc1DB02A252b5b4814aD;
 
-    /// @custom:uniswap
-    address ARBITRUM_ROUTER = 0x68b3465833fb72A70ecDF485E0e4C7bD8665Fc45;
-    address ARBITRUM_QUOTER = 0x61fFE014bA17989E743c5F6cB21bF9697530B21e;
+    /// @custom:odos
+    address ARBITRUM_ROUTER = 0xa669e7A0d4b3e4Fa48af2dE86BD4CD7126Be4e13;
 
 }
 
@@ -64,8 +62,7 @@ contract ArbitrumSepolia {
     address ARBITRUM_SEPOLIA_AAVE_POOL =
         0xBfC91D59fdAA134A4ED45f7B584cAf96D7792Eff;
 
-    /// @custom:uniswap
-    address ARBITRUM_SEPOLIA_ROUTER = 0x101F443B4d1b059569D643917553c771E1b9663E;
-    address ARBITRUM_SEPOLIA_QUOTER = 0x2779a0CC1c3e0E44D2542EC3e79e3864Ae93Ef0B;
+    /// @custom:odos
+    address ARBITRUM_SEPOLIA_ROUTER = address(0);
 
 }
