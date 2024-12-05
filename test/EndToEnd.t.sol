@@ -286,9 +286,9 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
         vm.stopPrank();
 
         assertEq(weth.balanceOf(address(user)), wethBefore - 1 ether);
-        assertGt(
+        assertGe(
             usdc.balanceOf(address(user)),
-            usdcBefore + ((1000 - 35) * outAmount_1_zap / 1000)
+            usdcBefore + ((1000 - 10) * outAmount_1_zap / 1000)
         );
 
         assertEq(weth.balanceOf(address(zap)), 0);
@@ -301,9 +301,9 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
         vm.stopPrank();
 
         assertEq(weth.balanceOf(address(user)), wethBefore - 2 ether);
-        assertEq(
+        assertGe(
             usdc.balanceOf(address(user)),
-            usdcBefore + 2 * ((1000 - 35) * outAmount_1_zap / 1000)
+            usdcBefore + 2 * ((1000 - 10) * outAmount_1_zap / 1000)
         );
 
         assertEq(weth.balanceOf(address(zap)), 0);
@@ -362,14 +362,14 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         uint256 ethBalAfter = address(attackerContract).balance;
         uint256 usdcBalAfter = usdc.balanceOf(attacker);
-        // the USDC refunded to the receiver is the same units as the ETH paid
-        // to the reentrant contract
-        assertEq(ethBalAfter - ethBalBefore, usdcBalAfter);
+
+        assertGe(ethBalAfter, ethBalBefore + (1000 - 10) * outAmount_10_attacker / 1000);
 
         uint256 unrefundedUsdcZap = usdc.balanceOf(address(zap));
+        assertEq(unrefundedUsdcZap, 0); 
         // the final amounts are less than or equal to the amount provided
         // initially, ie no profit
-        assertTrue(usdcBalBefore >= usdcBalAfter + unrefundedUsdcZap);
+        assertEq(usdcBalBefore, usdcBalAfter + inAmount_10_attacker);
     }
 
     function testUnwindSmallDebtNoOI_Overpay_AccountOwner_Success()
