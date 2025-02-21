@@ -83,7 +83,7 @@ contract Bootstrap is
         spotMarket = ISpotMarket(BASE_SPOT_MARKET);
         perpsMarket = IPerpsMarket(BASE_PERPS_MARKET);
         usdc = IERC20(BASE_USDC);
-        susdc = IERC20(spotMarket.getSynth(zap.SSTATA_SPOT_ID()));
+        susdc = IERC20(spotMarket.getSynth(zap.SUSDC_SPOT_ID()));
         usdx = IERC20(BASE_USDX);
         sstata = IERC20(BASE_SSTATA);
         weth = IERC20(BASE_WETH);
