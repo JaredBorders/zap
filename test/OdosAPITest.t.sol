@@ -35,25 +35,26 @@ contract OdosAPITest is Bootstrap {
         assertEq(assembleStatus, 200);
     }
 
-    function test_odos_api_arbitrum() public arbitrum {
-        (uint256 quoteStatus, bytes memory quoteData) = getOdosQuote(
-            ARBITRUM_CHAIN_ID,
-            ARBITRUM_WETH,
-            1 ether,
-            ARBITRUM_USDC,
-            DEFAULT_PROPORTION,
-            DEFAULT_SLIPPAGE,
-            address(zap)
-        );
+    /// @custom:disabled no stata on arbitrum
+    // function test_odos_api_arbitrum() public arbitrum {
+    //     (uint256 quoteStatus, bytes memory quoteData) = getOdosQuote(
+    //         ARBITRUM_CHAIN_ID,
+    //         ARBITRUM_WETH,
+    //         1 ether,
+    //         ARBITRUM_USDC,
+    //         DEFAULT_PROPORTION,
+    //         DEFAULT_SLIPPAGE,
+    //         address(zap)
+    //     );
 
-        assertEq(quoteStatus, 200);
+    //     assertEq(quoteStatus, 200);
 
-        string memory pathId =
-            abi.decode(vm.parseJson(string(quoteData), ".pathId"), (string));
+    //     string memory pathId =
+    //         abi.decode(vm.parseJson(string(quoteData), ".pathId"), (string));
 
-        (uint256 assembleStatus,) = odosAssemble(pathId);
+    //     (uint256 assembleStatus,) = odosAssemble(pathId);
 
-        assertEq(assembleStatus, 200);
-    }
+    //     assertEq(assembleStatus, 200);
+    // }
 
 }

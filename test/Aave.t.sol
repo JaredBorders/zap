@@ -15,21 +15,22 @@ import {
 
 contract AaveTest is Bootstrap, Errors {
 
-    function test_executeOperation_only_aave(
-        address caller,
-        address a,
-        uint256 b,
-        uint256 c,
-        bytes calldata d
-    )
-        public
-        arbitrum
-    {
-        if (caller != zap.AAVE()) {
-            vm.prank(caller);
-            vm.expectRevert(abi.encodeWithSelector(OnlyAave.selector, caller));
-            zap.executeOperation(a, b, c, a, d);
-        }
-    }
+    /// @custom:disabled no stata on arbitrum
+    // function test_executeOperation_only_aave(
+    //     address caller,
+    //     address a,
+    //     uint256 b,
+    //     uint256 c,
+    //     bytes calldata d
+    // )
+    //     public
+    //     arbitrum
+    // {
+    //     if (caller != zap.AAVE()) {
+    //         vm.prank(caller);
+    //         vm.expectRevert(abi.encodeWithSelector(OnlyAave.selector, caller));
+    //         zap.executeOperation(a, b, c, a, d);
+    //     }
+    // }
 
 }

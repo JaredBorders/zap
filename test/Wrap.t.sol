@@ -32,22 +32,23 @@ contract WrapTest is Bootstrap {
         assertEq(susdc.balanceOf(ACTOR), wrapped);
     }
 
-    function test_wrap_arbitrum(uint32 amount) public arbitrum {
-        _spin(ACTOR, usdc, amount, address(zap));
-        assertEq(usdc.balanceOf(ACTOR), amount);
-        assertEq(susdc.balanceOf(ACTOR), 0);
-        vm.startPrank(ACTOR);
-        uint256 wrapped = zap.wrap({
-            _token: address(usdc),
-            _synthId: zap.SUSDC_SPOT_ID(),
-            _amount: amount,
-            _minAmountOut: DEFAULT_MIN_AMOUNT_OUT,
-            _receiver: ACTOR
-        });
-        vm.stopPrank();
-        assertGe(wrapped, DEFAULT_MIN_AMOUNT_OUT);
-        assertEq(usdc.balanceOf(ACTOR), 0);
-        assertEq(susdc.balanceOf(ACTOR), wrapped);
-    }
+    /// @custom:disabled no stata on arbitrum
+    // function test_wrap_arbitrum(uint32 amount) public arbitrum {
+    //     _spin(ACTOR, usdc, amount, address(zap));
+    //     assertEq(usdc.balanceOf(ACTOR), amount);
+    //     assertEq(susdc.balanceOf(ACTOR), 0);
+    //     vm.startPrank(ACTOR);
+    //     uint256 wrapped = zap.wrap({
+    //         _token: address(usdc),
+    //         _synthId: zap.SUSDC_SPOT_ID(),
+    //         _amount: amount,
+    //         _minAmountOut: DEFAULT_MIN_AMOUNT_OUT,
+    //         _receiver: ACTOR
+    //     });
+    //     vm.stopPrank();
+    //     assertGe(wrapped, DEFAULT_MIN_AMOUNT_OUT);
+    //     assertEq(usdc.balanceOf(ACTOR), 0);
+    //     assertEq(susdc.balanceOf(ACTOR), wrapped);
+    // }
 
 }
