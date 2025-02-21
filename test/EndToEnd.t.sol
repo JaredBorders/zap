@@ -48,7 +48,8 @@
 //     }
 
 //     receive() external payable {
-//         // could call back into zap to do another swap but that just pays more
+//         // could call back into zap to do another swap but that just pays
+// more
 //         // fees, no real profit
 //         // could transfer usdc into zap for zap to be able to pay back the
 //         // original caller but that is also just shuffling your own assets
@@ -72,19 +73,23 @@
 
 //     uint128 smallAccountIdNoOi =
 //         170_141_183_460_469_231_731_687_303_715_884_106_052;
-//     address smallAccountNoOiOwner = 0xbd400F9a17DC18bc031DBF5ffCD2689F4BF650dD;
+//     address smallAccountNoOiOwner =
+// 0xbd400F9a17DC18bc031DBF5ffCD2689F4BF650dD;
 
 //     uint128 smallAccountIdWithOi =
 //         170_141_183_460_469_231_731_687_303_715_884_106_146;
-//     address smallAccountWithOiOwner = 0x46232CbDB0512Ca7B00B8271e285BF8447F1330b;
+//     address smallAccountWithOiOwner =
+// 0x46232CbDB0512Ca7B00B8271e285BF8447F1330b;
 
 //     uint128 largeAccountIdNoOi =
 //         170_141_183_460_469_231_731_687_303_715_884_105_759;
-//     address largeAccountNoOiOwner = 0x626a7d9f7bBCaEB1Fa88E8128Bec8f2Dd48b2b4d;
+//     address largeAccountNoOiOwner =
+// 0x626a7d9f7bBCaEB1Fa88E8128Bec8f2Dd48b2b4d;
 
 //     uint128 largeAccountIdWithOi =
 //         170_141_183_460_469_231_731_687_303_715_884_105_846;
-//     address largeAccountWithOiOwner = 0x1C1e747A6BE850549E9655addf59FD9e7cC2D4dC;
+//     address largeAccountWithOiOwner =
+// 0x1C1e747A6BE850549E9655addf59FD9e7cC2D4dC;
 
 //     string RPC = vm.envString("ARBITRUM_RPC");
 //     mapping(string => uint256) FORK;
@@ -111,7 +116,8 @@
 //         FORK["10_zap"] = vm.createFork(RPC, blockNumber_10_zap);
 //         FORK["100_zap"] = vm.createFork(RPC, blockNumber_100_zap);
 
-//         FORK["1000_attacker"] = vm.createFork(RPC, blockNumber_1000_attacker);
+//         FORK["1000_attacker"] = vm.createFork(RPC,
+// blockNumber_1000_attacker);
 //     }
 
 //     function initilizeFork(uint256 fork) public {
@@ -172,7 +178,8 @@
 //                 "getPriceUnsafe(bytes32)",
 //                 0xff61491a931112ddf1bd8147cd1b641375f79f5825126d665480874634fd0ace
 //             ),
-//             abi.encode(314_393_291_700, 176_780_592, int32(-8), block.timestamp)
+//             abi.encode(314_393_291_700, 176_780_592, int32(-8),
+// block.timestamp)
 //         );
 //         vm.mockCall(
 //             address(pyth),
@@ -348,8 +355,10 @@
 //         selectFork(FORK["10_attacker"])
 //     {
 //         Attacker attackerContract = new Attacker(usdc, address(zap));
-//         uint256 amountUsdc = 1 ether; // non-realistic amount of USDC, but it is
-//             // more to prove that the reentrancy is possible but not feasible or
+//         uint256 amountUsdc = 1 ether; // non-realistic amount of USDC, but it
+// is
+//             // more to prove that the reentrancy is possible but not feasible
+// or
 //             // exploitable
 //         address attacker = vm.addr(1234);
 
@@ -362,7 +371,8 @@
 
 //         vm.startPrank(attacker);
 //         usdc.approve(address(zap), amountUsdc);
-//         zap.swapFrom(address(usdc), swapData_10_attacker, amountUsdc, attacker);
+//         zap.swapFrom(address(usdc), swapData_10_attacker, amountUsdc,
+// attacker);
 //         vm.stopPrank();
 
 //         uint256 ethBalAfter = address(attackerContract).balance;
@@ -389,7 +399,8 @@
 
 //         uint256 tcvBefore = perpsMarket.totalCollateralValue(accountId);
 //         uint256 debt = perpsMarket.debt(accountId);
-//         uint256 collateralAmount = perpsMarket.getCollateralAmount(accountId, 4);
+//         uint256 collateralAmount = perpsMarket.getCollateralAmount(accountId,
+// 4);
 //         uint256 wethBefore = weth.balanceOf(address(this));
 //         uint256 usdcBefore = usdc.balanceOf(address(this));
 
@@ -448,7 +459,8 @@
 
 //         uint256 tcvBefore = perpsMarket.totalCollateralValue(accountId);
 //         uint256 debt = perpsMarket.debt(accountId);
-//         uint256 collateralAmount = perpsMarket.getCollateralAmount(accountId, 4);
+//         uint256 collateralAmount = perpsMarket.getCollateralAmount(accountId,
+// 4);
 //         uint256 wethBefore = weth.balanceOf(address(this));
 //         uint256 usdcBefore = usdc.balanceOf(address(this));
 
@@ -482,7 +494,8 @@
 //         assertGt(
 //             perpsMarket.totalCollateralValue(accountId),
 //             tcvBefore - outValue_0p01_zap
-//         ); // this check is weak because the oracle price on this block is diff
+//         ); // this check is weak because the oracle price on this block is
+// diff
 //             // from the odos api price
 //         assertGt(perpsMarket.totalAccountOpenInterest(accountId), 0);
 //         assertFalse(
@@ -512,7 +525,8 @@
 
 //         uint256 tcvBefore = perpsMarket.totalCollateralValue(accountId);
 //         uint256 debt = perpsMarket.debt(accountId);
-//         uint256 collateralAmount = perpsMarket.getCollateralAmount(accountId, 4);
+//         uint256 collateralAmount = perpsMarket.getCollateralAmount(accountId,
+// 4);
 //         uint256 wethBefore = weth.balanceOf(address(this));
 //         uint256 usdcBefore = usdc.balanceOf(address(this));
 
@@ -556,7 +570,8 @@
 //         assertEq(usdx.balanceOf(address(zap)), 0);
 //     }
 
-//     function testUnwindSmallDebtNoOI_Overpay_AccountOwner_OdosToWrongAddress_Fail(
+//     function
+// testUnwindSmallDebtNoOI_Overpay_AccountOwner_OdosToWrongAddress_Fail(
 //     )
 //         public
 //         selectFork(FORK["0p01_wrong"])
@@ -566,7 +581,8 @@
 
 //         uint256 tcvBefore = perpsMarket.totalCollateralValue(accountId);
 //         uint256 debt = perpsMarket.debt(accountId);
-//         uint256 collateralAmount = perpsMarket.getCollateralAmount(accountId, 4);
+//         uint256 collateralAmount = perpsMarket.getCollateralAmount(accountId,
+// 4);
 //         uint256 wethBefore = weth.balanceOf(address(this));
 //         uint256 usdcBefore = usdc.balanceOf(address(this));
 
@@ -621,7 +637,8 @@
 
 //         uint256 tcvBefore = perpsMarket.totalCollateralValue(accountId);
 //         uint256 debt = perpsMarket.debt(accountId);
-//         uint256 collateralAmount = perpsMarket.getCollateralAmount(accountId, 4);
+//         uint256 collateralAmount = perpsMarket.getCollateralAmount(accountId,
+// 4);
 //         uint256 wethBefore = weth.balanceOf(address(this));
 //         uint256 usdcBefore = usdc.balanceOf(address(this));
 
@@ -674,7 +691,8 @@
 
 //         uint256 tcvBefore = perpsMarket.totalCollateralValue(accountId);
 //         uint256 debt = perpsMarket.debt(accountId);
-//         uint256 collateralAmount = perpsMarket.getCollateralAmount(accountId, 4);
+//         uint256 collateralAmount = perpsMarket.getCollateralAmount(accountId,
+// 4);
 //         uint256 wethBefore = weth.balanceOf(address(this));
 //         uint256 usdcBefore = usdc.balanceOf(address(this));
 
@@ -756,7 +774,8 @@
 
 //         uint256 tcvBefore = perpsMarket.totalCollateralValue(accountId);
 //         uint256 debt = perpsMarket.debt(accountId);
-//         uint256 collateralAmount = perpsMarket.getCollateralAmount(accountId, 4);
+//         uint256 collateralAmount = perpsMarket.getCollateralAmount(accountId,
+// 4);
 //         uint256 wethBefore = weth.balanceOf(address(this));
 //         uint256 usdcBefore = usdc.balanceOf(address(this));
 
@@ -797,7 +816,8 @@
 //         );
 //         assertGt(
 //             usdc.balanceOf(address(this)),
-//             usdcBefore + ((1000 - 2) * outAmount_10_zap / 1000) - (debt / 1e12)
+//             usdcBefore + ((1000 - 2) * outAmount_10_zap / 1000) - (debt /
+// 1e12)
 //         );
 
 //         assertEq(weth.balanceOf(address(zap)), 0);
@@ -814,7 +834,8 @@
 
 //         uint256 tcvBefore = perpsMarket.totalCollateralValue(accountId);
 //         uint256 debt = perpsMarket.debt(accountId);
-//         uint256 collateralAmount = perpsMarket.getCollateralAmount(accountId, 4);
+//         uint256 collateralAmount = perpsMarket.getCollateralAmount(accountId,
+// 4);
 //         uint256 wethBefore = weth.balanceOf(address(this));
 //         uint256 usdcBefore = usdc.balanceOf(address(this));
 
@@ -848,7 +869,8 @@
 //         assertGt(
 //             perpsMarket.totalCollateralValue(accountId),
 //             tcvBefore - outValue_10_zap
-//         ); // this check is weak because the oracle price on this block is diff
+//         ); // this check is weak because the oracle price on this block is
+// diff
 //             // from the odos api price
 //         assertGt(perpsMarket.totalAccountOpenInterest(accountId), 0);
 //         assertFalse(
@@ -860,7 +882,8 @@
 //         assertEq(weth.balanceOf(address(this)), wethBefore);
 //         assertGt(
 //             usdc.balanceOf(address(this)),
-//             usdcBefore + ((1000 - 1) * outAmount_10_zap / 1000) - (debt / 1e12)
+//             usdcBefore + ((1000 - 1) * outAmount_10_zap / 1000) - (debt /
+// 1e12)
 //         );
 
 //         assertEq(weth.balanceOf(address(zap)), 0);
@@ -1562,7 +1585,8 @@
 //         uint256 plumberWethBefore = weth.balanceOf(address(this));
 //         uint256 plumberUsdxBefore = usdx.balanceOf(address(this));
 
-//         // this test contract created the Zap contract and should be the owner
+//         // this test contract created the Zap contract and should be the
+// owner
 //         zap.flush(address(usdx));
 
 //         assertEq(usdx.balanceOf(address(zap)), 0);
@@ -1600,7 +1624,8 @@
 //         uint256 plumberWethBefore = weth.balanceOf(address(this));
 //         uint256 plumberUsdxBefore = usdx.balanceOf(address(this));
 
-//         // this test contract created the Zap contract and should be the owner
+//         // this test contract created the Zap contract and should be the
+// owner
 //         vm.prank(vm.addr(987_654_321));
 //         vm.expectRevert(abi.encodeWithSelector(OnlyPlumber.selector));
 //         zap.flush(address(usdx));
@@ -1784,9 +1809,11 @@
 //         );
 //     }
 
-//     // Basic functional tests, these are similar to existing tests and were used
+//     // Basic functional tests, these are similar to existing tests and were
+// used
 //     // to ensure this harness worked correctly
-//     function testBuySuccess(uint128 amount) public selectFork(FORK["1_zap"]) {
+//     function testBuySuccess(uint128 amount) public selectFork(FORK["1_zap"])
+// {
 //         // D18, fuzzing up to 3e38
 //         vm.assume(amount < uint128(type(int128).max / 9));
 //         vm.assume(amount > 10);
@@ -1955,7 +1982,8 @@
 //         usdc.approve(address(zap), amount);
 
 //         uint256 zapped =
-//             zap.zapIn({_amount: amount, _minAmountOut: amount, _receiver: user});
+//             zap.zapIn({_amount: amount, _minAmountOut: amount, _receiver:
+// user});
 //         vm.stopPrank();
 
 //         assertGe(zapped, uint256(amount) * 99e10); // amount * 1e12 * 0.99

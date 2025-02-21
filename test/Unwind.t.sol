@@ -54,7 +54,8 @@ contract UnwindTest is Bootstrap, Errors {
     //     /// While there is debt, withdrawable margin should be 0
     //     assertEq(withdrawableMargin, 0);
 
-    //     int256 availableMargin = perpsMarketProxy.getAvailableMargin(ACCOUNT_ID);
+    //     int256 availableMargin =
+    // perpsMarketProxy.getAvailableMargin(ACCOUNT_ID);
     //     assertGt(availableMargin, 0);
 
     //     uint256 balanceBefore = IERC20(ARBITRUM_WETH).balanceOf(DEBT_ACTOR);

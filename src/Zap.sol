@@ -202,7 +202,13 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
     /// @param _amount amount of STATA to deposit
     /// @param _receiver address to receive deposited STATA
     /// @return shares received
-    function _depositStata(uint256 _amount, address _receiver) internal returns (uint256 shares) {
+    function _depositStata(
+        uint256 _amount,
+        address _receiver
+    )
+        internal
+        returns (uint256 shares)
+    {
         IERC20(USDC).approve(STATA, _amount);
         shares = IERC4626(STATA).deposit(_amount, _receiver);
     }
@@ -211,7 +217,13 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
     /// @param _shares amount of STATA to redeem
     /// @param _receiver address to receive redeemed STATA
     /// @return assets received
-    function _redeemStata(uint256 _shares, address _receiver) internal returns (uint256 assets) {
+    function _redeemStata(
+        uint256 _shares,
+        address _receiver
+    )
+        internal
+        returns (uint256 assets)
+    {
         assets = IERC4626(STATA).redeem(_shares, _receiver, _receiver);
     }
 

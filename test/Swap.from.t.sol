@@ -56,7 +56,8 @@ contract SwapFromTest is BootstrapWithCurrentBlock {
     //         assertEq(weth.balanceOf(address(zap)), 0);
 
     //         pathId = getOdosQuotePathId(
-    //             ARBITRUM_CHAIN_ID, ARBITRUM_WETH, DEFAULT_AMOUNT, ARBITRUM_USDC
+    //             ARBITRUM_CHAIN_ID, ARBITRUM_WETH, DEFAULT_AMOUNT,
+    // ARBITRUM_USDC
     //         );
 
     //         swapPath = getAssemblePath(pathId);
@@ -85,7 +86,8 @@ contract SwapFromTest is BootstrapWithCurrentBlock {
     //         assertEq(tbtc.balanceOf(address(zap)), 0);
 
     //         pathId = getOdosQuotePathId(
-    //             ARBITRUM_CHAIN_ID, ARBITRUM_TBTC, DEFAULT_AMOUNT, ARBITRUM_USDC
+    //             ARBITRUM_CHAIN_ID, ARBITRUM_TBTC, DEFAULT_AMOUNT,
+    // ARBITRUM_USDC
     //         );
 
     //         swapPath = getAssemblePath(pathId);

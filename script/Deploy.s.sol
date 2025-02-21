@@ -80,14 +80,17 @@ contract DeployArbitrum is Deploy, Arbitrum {
         Zap zap = deploySystem({
             usdc: ARBITRUM_USDC,
             usdx: ARBITRUM_USDX,
-            sstata: address(0), //todo we are not deploying this stata release to arbitrum
+            sstata: address(0), //todo we are not deploying this stata release
+                // to arbitrum
             spotMarket: ARBITRUM_SPOT_MARKET,
             perpsMarket: ARBITRUM_PERPS_MARKET,
             referrer: ARBITRUM_REFERRER,
             susdcSpotId: ARBITRUM_SUSDC_SPOT_MARKET_ID,
-            sstataSpotId: 0, //todo we are not deploying this stata release to arbitrum
+            sstataSpotId: 0, //todo we are not deploying this stata release to
+                // arbitrum
             aave: ARBITRUM_AAVE_POOL,
-            stata: address(0), //todo we are not deploying this stata release to arbitrum
+            stata: address(0), //todo we are not deploying this stata release to
+                // arbitrum
             router: ARBITRUM_ROUTER
         });
         Flush(address(zap)).nominatePlumber(ARBITRUM_PDAO);
@@ -102,14 +105,17 @@ contract DeployArbitrumSepolia is Deploy, ArbitrumSepolia {
         Zap zap = deploySystem({
             usdc: ARBITRUM_SEPOLIA_USDC,
             usdx: ARBITRUM_SEPOLIA_USDX,
-            sstata: address(0), //todo we are not deploying this stata release to arbitrum
+            sstata: address(0), //todo we are not deploying this stata release
+                // to arbitrum
             spotMarket: ARBITRUM_SEPOLIA_SPOT_MARKET,
             perpsMarket: ARBITRUM_SEPOLIA_PERPS_MARKET,
             referrer: ARBITRUM_SEPOLIA_REFERRER,
             susdcSpotId: ARBITRUM_SEPOLIA_SUSDC_SPOT_MARKET_ID,
-            sstataSpotId: 0, //todo we are not deploying this stata release to arbitrum
+            sstataSpotId: 0, //todo we are not deploying this stata release to
+                // arbitrum
             aave: ARBITRUM_SEPOLIA_AAVE_POOL,
-            stata: address(0), //todo we are not deploying this stata release to arbitrum
+            stata: address(0), //todo we are not deploying this stata release to
+                // arbitrum
             router: ARBITRUM_SEPOLIA_ROUTER
         });
         Flush(address(zap)).nominatePlumber(ARBITRUM_SEPOLIA_PDAO);
