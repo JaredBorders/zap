@@ -3,6 +3,7 @@ pragma solidity 0.8.27;
 
 import {IPool} from "./interfaces/IAave.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
+import {IERC4626} from "./interfaces/IERC4626.sol";
 import {IPerpsMarket, ISpotMarket} from "./interfaces/ISynthetix.sol";
 import {Errors} from "./utils/Errors.sol";
 
@@ -34,10 +35,13 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
     address public immutable PERPS_MARKET;
     address public immutable REFERRER;
     uint128 public immutable SUSDC_SPOT_ID;
+    uint128 public immutable SSTATA_SPOT_ID;
+    address public immutable SSTATA;
 
     /// @custom:aave
     uint16 public constant REFERRAL_CODE = 0;
     address public immutable AAVE;
+    address public immutable STATA;
 
     /// @custom:odos
     address public immutable ROUTER;
@@ -45,11 +49,14 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
     constructor(
         address _usdc,
         address _usdx,
+        address _sstata,
         address _spotMarket,
         address _perpsMarket,
         address _referrer,
         uint128 _susdcSpotId,
+        uint128 _sstataSpotId,
         address _aave,
+        address _stata,
         address _router
     ) {
         /// @custom:circle
@@ -57,13 +64,16 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
 
         /// @custom:synthetix
         USDX = _usdx;
+        SSTATA = _sstata;
         SPOT_MARKET = _spotMarket;
         PERPS_MARKET = _perpsMarket;
         REFERRER = _referrer;
         SUSDC_SPOT_ID = _susdcSpotId;
+        SSTATA_SPOT_ID = _sstataSpotId;
 
         /// @custom:aave
         AAVE = _aave;
+        STATA = _stata;
 
         /// @custom:odos
         ROUTER = _router;
@@ -93,12 +103,12 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
                                   ZAP
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice zap USDC into USDx
+    /// @notice zap USDC into STATA
     /// @dev caller must grant USDC allowance to this contract
     /// @param _amount amount of USDC to zap
     /// @param _minAmountOut acceptable slippage for wrapping and selling
-    /// @param _receiver address to receive USDx
-    /// @return zapped amount of USDx received
+    /// @param _receiver address to receive STATA
+    /// @return zapped amount of STATA received
     function zapIn(
         uint256 _amount,
         uint256 _minAmountOut,
@@ -109,12 +119,25 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
     {
         _pull(USDC, msg.sender, _amount);
         zapped = _zapIn(_amount, _minAmountOut);
-        _push(USDX, _receiver, zapped);
+        _push(SSTATA, _receiver, zapped);
+    }
+
+    /// @dev allowance is assumed
+    /// @dev following execution, this contract will hold the zapped STATA
+    function _zapIn(
+        uint256 _amount,
+        uint256 _minAmountOut
+    )
+        internal
+        returns (uint256 zapped)
+    {
+        zapped = _depositStata(_amount, address(this));
+        zapped = _wrap(STATA, SSTATA_SPOT_ID, zapped, _minAmountOut);
     }
 
     /// @dev allowance is assumed
     /// @dev following execution, this contract will hold the zapped USDx
-    function _zapIn(
+    function _zapInUSDx(
         uint256 _amount,
         uint256 _minAmountOut
     )
@@ -139,7 +162,7 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         external
         returns (uint256 zapped)
     {
-        _pull(USDX, msg.sender, _amount);
+        _pull(SSTATA, msg.sender, _amount);
         zapped = _zapOut(_amount, _minAmountOut);
         _push(USDC, _receiver, zapped);
     }
@@ -153,8 +176,42 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         internal
         returns (uint256 zapped)
     {
-        zapped = _buy(SUSDC_SPOT_ID, _amount, _minAmountOut);
-        zapped = _unwrap(SUSDC_SPOT_ID, zapped, _minAmountOut);
+        zapped = _unwrap(SSTATA_SPOT_ID, _amount, _minAmountOut);
+        zapped = _redeemStata(zapped, address(this));
+    }
+
+    /// @dev allowance is assumed
+    /// @dev following execution, this contract will hold the zapped USDC
+    function _zapOutUSDx(
+        uint256 _amount,
+        uint256 _minAmountOut
+    )
+        internal
+        returns (uint256 zapped)
+    {
+        zapped = _buy(SSTATA_SPOT_ID, _amount, _minAmountOut);
+        zapped = _unwrap(SSTATA_SPOT_ID, zapped, _minAmountOut);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                        STATA DEPOSIT AND WITHDRAW
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice deposit STATA
+    /// @param _amount amount of STATA to deposit
+    /// @param _receiver address to receive deposited STATA
+    /// @return shares received
+    function _depositStata(uint256 _amount, address _receiver) internal returns (uint256 shares) {
+        IERC20(USDC).approve(STATA, _amount);
+        shares = IERC4626(STATA).deposit(_amount, _receiver);
+    }
+
+    /// @notice redeem STATA
+    /// @param _shares amount of STATA to redeem
+    /// @param _receiver address to receive redeemed STATA
+    /// @return assets received
+    function _redeemStata(uint256 _shares, address _receiver) internal returns (uint256 assets) {
+        assets = IERC4626(STATA).redeem(_shares, _receiver, _receiver);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -479,7 +536,7 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
 
         // zap USDC from flashloan into USDx;
         // ALL USDC flashloaned from Aave is zapped into USDx
-        uint256 usdxAmount = _zapIn(_flashloan, _zapMinAmountOut);
+        uint256 usdxAmount = _zapInUSDx(_flashloan, _zapMinAmountOut);
 
         // burn USDx to pay off synthetix perp position debt;
         // debt is denominated in USD and thus repaid with USDx
@@ -493,7 +550,9 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         _withdraw(_collateralId, _collateralAmount, _accountId);
 
         if (_collateral == USDC && _collateralId == USDX_ID) {
-            unwound = _zapOut(_collateralAmount, _collateralAmount / 1e12);
+            unwound = _zapOutUSDx(_collateralAmount, _collateralAmount / 1e12);
+        } else if (_collateral == STATA && _collateralId == SSTATA_SPOT_ID) {
+            unwound = _zapOut(_collateralAmount, _unwrapMinAmountOut);
         } else {
             // unwrap withdrawn synthetix perp position collateral;
             // i.e., sETH -> WETH, sUSDe -> USDe, sUSDC -> USDC (...)
