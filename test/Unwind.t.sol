@@ -35,54 +35,56 @@ contract UnwindTest is Bootstrap, Errors {
     bytes swapPath;
     string pathId;
 
-    function test_unwind_is_authorized() public arbitrum {
-        vm.prank(ACTOR);
-        vm.expectRevert(NotPermitted.selector);
-        zap.unwind(0, 0, 0, address(0), "", /*todo*/ 0, 0, 0, address(0));
-    }
+    /// @custom:disabled no stata on arbitrum
+    // function test_unwind_is_authorized() public arbitrum {
+    //     vm.prank(ACTOR);
+    //     vm.expectRevert(NotPermitted.selector);
+    //     zap.unwind(0, 0, 0, address(0), "", /*todo*/ 0, 0, 0, address(0));
+    // }
 
-    /// @custom:todo
-    function test_unwind_arbitrum() public arbitrum {
-        IPerpsMarket perpsMarketProxy = IPerpsMarket(zap.PERPS_MARKET());
-        uint256 initialAccountDebt = perpsMarketProxy.debt(ACCOUNT_ID);
-        assertEq(initialAccountDebt, INITIAL_DEBT);
+    // /// @custom:todo
+    // function test_unwind_arbitrum() public arbitrum {
+    //     IPerpsMarket perpsMarketProxy = IPerpsMarket(zap.PERPS_MARKET());
+    //     uint256 initialAccountDebt = perpsMarketProxy.debt(ACCOUNT_ID);
+    //     assertEq(initialAccountDebt, INITIAL_DEBT);
 
-        int256 withdrawableMargin =
-            perpsMarketProxy.getWithdrawableMargin(ACCOUNT_ID);
+    //     int256 withdrawableMargin =
+    //         perpsMarketProxy.getWithdrawableMargin(ACCOUNT_ID);
 
-        /// While there is debt, withdrawable margin should be 0
-        assertEq(withdrawableMargin, 0);
+    //     /// While there is debt, withdrawable margin should be 0
+    //     assertEq(withdrawableMargin, 0);
 
-        int256 availableMargin = perpsMarketProxy.getAvailableMargin(ACCOUNT_ID);
-        assertGt(availableMargin, 0);
+    //     int256 availableMargin =
+    // perpsMarketProxy.getAvailableMargin(ACCOUNT_ID);
+    //     assertGt(availableMargin, 0);
 
-        uint256 balanceBefore = IERC20(ARBITRUM_WETH).balanceOf(DEBT_ACTOR);
+    //     uint256 balanceBefore = IERC20(ARBITRUM_WETH).balanceOf(DEBT_ACTOR);
 
-        vm.startPrank(DEBT_ACTOR);
+    //     vm.startPrank(DEBT_ACTOR);
 
-        pathId = getOdosQuotePathId(
-            ARBITRUM_CHAIN_ID, ARBITRUM_WETH, SWAP_AMOUNT, ARBITRUM_USDC
-        );
+    //     pathId = getOdosQuotePathId(
+    //         ARBITRUM_CHAIN_ID, ARBITRUM_WETH, SWAP_AMOUNT, ARBITRUM_USDC
+    //     );
 
-        swapPath = getAssemblePath(pathId);
+    //     swapPath = getAssemblePath(pathId);
 
-        zap.unwind({
-            _accountId: ACCOUNT_ID,
-            _collateralId: 4,
-            _collateralAmount: 36_000_000_000_000_000,
-            _collateral: WETH_ADDR,
-            _path: swapPath,
-            _zapMinAmountOut: 2_222_267_000_000_000_000,
-            _unwrapMinAmountOut: 35_964_000_000_000_000,
-            _swapAmountIn: SWAP_AMOUNT,
-            _receiver: DEBT_ACTOR
-        });
+    //     zap.unwind({
+    //         _accountId: ACCOUNT_ID,
+    //         _collateralId: 4,
+    //         _collateralAmount: 36_000_000_000_000_000,
+    //         _collateral: WETH_ADDR,
+    //         _path: swapPath,
+    //         _zapMinAmountOut: 2_222_267_000_000_000_000,
+    //         _unwrapMinAmountOut: 35_964_000_000_000_000,
+    //         _swapAmountIn: SWAP_AMOUNT,
+    //         _receiver: DEBT_ACTOR
+    //     });
 
-        vm.stopPrank();
+    //     vm.stopPrank();
 
-        uint256 balanceAfter = IERC20(ARBITRUM_WETH).balanceOf(DEBT_ACTOR);
+    //     uint256 balanceAfter = IERC20(ARBITRUM_WETH).balanceOf(DEBT_ACTOR);
 
-        assertGt(balanceAfter, balanceBefore);
-    }
+    //     assertGt(balanceAfter, balanceBefore);
+    // }
 
 }

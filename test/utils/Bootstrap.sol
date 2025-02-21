@@ -40,6 +40,7 @@ contract Bootstrap is
     IERC20 usdc;
     IERC20 susdc;
     IERC20 usdx;
+    IERC20 sstata;
     IERC20 weth;
     IERC20 tbtc;
 
@@ -67,11 +68,14 @@ contract Bootstrap is
         zap = deploySystem({
             usdc: BASE_USDC,
             usdx: BASE_USDX,
+            sstata: BASE_SSTATA,
             spotMarket: BASE_SPOT_MARKET,
             perpsMarket: BASE_PERPS_MARKET,
             referrer: BASE_REFERRER,
             susdcSpotId: BASE_SUSDC_SPOT_MARKET_ID,
+            sstataSpotId: BASE_SSTATA_SPOT_MARKET_ID,
             aave: BASE_AAVE_POOL,
+            stata: BASE_STATA,
             router: BASE_ROUTER
         });
 
@@ -81,6 +85,7 @@ contract Bootstrap is
         usdc = IERC20(BASE_USDC);
         susdc = IERC20(spotMarket.getSynth(zap.SUSDC_SPOT_ID()));
         usdx = IERC20(BASE_USDX);
+        sstata = IERC20(BASE_SSTATA);
         weth = IERC20(BASE_WETH);
         tbtc = IERC20(BASE_TBTC);
 
@@ -95,11 +100,17 @@ contract Bootstrap is
         zap = deploySystem({
             usdc: ARBITRUM_USDC,
             usdx: ARBITRUM_USDX,
+            sstata: address(0), //todo we are not deploying this stata release
+                // to arbitrum
             spotMarket: ARBITRUM_SPOT_MARKET,
             perpsMarket: ARBITRUM_PERPS_MARKET,
             referrer: ARBITRUM_REFERRER,
             susdcSpotId: ARBITRUM_SUSDC_SPOT_MARKET_ID,
+            sstataSpotId: 0, //todo we are not deploying this stata release to
+                // arbitrum
             aave: ARBITRUM_AAVE_POOL,
+            stata: address(0), //todo we are not deploying this stata release to
+                // arbitrum
             router: ARBITRUM_ROUTER
         });
 
@@ -107,7 +118,7 @@ contract Bootstrap is
         spotMarket = ISpotMarket(ARBITRUM_SPOT_MARKET);
         perpsMarket = IPerpsMarket(ARBITRUM_PERPS_MARKET);
         usdc = IERC20(ARBITRUM_USDC);
-        susdc = IERC20(spotMarket.getSynth(zap.SUSDC_SPOT_ID()));
+        susdc = IERC20(spotMarket.getSynth(zap.SSTATA_SPOT_ID()));
         usdx = IERC20(ARBITRUM_USDX);
         weth = IERC20(ARBITRUM_WETH);
         tbtc = IERC20(ARBITRUM_TBTC);
@@ -122,11 +133,17 @@ contract Bootstrap is
         zap = deploySystem({
             usdc: ARBITRUM_SEPOLIA_USDC,
             usdx: ARBITRUM_SEPOLIA_USDX,
+            sstata: address(0), //todo we are not deploying this stata release
+                // to arbitrum
             spotMarket: ARBITRUM_SEPOLIA_SPOT_MARKET,
             perpsMarket: ARBITRUM_SEPOLIA_PERPS_MARKET,
             referrer: ARBITRUM_SEPOLIA_REFERRER,
             susdcSpotId: ARBITRUM_SEPOLIA_SUSDC_SPOT_MARKET_ID,
+            sstataSpotId: 0, //todo we are not deploying this stata release to
+                // arbitrum
             aave: ARBITRUM_SEPOLIA_AAVE_POOL,
+            stata: address(0), //todo we are not deploying this stata release to
+                // arbitrum
             router: ARBITRUM_SEPOLIA_ROUTER
         });
 
@@ -134,7 +151,7 @@ contract Bootstrap is
         spotMarket = ISpotMarket(ARBITRUM_SEPOLIA_SPOT_MARKET);
         perpsMarket = IPerpsMarket(ARBITRUM_SEPOLIA_PERPS_MARKET);
         usdc = IERC20(ARBITRUM_SEPOLIA_USDC);
-        susdc = IERC20(spotMarket.getSynth(zap.SUSDC_SPOT_ID()));
+        susdc = IERC20(spotMarket.getSynth(zap.SSTATA_SPOT_ID()));
         usdx = IERC20(ARBITRUM_SEPOLIA_USDX);
         weth = IERC20(ARBITRUM_SEPOLIA_WETH);
 
