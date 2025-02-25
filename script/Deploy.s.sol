@@ -1,92 +1,103 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity 0.8.20;
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.27;
 
-import {BaseGoerliParameters} from "./utils/parameters/BaseGoerliParameters.sol";
-import {BaseParameters} from "./utils/parameters/BaseParameters.sol";
-import {OptimismGoerliParameters} from
-    "./utils/parameters/OptimismGoerliParameters.sol";
-import {OptimismParameters} from "./utils/parameters/OptimismParameters.sol";
 import {Script} from "../lib/forge-std/src/Script.sol";
-import {Zap} from "../src/Zap.sol";
-import {ZapExposed} from "../test/utils/exposed/ZapExposed.sol";
+import {Flush, Zap} from "../src/Zap.sol";
+import {Arbitrum, ArbitrumSepolia, Base} from "./utils/Parameters.sol";
 
-/// @title Zap deployment script
-/// @notice ZapExposed is deployed (not Zap) and
-/// ZapExposed is unsafe and not meant for production
-/// @author JaredBorders (jaredborders@pm.me)
-contract Setup is Script {
+/// @title zap deployment script
+/// @author @jaredborders
+/// @author @flocqst
+contract Deploy is Script {
+
+    modifier broadcast() {
+        uint256 privateKey = vm.envUint("PRIVATE_KEY");
+        vm.startBroadcast(privateKey);
+        _;
+        vm.stopBroadcast();
+    }
+
     function deploySystem(
-        address _usdc,
-        address _susd,
-        address _spotMarketProxy,
-        uint128 _sUSDCId
-    ) public returns (address zapAddress) {
-        zapAddress =
-            address(new ZapExposed(_usdc, _susd, _spotMarketProxy, _sUSDCId));
+        address usdc,
+        address usdx,
+        address spotMarket,
+        address perpsMarket,
+        address referrer,
+        uint128 susdcSpotId,
+        address aave,
+        address router
+    )
+        public
+        returns (Zap zap)
+    {
+        zap = new Zap({
+            _usdc: usdc,
+            _usdx: usdx,
+            _spotMarket: spotMarket,
+            _perpsMarket: perpsMarket,
+            _referrer: referrer,
+            _susdcSpotId: susdcSpotId,
+            _aave: aave,
+            _router: router
+        });
     }
+
 }
 
-/// @dev steps to deploy and verify on Base:
-/// (1) load the variables in the .env file via `source .env`
-/// (2) run `forge script script/Deploy.s.sol:DeployBase --rpc-url $BASE_RPC_URL --etherscan-api-key $BASESCAN_API_KEY --broadcast --verify -vvvv`
-contract DeployBase is Setup, BaseParameters {
-    function run() public {
-        uint256 privateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(privateKey);
+/// @custom:deploy `make deploy_base`
+contract DeployBase is Deploy, Base {
 
-        Setup.deploySystem(
-            USDC, USD_PROXY, SPOT_MARKET_PROXY, SUSDC_SPOT_MARKET_ID
-        );
-
-        vm.stopBroadcast();
+    function run() public broadcast {
+        Zap zap = deploySystem({
+            usdc: BASE_USDC,
+            usdx: BASE_USDX,
+            spotMarket: BASE_SPOT_MARKET,
+            perpsMarket: BASE_PERPS_MARKET,
+            referrer: BASE_REFERRER,
+            susdcSpotId: BASE_SUSDC_SPOT_MARKET_ID,
+            aave: BASE_AAVE_POOL,
+            router: BASE_ROUTER
+        });
+        // PDAO will have to accept Nomination
+        Flush(address(zap)).nominatePlumber(BASE_PDAO);
     }
+
 }
 
-/// @dev steps to deploy and verify on Base Goerli:
-/// (1) load the variables in the .env file via `source .env`
-/// (2) run `forge script script/Deploy.s.sol:DeployBaseGoerli --rpc-url $BASE_GOERLI_RPC_URL --etherscan-api-key $BASESCAN_API_KEY --broadcast --verify -vvvv`
-contract DeployBaseGoerli is Setup, BaseGoerliParameters {
-    function run() public {
-        uint256 privateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(privateKey);
+/// @custom:deplo `make deploy_arbitrum`
+contract DeployArbitrum is Deploy, Arbitrum {
 
-        Setup.deploySystem(
-            USDC, USD_PROXY, SPOT_MARKET_PROXY, SUSDC_SPOT_MARKET_ID
-        );
-
-        vm.stopBroadcast();
+    function run() public broadcast {
+        Zap zap = deploySystem({
+            usdc: ARBITRUM_USDC,
+            usdx: ARBITRUM_USDX,
+            spotMarket: ARBITRUM_SPOT_MARKET,
+            perpsMarket: ARBITRUM_PERPS_MARKET,
+            referrer: ARBITRUM_REFERRER,
+            susdcSpotId: ARBITRUM_SUSDC_SPOT_MARKET_ID,
+            aave: ARBITRUM_AAVE_POOL,
+            router: ARBITRUM_ROUTER
+        });
+        Flush(address(zap)).nominatePlumber(ARBITRUM_PDAO);
     }
+
 }
 
-/// @dev steps to deploy and verify on Optimism:
-/// (1) load the variables in the .env file via `source .env`
-/// (2) run `forge script script/Deploy.s.sol:DeployOptimism --rpc-url $OPTIMISM_RPC_URL --etherscan-api-key $OPTIMISM_ETHERSCAN_API_KEY --broadcast --verify -vvvv`
-contract DeployOptimism is Setup, OptimismParameters {
-    function run() public {
-        uint256 privateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(privateKey);
+/// @custom:deploy `make deploy_arbitrum_sepolia`
+contract DeployArbitrumSepolia is Deploy, ArbitrumSepolia {
 
-        Setup.deploySystem(
-            USDC, USD_PROXY, SPOT_MARKET_PROXY, SUSDC_SPOT_MARKET_ID
-        );
-
-        vm.stopBroadcast();
+    function run() public broadcast {
+        Zap zap = deploySystem({
+            usdc: ARBITRUM_SEPOLIA_USDC,
+            usdx: ARBITRUM_SEPOLIA_USDX,
+            spotMarket: ARBITRUM_SEPOLIA_SPOT_MARKET,
+            perpsMarket: ARBITRUM_SEPOLIA_PERPS_MARKET,
+            referrer: ARBITRUM_SEPOLIA_REFERRER,
+            susdcSpotId: ARBITRUM_SEPOLIA_SUSDC_SPOT_MARKET_ID,
+            aave: ARBITRUM_SEPOLIA_AAVE_POOL,
+            router: ARBITRUM_SEPOLIA_ROUTER
+        });
+        Flush(address(zap)).nominatePlumber(ARBITRUM_SEPOLIA_PDAO);
     }
-}
 
-/// @dev steps to deploy and verify on Optimism Goerli:
-/// (1) load the variables in the .env file via `source .env`
-/// (2) run `forge script script/Deploy.s.sol:DeployOptimismGoerli --rpc-url $OPTIMISM_GOERLI_RPC_URL --etherscan-api-key $OPTIMISM_ETHERSCAN_API_KEY --broadcast --verify -vvvv`
-
-contract DeployOptimismGoerli is Setup, OptimismGoerliParameters {
-    function run() public {
-        uint256 privateKey = vm.envUint("PRIVATE_KEY");
-        vm.startBroadcast(privateKey);
-
-        Setup.deploySystem(
-            USDC, USD_PROXY, SPOT_MARKET_PROXY, SUSDC_SPOT_MARKET_ID
-        );
-
-        vm.stopBroadcast();
-    }
 }

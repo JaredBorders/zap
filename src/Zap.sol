@@ -1,240 +1,726 @@
-// SPDX-License-Identifier: GPL-3.0-or-later
-pragma solidity 0.8.20;
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.27;
 
+import {IPool} from "./interfaces/IAave.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
-import {ISpotMarketProxy} from "./interfaces/ISpotMarketProxy.sol";
-import {ZapErrors} from "./ZapErrors.sol";
-import {ZapEvents} from "./ZapEvents.sol";
+import {IPerpsMarket, ISpotMarket} from "./interfaces/ISynthetix.sol";
+import {Errors} from "./utils/Errors.sol";
 
-/// @title Zap contract for wrapping/unwrapping $USDC into $sUSD
-/// via Synthetix v3 Andromeda Spot Market
-/// @author JaredBorders (jaredborders@pm.me)
-abstract contract Zap is ZapErrors, ZapEvents {
-    /*//////////////////////////////////////////////////////////////
-                               CONSTANTS
-    //////////////////////////////////////////////////////////////*/
+import {Flush} from "./utils/Flush.sol";
+import {Reentrancy} from "./utils/Reentrancy.sol";
+import {SafeERC20} from "./utils/SafeTransferERC20.sol";
 
-    /// @notice keccak256 hash of expected name of $sUSDC synth
-    /// @dev pre-computed to save gas during deployment:
-    /// keccak256(abi.encodePacked("Synthetic USD Coin Spot Market"))
-    bytes32 internal constant _HASHED_SUSDC_NAME =
-        0xdb59c31a60f6ecfcb2e666ed077a3791b5c753b5a5e8dc5120f29367b94bbb22;
+/// @title zap
+/// @custom:synthetix zap USDC into and out of USDx
+/// @custom:aave flash loan USDC to unwind synthetix collateral
+/// @custom:odos swap unwound collateral for USDC to repay flashloan
+/// @dev idle token balances are not safe
+/// @dev intended for standalone use; do not inherit
+/// @author @jaredborders
+/// @author @flocqst
+/// @author @barrasso
+/// @author @moss-eth
+contract Zap is Reentrancy, Errors, Flush(msg.sender) {
 
-    /*//////////////////////////////////////////////////////////////
-                               IMMUTABLES
-    //////////////////////////////////////////////////////////////*/
+    /// @custom:circle
+    address public immutable USDC;
 
-    /// @notice $USDC token contract address
-    IERC20 internal immutable _USDC;
+    /// @custom:synthetix
+    bytes32 public constant MODIFY_PERMISSION = "PERPS_MODIFY_COLLATERAL";
+    bytes32 public constant BURN_PERMISSION = "BURN";
+    uint128 public immutable USDX_ID;
+    address public immutable USDX;
+    address public immutable SPOT_MARKET;
+    address public immutable PERPS_MARKET;
+    address public immutable REFERRER;
+    uint128 public immutable SUSDC_SPOT_ID;
 
-    /// @notice $sUSD token/synth contract address
-    IERC20 internal immutable _SUSD;
+    /// @custom:aave
+    uint16 public constant REFERRAL_CODE = 0;
+    address public immutable AAVE;
 
-    /// @notice $sUSDC token/synth contract address
-    IERC20 internal immutable _SUSDC;
+    /// @custom:odos
+    address public immutable ROUTER;
 
-    /// @notice Synthetix v3 Spot Market ID for $sUSDC
-    uint128 internal immutable _SUSDC_SPOT_MARKET_ID;
-
-    /// @notice Synthetix v3 Spot Market Proxy contract address
-    ISpotMarketProxy internal immutable _SPOT_MARKET_PROXY;
-
-    /// @notice used to adjust $USDC decimals
-    uint256 internal immutable _DECIMALS_FACTOR;
-
-    /*//////////////////////////////////////////////////////////////
-                              CONSTRUCTOR
-    //////////////////////////////////////////////////////////////*/
-
-    /// @notice Zap constructor
-    /// @dev will revert if any of the addresses are zero
-    /// @dev will revert if the Synthetix v3 Spot Market ID for
-    /// $sUSDC is incorrect
-    /// @param _usdc $USDC token contract address
-    /// @param _susd $sUSD token contract address
-    /// @param _spotMarketProxy Synthetix v3 Spot Market Proxy
-    /// contract address
-    /// @param _sUSDCId Synthetix v3 Spot Market ID for $sUSDC
     constructor(
         address _usdc,
-        address _susd,
-        address _spotMarketProxy,
-        uint128 _sUSDCId
+        address _usdx,
+        address _spotMarket,
+        address _perpsMarket,
+        address _referrer,
+        uint128 _susdcSpotId,
+        address _aave,
+        address _router
     ) {
-        if (_usdc == address(0)) revert USDCZeroAddress();
-        if (_susd == address(0)) revert SUSDZeroAddress();
-        if (_spotMarketProxy == address(0)) revert SpotMarketZeroAddress();
+        /// @custom:circle
+        USDC = _usdc;
 
-        _USDC = IERC20(_usdc);
-        _SUSD = IERC20(_susd);
-        _SPOT_MARKET_PROXY = ISpotMarketProxy(_spotMarketProxy);
+        /// @custom:synthetix
+        USDX = _usdx;
+        SPOT_MARKET = _spotMarket;
+        PERPS_MARKET = _perpsMarket;
+        REFERRER = _referrer;
+        SUSDC_SPOT_ID = _susdcSpotId;
 
-        _DECIMALS_FACTOR = 10 ** (18 - IERC20(_usdc).decimals());
+        /// @custom:aave
+        AAVE = _aave;
 
-        if (
-            keccak256(abi.encodePacked(_SPOT_MARKET_PROXY.name(_sUSDCId)))
-                != _HASHED_SUSDC_NAME
-        ) revert InvalidIdSUSDC(_sUSDCId);
-
-        // id of $sUSDC is verified to be correct via the above
-        // name comparison check
-        _SUSDC_SPOT_MARKET_ID = _sUSDCId;
-        _SUSDC = IERC20(_SPOT_MARKET_PROXY.getSynth(_sUSDCId));
+        /// @custom:odos
+        ROUTER = _router;
     }
 
     /*//////////////////////////////////////////////////////////////
-                                 ZAP IN
+                               MODIFIERS
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice wrap $USDC into $sUSD
-    /// @dev call will result in $sUSD minted to this contract
-    /// @dev override this function to include additional logic
-    /// @dev wrapping $USDC requires sufficient Zap
-    /// contract $USDC allowance and results in a
-    /// 1:1 ratio in terms of value
-    /// @dev assumes zero fees when
-    /// wrapping/unwrapping/selling/buying
-    /// @param _amount is the amount of $USDC to wrap
-    function _zapIn(uint256 _amount)
-        internal
-        virtual
-        returns (uint256 adjustedAmount)
+    /// @notice validate caller is authorized to modify synthetix perp position
+    /// @param _accountId synthetix perp market account id
+    modifier isAuthorized(uint128 _accountId) {
+        bool authorized = IPerpsMarket(PERPS_MARKET).isAuthorized(
+            _accountId, MODIFY_PERMISSION, msg.sender
+        );
+        require(authorized, NotPermitted());
+        _;
+    }
+
+    /// @notice validate caller is Aave lending pool
+    modifier onlyAave() {
+        require(msg.sender == AAVE, OnlyAave(msg.sender));
+        _;
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                                  ZAP
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice zap USDC into USDx
+    /// @dev caller must grant USDC allowance to this contract
+    /// @param _amount amount of USDC to zap
+    /// @param _minAmountOut acceptable slippage for wrapping and selling
+    /// @param _receiver address to receive USDx
+    /// @return zapped amount of USDx received
+    function zapIn(
+        uint256 _amount,
+        uint256 _minAmountOut,
+        address _receiver
+    )
+        external
+        returns (uint256 zapped)
     {
-        // transfer $USDC to the Zap contract
-        if (!_USDC.transferFrom(msg.sender, address(this), _amount)) {
-            revert TransferFailed(
-                address(_USDC), msg.sender, address(this), _amount
-            );
-        }
+        _pull(USDC, msg.sender, _amount);
+        zapped = _zapIn(_amount, _minAmountOut);
+        _push(USDX, _receiver, zapped);
+    }
 
-        // allocate $USDC allowance to the Spot Market Proxy
-        if (!_USDC.approve(address(_SPOT_MARKET_PROXY), _amount)) {
-            revert ApprovalFailed(
-                address(_USDC),
-                address(this),
-                address(_SPOT_MARKET_PROXY),
-                _amount
-            );
-        }
+    /// @dev allowance is assumed
+    /// @dev following execution, this contract will hold the zapped USDx
+    function _zapIn(
+        uint256 _amount,
+        uint256 _minAmountOut
+    )
+        internal
+        returns (uint256 zapped)
+    {
+        zapped = _wrap(USDC, SUSDC_SPOT_ID, _amount, _minAmountOut);
+        zapped = _sell(SUSDC_SPOT_ID, zapped, _minAmountOut);
+    }
 
-        /// @notice $USDC may use non-standard decimals
-        /// @dev adjustedAmount is the amount of $sUSDC
-        /// expected to receive from wrapping
-        /// @dev Synthetix synths use 18 decimals
-        /// @custom:example if $USDC has 6 decimals,
-        /// and $sUSD and $sUSDC have 18 decimals,
-        /// then, 1e12 $sUSD/$sUSDC = 1 $USDC
-        adjustedAmount = _amount * _DECIMALS_FACTOR;
+    /// @notice zap USDx into USDC
+    /// @dev caller must grant USDx allowance to this contract
+    /// @param _amount amount of USDx to zap
+    /// @param _minAmountOut acceptable slippage for buying and unwrapping
+    /// @param _receiver address to receive USDC
+    /// @return zapped amount of USDC received
+    function zapOut(
+        uint256 _amount,
+        uint256 _minAmountOut,
+        address _receiver
+    )
+        external
+        returns (uint256 zapped)
+    {
+        _pull(USDX, msg.sender, _amount);
+        zapped = _zapOut(_amount, _minAmountOut);
+        _push(USDC, _receiver, zapped);
+    }
 
-        /// @notice wrap $USDC into $sUSDC
-        /// @dev call will result in $sUSDC minted/transferred
-        /// to the Zap contract
-        _SPOT_MARKET_PROXY.wrap({
-            marketId: _SUSDC_SPOT_MARKET_ID,
+    /// @dev allowance is assumed
+    /// @dev following execution, this contract will hold the zapped USDC
+    function _zapOut(
+        uint256 _amount,
+        uint256 _minAmountOut
+    )
+        internal
+        returns (uint256 zapped)
+    {
+        zapped = _buy(SUSDC_SPOT_ID, _amount, _minAmountOut);
+        zapped = _unwrap(SUSDC_SPOT_ID, zapped, _minAmountOut);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                            WRAP AND UNWRAP
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice wrap collateral via synthetix spot market
+    /// @dev caller must grant token allowance to this contract
+    /// @custom:synth -> synthetix token representation of an asset with an
+    /// acceptable onchain price oracle
+    /// @param _token address of token to wrap
+    /// @param _synthId synthetix market id of synth to wrap into
+    /// @param _amount amount of token to wrap
+    /// @param _minAmountOut acceptable slippage for wrapping
+    /// @param _receiver address to receive wrapped synth
+    /// @return wrapped amount of synth received
+    function wrap(
+        address _token,
+        uint128 _synthId,
+        uint256 _amount,
+        uint256 _minAmountOut,
+        address _receiver
+    )
+        external
+        returns (uint256 wrapped)
+    {
+        _pull(_token, msg.sender, _amount);
+        wrapped = _wrap(_token, _synthId, _amount, _minAmountOut);
+        _push(ISpotMarket(SPOT_MARKET).getSynth(_synthId), _receiver, wrapped);
+    }
+
+    /// @dev allowance is assumed
+    /// @dev following execution, this contract will hold the wrapped synth
+    function _wrap(
+        address _token,
+        uint128 _synthId,
+        uint256 _amount,
+        uint256 _minAmountOut
+    )
+        internal
+        returns (uint256 wrapped)
+    {
+        IERC20(_token).approve(SPOT_MARKET, _amount);
+        (wrapped,) = ISpotMarket(SPOT_MARKET).wrap({
+            marketId: _synthId,
             wrapAmount: _amount,
-            minAmountReceived: adjustedAmount
+            minAmountReceived: _minAmountOut
         });
+    }
 
-        // allocate $sUSDC allowance to the Spot Market Proxy
-        if (!_SUSDC.approve(address(_SPOT_MARKET_PROXY), adjustedAmount)) {
-            revert ApprovalFailed(
-                address(_SUSDC),
-                address(this),
-                address(_SPOT_MARKET_PROXY),
-                adjustedAmount
-            );
-        }
+    /// @notice unwrap collateral via synthetix spot market
+    /// @dev caller must grant synth allowance to this contract
+    /// @custom:synth -> synthetix token representation of an asset with an
+    /// acceptable onchain price oracle
+    /// @param _token address of token to unwrap into
+    /// @param _synthId synthetix market id of synth to unwrap
+    /// @param _amount amount of synth to unwrap
+    /// @param _minAmountOut acceptable slippage for unwrapping
+    /// @param _receiver address to receive unwrapped token
+    /// @return unwrapped amount of token received
+    function unwrap(
+        address _token,
+        uint128 _synthId,
+        uint256 _amount,
+        uint256 _minAmountOut,
+        address _receiver
+    )
+        external
+        returns (uint256 unwrapped)
+    {
+        address synth = ISpotMarket(SPOT_MARKET).getSynth(_synthId);
+        _pull(synth, msg.sender, _amount);
+        unwrapped = _unwrap(_synthId, _amount, _minAmountOut);
+        _push(_token, _receiver, unwrapped);
+    }
 
-        /// @notice sell $sUSDC for $sUSD
-        /// @dev call will result in $sUSD minted/transferred
-        /// to the Zap contract
-        _SPOT_MARKET_PROXY.sell({
-            marketId: _SUSDC_SPOT_MARKET_ID,
-            synthAmount: adjustedAmount,
-            minUsdAmount: adjustedAmount,
-            referrer: address(0)
+    /// @dev allowance is assumed
+    /// @dev following execution, this contract will hold the unwrapped token
+    function _unwrap(
+        uint128 _synthId,
+        uint256 _amount,
+        uint256 _minAmountOut
+    )
+        private
+        returns (uint256 unwrapped)
+    {
+        address synth = ISpotMarket(SPOT_MARKET).getSynth(_synthId);
+        IERC20(synth).approve(SPOT_MARKET, _amount);
+        (unwrapped,) = ISpotMarket(SPOT_MARKET).unwrap({
+            marketId: _synthId,
+            unwrapAmount: _amount,
+            minAmountReceived: _minAmountOut
         });
-
-        emit ZappedIn({amountWrapped: _amount, amountMinted: adjustedAmount});
     }
 
     /*//////////////////////////////////////////////////////////////
-                                ZAP OUT
+                              BUY AND SELL
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice unwrap $USDC from $sUSD
-    /// @dev call will result in $USDC transferred to this contract
-    /// @dev override this function to include additional logic
-    /// @dev unwrapping may result in a loss of precision:
-    /// unwrapping (1e12 + n) $sUSDC results in 1 $USDC
-    /// when n is a number less than 1e12; n $sUSDC is lost
-    /// @param _amount is the amount of $sUSD to sell
-    /// for $sUSDC and then unwrap
-    function _zapOut(uint256 _amount)
-        internal
-        virtual
-        returns (uint256 adjustedAmount)
+    /// @notice buy synth via synthetix spot market
+    /// @dev caller must grant USDX allowance to this contract
+    /// @param _synthId synthetix market id of synth to buy
+    /// @param _amount amount of USDX to spend
+    /// @param _minAmountOut acceptable slippage for buying
+    /// @param _receiver address to receive synth
+    /// @return received amount of synth
+    function buy(
+        uint128 _synthId,
+        uint256 _amount,
+        uint256 _minAmountOut,
+        address _receiver
+    )
+        external
+        returns (uint256 received, address synth)
     {
-        /// @notice prior to unwrapping, ensure that there
-        /// is enough $sUSDC to unwrap
-        /// @custom:example if $USDC has 6 decimals, and
-        /// $sUSDC has greater than 6 decimals,
-        /// then it is possible that the amount of
-        /// $sUSDC to unwrap is less than 1 $USDC;
-        /// this contract will prevent such cases
-        /// @dev if $USDC has 6 decimals, and $sUSDC has 18 decimals,
-        /// precision may be lost
-        if (_amount < _DECIMALS_FACTOR) {
-            revert InsufficientAmount(_amount);
-        }
-
-        // allocate $sUSD allowance to the Spot Market Proxy
-        if (!_SUSD.approve(address(_SPOT_MARKET_PROXY), _amount)) {
-            revert ApprovalFailed(
-                address(_SUSD),
-                address(this),
-                address(_SPOT_MARKET_PROXY),
-                _amount
-            );
-        }
-
-        /// @notice buy $sUSDC with $sUSD
-        /// @dev call will result in $sUSDC minted/transferred
-        /// to the Zap contract
-        _SPOT_MARKET_PROXY.buy({
-            marketId: _SUSDC_SPOT_MARKET_ID,
-            usdAmount: _amount,
-            minAmountReceived: _amount,
-            referrer: address(0)
-        });
-
-        // allocate $sUSDC allowance to the Spot Market Proxy
-        if (!_SUSDC.approve(address(_SPOT_MARKET_PROXY), _amount)) {
-            revert ApprovalFailed(
-                address(_SUSDC),
-                address(this),
-                address(_SPOT_MARKET_PROXY),
-                _amount
-            );
-        }
-
-        /// @notice $USDC might use non-standard decimals
-        /// @dev adjustedAmount is the amount of $USDC
-        /// expected to receive from unwrapping
-        /// @custom:example if $USDC has 6 decimals,
-        /// and $sUSD and $sUSDC have 18 decimals,
-        /// then, 1e12 $sUSD/$sUSDC = 1 $USDC
-        adjustedAmount = _amount / _DECIMALS_FACTOR;
-
-        /// @notice unwrap $USDC via burning $sUSDC
-        /// @dev call will result in $USDC minted/transferred
-        /// to the Zap contract
-        _SPOT_MARKET_PROXY.unwrap({
-            marketId: _SUSDC_SPOT_MARKET_ID,
-            unwrapAmount: _amount,
-            minAmountReceived: adjustedAmount
-        });
-
-        emit ZappedOut({amountBurned: _amount, amountUnwrapped: adjustedAmount});
+        synth = ISpotMarket(SPOT_MARKET).getSynth(_synthId);
+        _pull(USDX, msg.sender, _amount);
+        received = _buy(_synthId, _amount, _minAmountOut);
+        _push(synth, _receiver, received);
     }
+
+    /// @dev allowance is assumed
+    /// @dev following execution, this contract will hold the bought synth
+    function _buy(
+        uint128 _synthId,
+        uint256 _amount,
+        uint256 _minAmountOut
+    )
+        internal
+        returns (uint256 received)
+    {
+        IERC20(USDX).approve(SPOT_MARKET, _amount);
+        (received,) = ISpotMarket(SPOT_MARKET).buy({
+            marketId: _synthId,
+            usdAmount: _amount,
+            minAmountReceived: _minAmountOut,
+            referrer: REFERRER
+        });
+    }
+
+    /// @notice sell synth via synthetix spot market
+    /// @dev caller must grant synth allowance to this contract
+    /// @param _synthId synthetix market id of synth to sell
+    /// @param _amount amount of synth to sell
+    /// @param _minAmountOut acceptable slippage for selling
+    /// @param _receiver address to receive USDX
+    /// @return received amount of USDX
+    function sell(
+        uint128 _synthId,
+        uint256 _amount,
+        uint256 _minAmountOut,
+        address _receiver
+    )
+        external
+        returns (uint256 received)
+    {
+        address synth = ISpotMarket(SPOT_MARKET).getSynth(_synthId);
+        _pull(synth, msg.sender, _amount);
+        received = _sell(_synthId, _amount, _minAmountOut);
+        _push(USDX, _receiver, received);
+    }
+
+    /// @dev allowance is assumed
+    /// @dev following execution, this contract will hold the sold USDX
+    function _sell(
+        uint128 _synthId,
+        uint256 _amount,
+        uint256 _minAmountOut
+    )
+        internal
+        returns (uint256 received)
+    {
+        address synth = ISpotMarket(SPOT_MARKET).getSynth(_synthId);
+        IERC20(synth).approve(SPOT_MARKET, _amount);
+        (received,) = ISpotMarket(SPOT_MARKET).sell({
+            marketId: _synthId,
+            synthAmount: _amount,
+            minUsdAmount: _minAmountOut,
+            referrer: REFERRER
+        });
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                           UNWIND COLLATERAL
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice unwind synthetix perp position collateral
+    /// @custom:synthetix RBAC permission required: "PERPS_MODIFY_COLLATERAL"
+    /// @param _accountId synthetix perp market account id
+    /// @param _collateralId synthetix spot market id or synth id
+    /// @param _collateralAmount amount of collateral to unwind
+    /// @param _collateral address of collateral to unwind
+    /// @param _path odos path from the sor/assemble api endpoint
+    /// @param _zapMinAmountOut acceptable slippage for zapping
+    /// @param _unwrapMinAmountOut acceptable slippage for unwrapping
+    /// @param _swapAmountIn amount intended to be swapped by odos
+    /// @param _receiver address to receive unwound collateral
+    function unwind(
+        uint128 _accountId,
+        uint128 _collateralId,
+        uint256 _collateralAmount,
+        address _collateral,
+        bytes memory _path,
+        uint256 _zapMinAmountOut,
+        uint256 _unwrapMinAmountOut,
+        uint256 _swapAmountIn,
+        address _receiver
+    )
+        external
+        isAuthorized(_accountId)
+        requireStage(Stage.UNSET)
+    {
+        stage = Stage.LEVEL1;
+
+        bytes memory params = abi.encode(
+            _accountId,
+            _collateralId,
+            _collateralAmount,
+            _collateral,
+            _path,
+            _zapMinAmountOut,
+            _unwrapMinAmountOut,
+            _swapAmountIn,
+            _receiver
+        );
+
+        // determine amount of synthetix perp position debt to unwind
+        uint256 debt = _approximateLoanNeeded(_accountId);
+
+        IPool(AAVE).flashLoanSimple({
+            receiverAddress: address(this),
+            asset: USDC,
+            amount: debt,
+            params: params,
+            referralCode: REFERRAL_CODE
+        });
+
+        stage = Stage.UNSET;
+    }
+
+    /// @notice flashloan callback function
+    /// @dev caller must be the Aave lending pool
+    /// @custom:caution calling this function directly is not recommended
+    /// @param _flashloan amount of USDC flashloaned from Aave
+    /// @param _premium amount of USDC premium owed to Aave
+    /// @param _params encoded parameters for unwinding synthetix perp position
+    /// @return bool representing successful execution
+    function executeOperation(
+        address,
+        uint256 _flashloan,
+        uint256 _premium,
+        address,
+        bytes calldata _params
+    )
+        external
+        onlyAave
+        requireStage(Stage.LEVEL1)
+        returns (bool)
+    {
+        stage = Stage.LEVEL2;
+
+        (,,, address _collateral,,,,, address _receiver) = abi.decode(
+            _params,
+            (
+                uint128,
+                uint128,
+                uint256,
+                address,
+                bytes,
+                uint256,
+                uint256,
+                uint256,
+                address
+            )
+        );
+
+        uint256 unwound = _unwind(_flashloan, _premium, _params);
+
+        if (unwound > 0) _push(_collateral, _receiver, unwound);
+
+        return IERC20(USDC).approve(AAVE, _flashloan + _premium);
+    }
+
+    /// @dev unwinds synthetix perp position collateral
+    /// @param _flashloan amount of USDC flashloaned from Aave
+    /// @param _premium amount of USDC premium owed to Aave
+    /// @param _params encoded parameters for unwinding synthetix perp position
+    /// @return unwound amount of collateral
+    function _unwind(
+        uint256 _flashloan,
+        uint256 _premium,
+        bytes calldata _params
+    )
+        internal
+        requireStage(Stage.LEVEL2)
+        returns (uint256 unwound)
+    {
+        (
+            uint128 _accountId,
+            uint128 _collateralId,
+            uint256 _collateralAmount,
+            address _collateral,
+            bytes memory _path,
+            uint256 _zapMinAmountOut,
+            uint256 _unwrapMinAmountOut,
+            uint256 _swapAmountIn,
+            address _receiver
+        ) = abi.decode(
+            _params,
+            (
+                uint128,
+                uint128,
+                uint256,
+                address,
+                bytes,
+                uint256,
+                uint256,
+                uint256,
+                address
+            )
+        );
+
+        // zap USDC from flashloan into USDx;
+        // ALL USDC flashloaned from Aave is zapped into USDx
+        uint256 usdxAmount = _zapIn(_flashloan, _zapMinAmountOut);
+
+        // burn USDx to pay off synthetix perp position debt;
+        // debt is denominated in USD and thus repaid with USDx
+        _burn(usdxAmount, _accountId);
+
+        /// @dev given the USDC buffer, an amount of USDx
+        /// necessarily less than the buffer will remain (<$1);
+        /// this amount is captured by the protocol
+        // withdraw synthetix perp position collateral to this contract;
+        // i.e., # of sETH, # of sUSDe, # of sUSDC (...)
+        _withdraw(_collateralId, _collateralAmount, _accountId);
+
+        if (_collateral == USDC && _collateralId == USDX_ID) {
+            unwound = _zapOut(_collateralAmount, _collateralAmount / 1e12);
+        } else {
+            // unwrap withdrawn synthetix perp position collateral;
+            // i.e., sETH -> WETH, sUSDe -> USDe, sUSDC -> USDC (...)
+            unwound =
+                _unwrap(_collateralId, _collateralAmount, _unwrapMinAmountOut);
+        }
+
+        // establish total debt now owed to Aave;
+        // i.e., # of USDC
+        _flashloan += _premium;
+
+        // swap as much (or little) as necessary to repay Aave flashloan;
+        // i.e., WETH -(swap)-> USDC -(repay)-> Aave
+        // i.e., USDe -(swap)-> USDC -(repay)-> Aave
+        // i.e., USDC -(repay)-> Aave
+        // whatever collateral amount is remaining is returned to the caller
+        if (_collateral == USDC) {
+            unwound -= _flashloan;
+        } else {
+            odosSwap(_collateral, _swapAmountIn, _path);
+            unwound -= _swapAmountIn;
+            uint256 leftovers = IERC20(USDC).balanceOf(address(this));
+            if (leftovers > _flashloan) {
+                _push(USDC, _receiver, leftovers - _flashloan);
+            }
+        }
+
+        /// @notice the path and max amount in must take into consideration:
+        ///     (1) Aave flashloan amount
+        ///     (2) premium owed to Aave for flashloan
+        ///     (3) USDC buffer added to the approximate loan needed
+        ///
+        /// @dev (1) is a function of (3); buffer added to loan requested
+        /// @dev (2) is a function of (1); premium is a percentage of loan
+    }
+
+    /// @notice approximate USDC needed to unwind synthetix perp position
+    /// @param _accountId synthetix perp market account id
+    /// @return amount of USDC needed
+    function _approximateLoanNeeded(uint128 _accountId)
+        internal
+        view
+        returns (uint256 amount)
+    {
+        // determine amount of debt associated with synthetix perp position
+        amount = IPerpsMarket(PERPS_MARKET).debt(_accountId);
+
+        uint256 usdxDecimals = IERC20(USDX).decimals();
+        uint256 usdcDecimals = IERC20(USDC).decimals();
+
+        /// @custom:synthetix debt is denominated in USDx
+        /// @custom:aave debt is denominated in USDC
+        /// @dev scale loan amount accordingly
+        amount /= 10 ** (usdxDecimals - usdcDecimals);
+
+        /// @dev barring exceptional circumstances,
+        /// a 1 USD buffer is sufficient to circumvent
+        /// precision loss
+        amount += 10 ** usdcDecimals;
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                                  BURN
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice burn USDx to pay off synthetix perp position debt
+    /// @custom:caution ALL USDx remaining post-burn will be sent to the caller
+    /// @dev caller must grant USDX allowance to this contract
+    /// @dev excess USDx will be returned to the caller
+    /// @param _amount amount of USDx to burn
+    /// @param _accountId synthetix perp market account id
+    /// @return excess amount of USDx returned to the caller
+    function burn(
+        uint256 _amount,
+        uint128 _accountId
+    )
+        external
+        returns (uint256 excess)
+    {
+        excess = IERC20(USDX).balanceOf(address(this));
+
+        // pull and burn
+        _pull(USDX, msg.sender, _amount);
+        _burn(_amount, _accountId);
+
+        excess = IERC20(USDX).balanceOf(address(this)) - excess;
+
+        if (excess > 0) _push(USDX, msg.sender, excess);
+    }
+
+    /// @dev allowance is assumed
+    /// @dev following execution, this contract will hold any excess USDx
+    function _burn(uint256 _amount, uint128 _accountId) internal {
+        IERC20(USDX).approve(PERPS_MARKET, _amount);
+        IPerpsMarket(PERPS_MARKET).payDebt(_accountId, _amount);
+        IERC20(USDX).approve(PERPS_MARKET, 0);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                                WITHDRAW
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice withdraw collateral from synthetix perp position
+    /// @custom:synthetix RBAC permission required: "PERPS_MODIFY_COLLATERAL"
+    /// @param _synthId synthetix market id of collateral
+    /// @param _amount amount of collateral to withdraw
+    /// @param _accountId synthetix perp market account id
+    /// @param _receiver address to receive collateral
+    function withdraw(
+        uint128 _synthId,
+        uint256 _amount,
+        uint128 _accountId,
+        address _receiver
+    )
+        external
+        isAuthorized(_accountId)
+    {
+        _withdraw(_synthId, _amount, _accountId);
+        address synth = _synthId == USDX_ID
+            ? USDX
+            : ISpotMarket(SPOT_MARKET).getSynth(_synthId);
+        _push(synth, _receiver, _amount);
+    }
+
+    /// @custom:synthetix RBAC permission required: "PERPS_MODIFY_COLLATERAL"
+    /// @dev following execution, this contract will hold the withdrawn
+    /// collateral
+    function _withdraw(
+        uint128 _synthId,
+        uint256 _amount,
+        uint128 _accountId
+    )
+        internal
+    {
+        IPerpsMarket market = IPerpsMarket(PERPS_MARKET);
+        market.modifyCollateral({
+            accountId: _accountId,
+            synthMarketId: _synthId,
+            amountDelta: -int256(_amount)
+        });
+        market.renouncePermission(_accountId, MODIFY_PERMISSION);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                                ODOS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice swap the input amount of tokens for USDC using Odos
+    /// @dev _path USDC is not enforced as the output token during the swap, but
+    /// is expected in the call to push
+    /// @dev caller must grant token allowance to this contract
+    /// @param _from address of token to swap
+    /// @param _path odos path from the sor/assemble api endpoint
+    /// @param _amountIn amount of token to spend
+    /// @param _receiver address to receive USDC
+    /// @return amountOut amount of tokens swapped for
+    function swapFrom(
+        address _from,
+        bytes memory _path,
+        uint256 _amountIn,
+        address _receiver
+    )
+        external
+        returns (uint256 amountOut)
+    {
+        _pull(_from, msg.sender, _amountIn);
+        amountOut = odosSwap(_from, _amountIn, _path);
+        _push(USDC, _receiver, amountOut);
+
+        // refund if there is any amount of `_from` token left
+        uint256 amountLeft = IERC20(_from).balanceOf(address(this));
+        if (amountLeft > 0) _push(_from, msg.sender, amountLeft);
+    }
+
+    /// @dev following execution, this contract will hold the swapped USDC
+    /// @param _tokenFrom address of token being swapped
+    /// @param _amountIn amount of token being swapped
+    /// @param _swapPath bytes from odos assemble api containing the swap
+    /// details
+    function odosSwap(
+        address _tokenFrom,
+        uint256 _amountIn,
+        bytes memory _swapPath
+    )
+        internal
+        returns (uint256 amountOut)
+    {
+        IERC20(_tokenFrom).approve(ROUTER, _amountIn);
+
+        (bool success, bytes memory result) = ROUTER.call{value: 0}(_swapPath);
+        require(success, SwapFailed());
+        amountOut = abi.decode(result, (uint256));
+
+        IERC20(_tokenFrom).approve(ROUTER, 0);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                               TRANSFERS
+    //////////////////////////////////////////////////////////////*/
+
+    /// @dev pull tokens from a sender
+    /// @param _token address of token to pull
+    /// @param _from address of sender
+    /// @param _amount amount of token to pull
+    function _pull(address _token, address _from, uint256 _amount) internal {
+        require(_amount > 0, PullFailed("Zero Amount"));
+        IERC20 token = IERC20(_token);
+
+        SafeERC20.safeTransferFrom(token, _from, address(this), _amount);
+    }
+
+    /// @dev push tokens to a receiver
+    /// @param _token address of token to push
+    /// @param _receiver address of receiver
+    /// @param _amount amount of token to push
+    function _push(
+        address _token,
+        address _receiver,
+        uint256 _amount
+    )
+        internal
+    {
+        require(_receiver != address(0), PushFailed("Zero Address"));
+        require(_amount > 0, PushFailed("Zero Amount"));
+        IERC20 token = IERC20(_token);
+
+        SafeERC20.safeTransfer(token, _receiver, _amount);
+    }
+
 }

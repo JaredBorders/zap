@@ -1,0 +1,136 @@
+// SPDX-License-Identifier: MIT
+pragma solidity 0.8.27;
+
+interface ISpotMarket {
+
+    struct Data {
+        uint256 fixedFees;
+        uint256 utilizationFees;
+        int256 skewFees;
+        int256 wrapperFees;
+    }
+
+    function getSynth(uint128 marketId)
+        external
+        view
+        returns (address synthAddress);
+
+    function wrap(
+        uint128 marketId,
+        uint256 wrapAmount,
+        uint256 minAmountReceived
+    )
+        external
+        returns (uint256 amountToMint, Data memory fees);
+
+    function unwrap(
+        uint128 marketId,
+        uint256 unwrapAmount,
+        uint256 minAmountReceived
+    )
+        external
+        returns (uint256 returnCollateralAmount, Data memory fees);
+
+    function buy(
+        uint128 marketId,
+        uint256 usdAmount,
+        uint256 minAmountReceived,
+        address referrer
+    )
+        external
+        returns (uint256 synthAmount, Data memory fees);
+
+    function sell(
+        uint128 marketId,
+        uint256 synthAmount,
+        uint256 minUsdAmount,
+        address referrer
+    )
+        external
+        returns (uint256 usdAmountReceived, Data memory fees);
+
+}
+
+interface IPerpsMarket {
+
+    error InsufficientCollateralAvailableForWithdraw(
+        int256 withdrawableMarginUsd, uint256 requestedMarginUsd
+    );
+    error PermissionDenied(
+        uint128 accountId, bytes32 permission, address target
+    );
+
+    function modifyCollateral(
+        uint128 accountId,
+        uint128 synthMarketId,
+        int256 amountDelta
+    )
+        external;
+
+    function renouncePermission(
+        uint128 accountId,
+        bytes32 permission
+    )
+        external;
+
+    function isAuthorized(
+        uint128 accountId,
+        bytes32 permission,
+        address target
+    )
+        external
+        view
+        returns (bool isAuthorized);
+
+    function payDebt(uint128 accountId, uint256 amount) external;
+
+    function debt(uint128 accountId)
+        external
+        view
+        returns (uint256 accountDebt);
+
+    function hasPermission(
+        uint128 accountId,
+        bytes32 permission,
+        address user
+    )
+        external
+        view
+        returns (bool);
+
+    function createAccount() external returns (uint128 accountId);
+
+    function grantPermission(
+        uint128 accountId,
+        bytes32 permission,
+        address user
+    )
+        external;
+
+    function getAvailableMargin(uint128 accountId)
+        external
+        returns (int256 availableMargin);
+
+    function getWithdrawableMargin(uint128 accountId)
+        external
+        returns (int256 withdrawableMargin);
+
+    function totalCollateralValue(uint128 accountId)
+        external
+        view
+        returns (uint256);
+
+    function totalAccountOpenInterest(uint128 accountId)
+        external
+        view
+        returns (uint256);
+
+    function getCollateralAmount(
+        uint128 accountId,
+        uint128 collateralId
+    )
+        external
+        view
+        returns (uint256);
+
+}
