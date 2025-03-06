@@ -35,11 +35,11 @@ contract UnwindTest is Bootstrap, Errors {
     bytes swapPath;
     string pathId;
 
-    // function test_unwind_is_authorized() public base {
-    //     vm.prank(ACTOR);
-    //     vm.expectRevert(NotPermitted.selector);
-    //     zap.unwind(0, 0, 0, address(0), "", /*todo*/ 0, 0, 0, address(0));
-    // }
+    function test_unwind_is_authorized() public base {
+        vm.prank(ACTOR);
+        vm.expectRevert(NotPermitted.selector);
+        zap.unwind(0, 0, 0, address(0), "", /*todo*/ 0, 0, 0, address(0));
+    }
 
     // /// @custom:todo
     // function test_unwind_base() public base {
