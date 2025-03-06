@@ -15,8 +15,8 @@ import {
 
 contract WithdrawTest is Bootstrap, Errors {
 
-    /// @custom:disabled no stata on arbitrum
-    // function test_withdraw_is_authorized_arbitrum() public arbitrum {
+    /// @custom:disabled no stata on base
+    // function test_withdraw_is_authorized_base() public base {
     //     vm.prank(ACTOR);
     //     vm.expectRevert(NotPermitted.selector);
     //     zap.withdraw(0, 0, 0, address(0));
@@ -50,8 +50,8 @@ contract WithdrawTest is Bootstrap, Errors {
         assertEq(usdx.balanceOf(ACTOR), amount);
     }
 
-    /// @custom:disabled no stata on arbitrum
-    // function test_withdraw_arbitrum() public arbitrum {
+    /// @custom:disabled no stata on base
+    // function test_withdraw_base() public base {
     //     uint32 amount = 1_000_000_000;
     //     _spin(ACTOR, usdx, amount, address(zap));
     //     vm.startPrank(ACTOR);

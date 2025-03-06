@@ -32,8 +32,9 @@ contract BuyTest is Bootstrap {
         assertGe(susdc.balanceOf(ACTOR), DEFAULT_MIN_AMOUNT_OUT);
     }
 
-    /// @custom:disabled no stata on arbitrum
-    // function test_buy_arbitrum(uint32 amount) public arbitrum {
+    /// TODO: add back test for base
+    /// @custom:disabled no stata on base? 
+    // function test_buy_base(uint32 amount) public base {
     //     _spin(ACTOR, usdx, amount, address(zap));
     //     assertEq(usdx.balanceOf(ACTOR), amount);
     //     assertEq(susdc.balanceOf(ACTOR), 0);

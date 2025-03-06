@@ -14,7 +14,7 @@ import {
 } from "./utils/Bootstrap.sol";
 
 contract AaveTest is Bootstrap, Errors {
-/// @custom:disabled no stata on arbitrum
+/// @custom:disabled no stata on base? TODO: check if there is stata on base and add this test back if there is
 // function test_executeOperation_only_aave(
 //     address caller,
 //     address a,
@@ -23,7 +23,7 @@ contract AaveTest is Bootstrap, Errors {
 //     bytes calldata d
 // )
 //     public
-//     arbitrum
+//     base
 // {
 //     if (caller != zap.AAVE()) {
 //         vm.prank(caller);

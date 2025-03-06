@@ -46,8 +46,8 @@ contract SwapFromTest is BootstrapWithCurrentBlock {
         assertEq(weth.balanceOf(address(zap)), 0);
     }
 
-    /// @custom:disabled no stata on arbitrum
-    // function test_swap_from_weth_arbitrum() public arbitrum {
+    /// @custom:disabled no stata on base
+    // function test_swap_from_weth_base() public base {
     //     {
     //         _spin(ACTOR, weth, DEFAULT_AMOUNT, address(zap));
     //         assertEq(usdc.balanceOf(ACTOR), 0);
@@ -56,8 +56,8 @@ contract SwapFromTest is BootstrapWithCurrentBlock {
     //         assertEq(weth.balanceOf(address(zap)), 0);
 
     //         pathId = getOdosQuotePathId(
-    //             ARBITRUM_CHAIN_ID, ARBITRUM_WETH, DEFAULT_AMOUNT,
-    // ARBITRUM_USDC
+    //             BASE_CHAIN_ID, BASE_WETH, DEFAULT_AMOUNT,
+    // BASE_USDC
     //         );
 
     //         swapPath = getAssemblePath(pathId);
@@ -65,7 +65,7 @@ contract SwapFromTest is BootstrapWithCurrentBlock {
 
     //     vm.startPrank(ACTOR);
     //     uint256 amountOut = zap.swapFrom({
-    //         _from: ARBITRUM_WETH,
+    //         _from: BASE_WETH,
     //         _path: swapPath,
     //         _amountIn: DEFAULT_AMOUNT,
     //         _receiver: ACTOR
@@ -77,7 +77,7 @@ contract SwapFromTest is BootstrapWithCurrentBlock {
     //     assertEq(weth.balanceOf(address(zap)), 0);
     // }
 
-    // function test_swap_from_tbtc_arbitrum() public arbitrum {
+    // function test_swap_from_tbtc_base() public base {
     //     {
     //         _spin(ACTOR, tbtc, DEFAULT_AMOUNT, address(zap));
     //         assertEq(usdc.balanceOf(ACTOR), 0);
@@ -86,8 +86,8 @@ contract SwapFromTest is BootstrapWithCurrentBlock {
     //         assertEq(tbtc.balanceOf(address(zap)), 0);
 
     //         pathId = getOdosQuotePathId(
-    //             ARBITRUM_CHAIN_ID, ARBITRUM_TBTC, DEFAULT_AMOUNT,
-    // ARBITRUM_USDC
+    //             BASE_CHAIN_ID, BASE_TBTC, DEFAULT_AMOUNT,
+    // BASE_USDC
     //         );
 
     //         swapPath = getAssemblePath(pathId);
@@ -95,7 +95,7 @@ contract SwapFromTest is BootstrapWithCurrentBlock {
 
     //     vm.startPrank(ACTOR);
     //     uint256 amountOut = zap.swapFrom({
-    //         _from: ARBITRUM_TBTC,
+    //         _from: BASE_TBTC,
     //         _path: swapPath,
     //         _amountIn: DEFAULT_AMOUNT,
     //         _receiver: ACTOR

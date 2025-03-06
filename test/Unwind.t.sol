@@ -35,15 +35,15 @@ contract UnwindTest is Bootstrap, Errors {
     bytes swapPath;
     string pathId;
 
-    /// @custom:disabled no stata on arbitrum
-    // function test_unwind_is_authorized() public arbitrum {
+    /// @custom:disabled no stata on base
+    // function test_unwind_is_authorized() public base {
     //     vm.prank(ACTOR);
     //     vm.expectRevert(NotPermitted.selector);
     //     zap.unwind(0, 0, 0, address(0), "", /*todo*/ 0, 0, 0, address(0));
     // }
 
     // /// @custom:todo
-    // function test_unwind_arbitrum() public arbitrum {
+    // function test_unwind_base() public base {
     //     IPerpsMarket perpsMarketProxy = IPerpsMarket(zap.PERPS_MARKET());
     //     uint256 initialAccountDebt = perpsMarketProxy.debt(ACCOUNT_ID);
     //     assertEq(initialAccountDebt, INITIAL_DEBT);
@@ -58,12 +58,12 @@ contract UnwindTest is Bootstrap, Errors {
     // perpsMarketProxy.getAvailableMargin(ACCOUNT_ID);
     //     assertGt(availableMargin, 0);
 
-    //     uint256 balanceBefore = IERC20(ARBITRUM_WETH).balanceOf(DEBT_ACTOR);
+    //     uint256 balanceBefore = IERC20(BASE_WETH).balanceOf(DEBT_ACTOR);
 
     //     vm.startPrank(DEBT_ACTOR);
 
     //     pathId = getOdosQuotePathId(
-    //         ARBITRUM_CHAIN_ID, ARBITRUM_WETH, SWAP_AMOUNT, ARBITRUM_USDC
+    //         BASE_CHAIN_ID, BASE_WETH, SWAP_AMOUNT, BASE_USDC
     //     );
 
     //     swapPath = getAssemblePath(pathId);
@@ -82,7 +82,7 @@ contract UnwindTest is Bootstrap, Errors {
 
     //     vm.stopPrank();
 
-    //     uint256 balanceAfter = IERC20(ARBITRUM_WETH).balanceOf(DEBT_ACTOR);
+    //     uint256 balanceAfter = IERC20(BASE_WETH).balanceOf(DEBT_ACTOR);
 
     //     assertGt(balanceAfter, balanceBefore);
     // }

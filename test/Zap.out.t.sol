@@ -41,8 +41,8 @@ contract ZapOutTest is Bootstrap {
         assertEq(sstata.balanceOf(ACTOR), 0);
     }
 
-    /// @custom:disabled no stata on arbitrum
-    // function test_zap_out_arbitum(uint64 amount) public arbitrum {
+    /// @custom:disabled no stata on base
+    // function test_zap_out_base(uint64 amount) public base {
     //     vm.assume(amount > 1e18);
     //     _spin(ACTOR, usdx, amount, address(zap));
     //     assertEq(usdc.balanceOf(ACTOR), 0);

@@ -1,9 +1,10 @@
-/// @custom:disabled no stata on arbitrum
+/// TODO add back this test
+/// @custom:disabled no stata on base?
 
 // // SPDX-License-Identifier: MIT
 // pragma solidity 0.8.27;
 
-// import {Arbitrum} from "../script/utils/Parameters.sol";
+// import {Base} from "../script/utils/Parameters.sol";
 // import {IERC20, Zap} from "../src/Zap.sol";
 // import {Flush} from "../src/utils/Flush.sol";
 // import "./interfaces/ISynthetix.sol";
@@ -59,7 +60,7 @@
 
 // }
 
-// contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
+// contract EndToEndTest is Test, Base, Constants, OdosSwapData {
 
 //     Zap zap;
 
@@ -91,7 +92,7 @@
 //     address largeAccountWithOiOwner =
 // 0x1C1e747A6BE850549E9655addf59FD9e7cC2D4dC;
 
-//     string RPC = vm.envString("ARBITRUM_RPC");
+//     string RPC = vm.envString("BASE_RPC");
 //     mapping(string => uint256) FORK;
 
 //     modifier selectFork(uint256 fork) {
@@ -123,14 +124,14 @@
 //     function initilizeFork(uint256 fork) public {
 //         vm.selectFork(fork);
 
-//         spotMarket = ISpotMarket(ARBITRUM_SPOT_MARKET);
-//         perpsMarket = IPerpsMarket(ARBITRUM_PERPS_MARKET);
+//         spotMarket = ISpotMarket(BASE_SPOT_MARKET);
+//         perpsMarket = IPerpsMarket(BASE_PERPS_MARKET);
 
-//         usdc = IERC20(ARBITRUM_USDC);
-//         usdx = IERC20(ARBITRUM_USDX);
-//         weth = IERC20(ARBITRUM_WETH);
+//         usdc = IERC20(BASE_USDC);
+//         usdx = IERC20(BASE_USDX);
+//         weth = IERC20(BASE_WETH);
 
-//         uint128 synthMarketId = ARBITRUM_SUSDC_SPOT_MARKET_ID;
+//         uint128 synthMarketId = BASE_SUSDC_SPOT_MARKET_ID;
 
 //         susdc = IERC20(spotMarket.getSynth(synthMarketId));
 
@@ -138,15 +139,15 @@
 //         zap = new Zap({
 //             _usdc: address(usdc),
 //             _usdx: address(usdx),
-//             _sstata: address(0), // no stata on arbitrum
+//             _sstata: address(0), // no stata on base
 //             _spotMarket: address(spotMarket),
 //             _perpsMarket: address(perpsMarket),
-//             _referrer: ARBITRUM_REFERRER,
+//             _referrer: BASE_REFERRER,
 //             _susdcSpotId: synthMarketId,
-//             _sstataSpotId: 0, // no stata on arbitrum
-//             _aave: ARBITRUM_AAVE_POOL,
-//             _stata: address(0), // no stata on arbitrum
-//             _router: ARBITRUM_ROUTER
+//             _sstataSpotId: 0, // no stata on base
+//             _aave: BASE_AAVE_POOL,
+//             _stata: address(0), // no stata on base
+//             _router: BASE_ROUTER
 //         });
 
 //         IPyth pyth = IPyth(0xd74CdD8Eef0E97a5a7678F907991316f88E7965A);
@@ -757,7 +758,7 @@
 //         public
 //         selectFork(FORK["0p01_zap"])
 //     {
-//         vm.startPrank(ARBITRUM_AAVE_POOL);
+//         vm.startPrank(BASE_AAVE_POOL);
 //         vm.expectRevert(
 //             abi.encodeWithSelector(ReentrancyDetected.selector, 0, 1)
 //         );

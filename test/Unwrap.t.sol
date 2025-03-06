@@ -40,8 +40,8 @@ contract UnwrapTest is Bootstrap {
         assertEq(susdc.balanceOf(ACTOR), 0);
     }
 
-    /// @custom:disabled no stata on arbitrum
-    // function test_unwrap_arbitrum(uint32 amount) public arbitrum {
+    /// @custom:disabled no stata on base
+    // function test_unwrap_base(uint32 amount) public base {
     //     _spin(ACTOR, usdc, amount, address(zap));
     //     vm.startPrank(ACTOR);
     //     uint256 wrapped = zap.wrap({

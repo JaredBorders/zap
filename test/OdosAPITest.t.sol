@@ -35,13 +35,13 @@ contract OdosAPITest is Bootstrap {
         assertEq(assembleStatus, 200);
     }
 
-    /// @custom:disabled no stata on arbitrum
-    // function test_odos_api_arbitrum() public arbitrum {
+    /// @custom:disabled no stata on base
+    // function test_odos_api_base() public base {
     //     (uint256 quoteStatus, bytes memory quoteData) = getOdosQuote(
-    //         ARBITRUM_CHAIN_ID,
-    //         ARBITRUM_WETH,
+    //         BASE_CHAIN_ID,
+    //         BASE_WETH,
     //         1 ether,
-    //         ARBITRUM_USDC,
+    //         BASE_USDC,
     //         DEFAULT_PROPORTION,
     //         DEFAULT_SLIPPAGE,
     //         address(zap)

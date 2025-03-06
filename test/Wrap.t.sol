@@ -32,8 +32,8 @@ contract WrapTest is Bootstrap {
         assertEq(susdc.balanceOf(ACTOR), wrapped);
     }
 
-    /// @custom:disabled no stata on arbitrum
-    // function test_wrap_arbitrum(uint32 amount) public arbitrum {
+    /// @custom:disabled no stata on base
+    // function test_wrap_base(uint32 amount) public base {
     //     _spin(ACTOR, usdc, amount, address(zap));
     //     assertEq(usdc.balanceOf(ACTOR), amount);
     //     assertEq(susdc.balanceOf(ACTOR), 0);

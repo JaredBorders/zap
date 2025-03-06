@@ -29,8 +29,8 @@ contract ZapInTest is Bootstrap {
         assertEq(sstata.balanceOf(ACTOR), zapped);
     }
 
-    /// @custom:disabled no stata on arbitrum
-    // function test_zap_in_arbitrum(uint32 amount) public arbitrum {
+    /// @custom:disabled no stata on base
+    // function test_zap_in_base(uint32 amount) public base {
     //     _spin(ACTOR, usdc, amount, address(zap));
     //     assertEq(usdc.balanceOf(ACTOR), amount);
     //     assertEq(usdx.balanceOf(ACTOR), 0);

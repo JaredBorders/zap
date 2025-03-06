@@ -38,8 +38,9 @@ contract SellTest is Bootstrap {
         assertEq(susdc.balanceOf(ACTOR), 0);
     }
 
-    /// @custom:disabled no stata on arbitrum
-    // function test_sell_arbitrum(uint32 amount) public arbitrum {
+    ///TODO: add this test back
+    /// @custom:disabled no stata on base
+    // function test_sell_base(uint32 amount) public base {
     //     _spin(ACTOR, usdx, amount, address(zap));
     //     vm.startPrank(ACTOR);
     //     (uint256 received,) = zap.buy({
