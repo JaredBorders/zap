@@ -32,15 +32,15 @@ contract BaseSepolia {
     address BASE_SEPOLIA_PDAO = address(0);
 
     /// @custom:synthetix
-    address BASE_SEPOLIA_USDC = 0x0;
-    address BASE_SEPOLIA_USDX = 0x0;
-    address BASE_SEPOLIA_SPOT_MARKET = 0x0;
-    address BASE_SEPOLIA_PERPS_MARKET = 0x0;
+    address BASE_SEPOLIA_USDC = 0x5dEaC602762362FE5f135FA5904351916053cF70;
+    address BASE_SEPOLIA_USDX = address(0);
+    address BASE_SEPOLIA_SPOT_MARKET = address(0);
+    address BASE_SEPOLIA_PERPS_MARKET = address(0);
     address BASE_SEPOLIA_REFERRER = address(0);
     uint128 BASE_SEPOLIA_SUSDC_SPOT_MARKET_ID = 0;
 
     /// @custom:aave
-    address BASE_SEPOLIA_AAVE_POOL = 0x0;
+    address BASE_SEPOLIA_AAVE_POOL = address(0);
 
     /// @custom:odos
     address BASE_SEPOLIA_ROUTER = address(0);

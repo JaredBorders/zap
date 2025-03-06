@@ -2,7 +2,7 @@
 pragma solidity 0.8.27;
 
 import {Deploy} from "../../script/Deploy.s.sol";
-import {Base, Base, BaseSepolia} from "../../script/utils/Parameters.sol";
+import {Base, BaseSepolia} from "../../script/utils/Parameters.sol";
 import {Errors, IERC20, IPool, Reentrancy, Zap} from "../../src/Zap.sol";
 import {IPerpsMarket, ISpotMarket} from "../interfaces/ISynthetix.sol";
 
@@ -12,13 +12,12 @@ import {stdJson} from "forge-std/StdJson.sol";
 import {Test} from "forge-std/Test.sol";
 import {Surl} from "surl/src/Surl.sol";
 
-contract Bootstrap is Test, Deploy, Base, Base, BaseSepolia, Constants {
+contract Bootstrap is Test, Deploy, Base, BaseSepolia, Constants {
 
     using Surl for *;
     using stdJson for string;
 
     /// @custom:forks
-    uint256 BASE;
     uint256 BASE;
     uint256 BASE_SEPOLIA;
 
@@ -39,12 +38,10 @@ contract Bootstrap is Test, Deploy, Base, Base, BaseSepolia, Constants {
 
     function setUp() public virtual {
         string memory BASE_RPC = vm.envString(BASE_RPC_REF);
-        string memory BASE_RPC = vm.envString(BASE_RPC_REF);
         string memory BASE_SEPOLIA_RPC = vm.envString(BASE_SEPOLIA_RPC_REF);
 
         BASE = vm.createFork(BASE_RPC, BASE_FORK_BLOCK);
-        BASE = vm.createFork(BASE_RPC, BASE_FORK_BLOCK);
-        BASE_SEPOLIA = vm.createFork(BASE_SEPOLIA_RPC, BASE_SEPOLIA_FORK_BLOCK);
+        BASE_SEPOLIA = vm.createFork(BASE_SEPOLIA_RPC /* , BASE_SEPOLIA_FORK_BLOCK */);
 
         headers.push("Content-Type: application/json");
     }
@@ -78,39 +75,6 @@ contract Bootstrap is Test, Deploy, Base, Base, BaseSepolia, Constants {
         weth = IERC20(BASE_WETH);
         tbtc = IERC20(BASE_TBTC);
 
-        _;
-    }
-
-    modifier base() {
-        /// @custom:fork
-        vm.selectFork(BASE);
-
-        /// @custom:target
-        zap = deploySystem({
-            usdc: BASE_USDC,
-            usdx: BASE_USDX,
-            sstata: address(0), //todo we are not deploying this stata release
-                // to base
-            spotMarket: BASE_SPOT_MARKET,
-            perpsMarket: BASE_PERPS_MARKET,
-            referrer: BASE_REFERRER,
-            susdcSpotId: BASE_SUSDC_SPOT_MARKET_ID,
-            sstataSpotId: 0, //todo we are not deploying this stata release to
-                // base
-            aave: BASE_AAVE_POOL,
-            stata: address(0), //todo we are not deploying this stata release to
-                // base
-            router: BASE_ROUTER
-        });
-
-        /// @custom:auxiliary
-        spotMarket = ISpotMarket(BASE_SPOT_MARKET);
-        perpsMarket = IPerpsMarket(BASE_PERPS_MARKET);
-        usdc = IERC20(BASE_USDC);
-        susdc = IERC20(spotMarket.getSynth(zap.SSTATA_SPOT_ID()));
-        usdx = IERC20(BASE_USDX);
-        weth = IERC20(BASE_WETH);
-        tbtc = IERC20(BASE_TBTC);
         _;
     }
 

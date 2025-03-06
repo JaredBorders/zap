@@ -47,8 +47,4 @@ contract BurnTest is Bootstrap {
 
     /// @custom:todo
     function test_burn_base(uint32 amount) public base {}
-
-    /// @custom:todo
-    function test_burn_base_sepolia(uint32 amount) public base_sepolia {}
-
 }

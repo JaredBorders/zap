@@ -78,22 +78,22 @@ contract DeployBaseSepolia is Deploy, BaseSepolia {
 
     function run() public broadcast {
         Zap zap = deploySystem({
-            usdc: base_SEPOLIA_USDC,
-            usdx: base_SEPOLIA_USDX,
+            usdc: BASE_SEPOLIA_USDC,
+            usdx: BASE_SEPOLIA_USDX,
             sstata: address(0), //todo we are not deploying this stata release
                 // to base
-            spotMarket: base_SEPOLIA_SPOT_MARKET,
-            perpsMarket: base_SEPOLIA_PERPS_MARKET,
-            referrer: base_SEPOLIA_REFERRER,
-            susdcSpotId: base_SEPOLIA_SUSDC_SPOT_MARKET_ID,
+            spotMarket: BASE_SEPOLIA_SPOT_MARKET,
+            perpsMarket: BASE_SEPOLIA_PERPS_MARKET,
+            referrer: BASE_SEPOLIA_REFERRER,
+            susdcSpotId: BASE_SEPOLIA_SUSDC_SPOT_MARKET_ID,
             sstataSpotId: 0, //todo we are not deploying this stata release to
                 // base
-            aave: base_SEPOLIA_AAVE_POOL,
+            aave: BASE_SEPOLIA_AAVE_POOL,
             stata: address(0), //todo we are not deploying this stata release to
                 // base
-            router: base_SEPOLIA_ROUTER
+            router: BASE_SEPOLIA_ROUTER
         });
-        Flush(address(zap)).nominatePlumber(base_SEPOLIA_PDAO);
+        Flush(address(zap)).nominatePlumber(BASE_SEPOLIA_PDAO);
     }
 
 }
