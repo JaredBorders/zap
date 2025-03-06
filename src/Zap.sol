@@ -503,7 +503,8 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
 
         uint256 unwound = _unwind(_flashloan, _premium, _params);
 
-        if (unwound > 0) _push(_collateral, _receiver, unwound);
+        if (unwound > 0 && _collateral != STATA) _push(_collateral, _receiver, unwound);
+        else if (unwound > 0 && _collateral == STATA) _push(USDC, _receiver, unwound);
 
         return IERC20(USDC).approve(AAVE, _flashloan + _premium);
     }
@@ -582,7 +583,7 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         // i.e., USDe -(swap)-> USDC -(repay)-> Aave
         // i.e., USDC -(repay)-> Aave
         // whatever collateral amount is remaining is returned to the caller
-        if (_collateral == USDC) {
+        if (_collateral == USDC || _collateral == STATA) {
             unwound -= _flashloan;
         } else {
             odosSwap(_collateral, _swapAmountIn, _path);
