@@ -2,9 +2,7 @@
 pragma solidity 0.8.27;
 
 import {Deploy} from "../../script/Deploy.s.sol";
-import {
-    Base, BaseSepolia, Base
-} from "../../script/utils/Parameters.sol";
+import {Base, Base, BaseSepolia} from "../../script/utils/Parameters.sol";
 import {Errors, IERC20, IPool, Reentrancy, Zap} from "../../src/Zap.sol";
 import {IPerpsMarket, ISpotMarket} from "../interfaces/ISynthetix.sol";
 
@@ -14,14 +12,7 @@ import {stdJson} from "forge-std/StdJson.sol";
 import {Test} from "forge-std/Test.sol";
 import {Surl} from "surl/src/Surl.sol";
 
-contract Bootstrap is
-    Test,
-    Deploy,
-    Base,
-    Base,
-    BaseSepolia,
-    Constants
-{
+contract Bootstrap is Test, Deploy, Base, Base, BaseSepolia, Constants {
 
     using Surl for *;
     using stdJson for string;
@@ -49,13 +40,11 @@ contract Bootstrap is
     function setUp() public virtual {
         string memory BASE_RPC = vm.envString(BASE_RPC_REF);
         string memory BASE_RPC = vm.envString(BASE_RPC_REF);
-        string memory BASE_SEPOLIA_RPC =
-            vm.envString(BASE_SEPOLIA_RPC_REF);
+        string memory BASE_SEPOLIA_RPC = vm.envString(BASE_SEPOLIA_RPC_REF);
 
         BASE = vm.createFork(BASE_RPC, BASE_FORK_BLOCK);
         BASE = vm.createFork(BASE_RPC, BASE_FORK_BLOCK);
-        BASE_SEPOLIA =
-            vm.createFork(BASE_SEPOLIA_RPC, BASE_SEPOLIA_FORK_BLOCK);
+        BASE_SEPOLIA = vm.createFork(BASE_SEPOLIA_RPC, BASE_SEPOLIA_FORK_BLOCK);
 
         headers.push("Content-Type: application/json");
     }

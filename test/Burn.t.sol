@@ -16,7 +16,8 @@ import "forge-std/console2.sol";
 
 contract BurnTest is Bootstrap {
 
-    /// @custom:disabled no stata on base? TODO: add back if there is stata on base
+    /// @custom:disabled no stata on base? TODO: add back if there is stata on
+    /// base
     // /// @custom:todo
     // ///@notice passes at block 269_610_923
     // function test_burn_base(uint32 amount) public base {
@@ -48,9 +49,6 @@ contract BurnTest is Bootstrap {
     function test_burn_base(uint32 amount) public base {}
 
     /// @custom:todo
-    function test_burn_base_sepolia(uint32 amount)
-        public
-        base_sepolia
-    {}
+    function test_burn_base_sepolia(uint32 amount) public base_sepolia {}
 
 }

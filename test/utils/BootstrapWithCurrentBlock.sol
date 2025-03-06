@@ -9,8 +9,7 @@ contract BootstrapWithCurrentBlock is Bootstrap {
     function setUp() public override {
         string memory BASE_RPC = vm.envString(BASE_RPC_REF);
         string memory BASE_RPC = vm.envString(BASE_RPC_REF);
-        string memory BASE_SEPOLIA_RPC =
-            vm.envString(BASE_SEPOLIA_RPC_REF);
+        string memory BASE_SEPOLIA_RPC = vm.envString(BASE_SEPOLIA_RPC_REF);
 
         BASE = vm.createFork(BASE_RPC);
         BASE = vm.createFork(BASE_RPC);

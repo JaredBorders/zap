@@ -14,7 +14,8 @@ import {
 } from "./utils/Bootstrap.sol";
 
 contract AaveTest is Bootstrap, Errors {
-/// @custom:disabled no stata on base? TODO: check if there is stata on base and add this test back if there is
+/// @custom:disabled no stata on base? TODO: check if there is stata on base and
+/// add this test back if there is
 // function test_executeOperation_only_aave(
 //     address caller,
 //     address a,

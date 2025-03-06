@@ -3,7 +3,7 @@ pragma solidity 0.8.27;
 
 import {Script} from "../lib/forge-std/src/Script.sol";
 import {Flush, Zap} from "../src/Zap.sol";
-import {BaseSepolia, Base} from "./utils/Parameters.sol";
+import {Base, BaseSepolia} from "./utils/Parameters.sol";
 
 /// @title zap deployment script
 /// @author @jaredborders
@@ -80,14 +80,17 @@ contract DeployBaseSepolia is Deploy, BaseSepolia {
         Zap zap = deploySystem({
             usdc: base_SEPOLIA_USDC,
             usdx: base_SEPOLIA_USDX,
-            sstata: address(0), //todo we are not deploying this stata release to base
+            sstata: address(0), //todo we are not deploying this stata release
+                // to base
             spotMarket: base_SEPOLIA_SPOT_MARKET,
             perpsMarket: base_SEPOLIA_PERPS_MARKET,
             referrer: base_SEPOLIA_REFERRER,
             susdcSpotId: base_SEPOLIA_SUSDC_SPOT_MARKET_ID,
-            sstataSpotId: 0, //todo we are not deploying this stata release to base
+            sstataSpotId: 0, //todo we are not deploying this stata release to
+                // base
             aave: base_SEPOLIA_AAVE_POOL,
-            stata: address(0), //todo we are not deploying this stata release to base
+            stata: address(0), //todo we are not deploying this stata release to
+                // base
             router: base_SEPOLIA_ROUTER
         });
         Flush(address(zap)).nominatePlumber(base_SEPOLIA_PDAO);
