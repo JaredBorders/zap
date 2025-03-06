@@ -35,7 +35,6 @@ contract UnwindTest is Bootstrap, Errors {
     bytes swapPath;
     string pathId;
 
-    /// @custom:disabled no stata on base
     // function test_unwind_is_authorized() public base {
     //     vm.prank(ACTOR);
     //     vm.expectRevert(NotPermitted.selector);
