@@ -503,8 +503,11 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
 
         uint256 unwound = _unwind(_flashloan, _premium, _params);
 
-        if (unwound > 0 && _collateral != STATA) _push(_collateral, _receiver, unwound);
-        else if (unwound > 0 && _collateral == STATA) _push(USDC, _receiver, unwound);
+        if (unwound > 0 && _collateral != STATA) {
+            _push(_collateral, _receiver, unwound);
+        } else if (unwound > 0 && _collateral == STATA) {
+            _push(USDC, _receiver, unwound);
+        }
 
         return IERC20(USDC).approve(AAVE, _flashloan + _premium);
     }
