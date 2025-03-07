@@ -1,19 +1,29 @@
 # Zap
-[Git Source](https://github.com/moss-eth/zap/blob/59cf0756a77f382e301eda36c7e1793c595fd9b7/src/Zap.sol)
+[Git Source](https://github.com/moss-eth/zap/blob/7ecc5cc79642d99fe6248a4895ed17a8ea025990/src/Zap.sol)
 
 **Inherits:**
 [Reentrancy](/src/utils/Reentrancy.sol/contract.Reentrancy.md), [Errors](/src/utils/Errors.sol/contract.Errors.md), [Flush](/src/utils/Flush.sol/contract.Flush.md)
 
 **Authors:**
-@jaredborders, @flocqst, @barrasso, @moss-eth
+@jaredborders, @flocqst, @barrasso, @moss-eth, @cmontecoding
 
 *idle token balances are not safe*
 
 *intended for standalone use; do not inherit*
 
+**Notes:**
+- synthetix: zap USDC into and out of USDx
+
+- aave: flash loan USDC to unwind synthetix collateral
+
+- odos: swap unwound collateral for USDC to repay flashloan
+
 
 ## State Variables
 ### USDC
+**Note:**
+circle: 
+
 
 ```solidity
 address public immutable USDC;
@@ -21,6 +31,9 @@ address public immutable USDC;
 
 
 ### MODIFY_PERMISSION
+**Note:**
+synthetix: 
+
 
 ```solidity
 bytes32 public constant MODIFY_PERMISSION = "PERPS_MODIFY_COLLATERAL";
@@ -76,7 +89,24 @@ uint128 public immutable SUSDC_SPOT_ID;
 ```
 
 
+### SSTATA_SPOT_ID
+
+```solidity
+uint128 public immutable SSTATA_SPOT_ID;
+```
+
+
+### SSTATA
+
+```solidity
+address public immutable SSTATA;
+```
+
+
 ### REFERRAL_CODE
+**Note:**
+aave: 
+
 
 ```solidity
 uint16 public constant REFERRAL_CODE = 0;
@@ -90,7 +120,17 @@ address public immutable AAVE;
 ```
 
 
+### STATA
+
+```solidity
+address public immutable STATA;
+```
+
+
 ### ROUTER
+**Note:**
+odos: 
+
 
 ```solidity
 address public immutable ROUTER;
@@ -105,11 +145,14 @@ address public immutable ROUTER;
 constructor(
     address _usdc,
     address _usdx,
+    address _sstata,
     address _spotMarket,
     address _perpsMarket,
     address _referrer,
     uint128 _susdcSpotId,
+    uint128 _sstataSpotId,
     address _aave,
+    address _stata,
     address _router
 );
 ```
@@ -117,6 +160,15 @@ constructor(
 ### isAuthorized
 
 validate caller is authorized to modify synthetix perp position
+
+**Notes:**
+- circle: 
+
+- synthetix: 
+
+- aave: 
+
+- odos: 
 
 
 ```solidity
@@ -140,7 +192,7 @@ modifier onlyAave();
 
 ### zapIn
 
-zap USDC into USDx
+zap USDC into STATA
 
 *caller must grant USDC allowance to this contract*
 
@@ -160,16 +212,32 @@ function zapIn(
 |----|----|-----------|
 |`_amount`|`uint256`|amount of USDC to zap|
 |`_minAmountOut`|`uint256`|acceptable slippage for wrapping and selling|
-|`_receiver`|`address`|address to receive USDx|
+|`_receiver`|`address`|address to receive STATA|
 
 **Returns**
 
 |Name|Type|Description|
 |----|----|-----------|
-|`zapped`|`uint256`|amount of USDx received|
+|`zapped`|`uint256`|amount of STATA received|
 
 
 ### _zapIn
+
+*allowance is assumed*
+
+*following execution, this contract will hold the zapped STATA*
+
+
+```solidity
+function _zapIn(
+    uint256 _amount,
+    uint256 _minAmountOut
+)
+    internal
+    returns (uint256 zapped);
+```
+
+### _zapInUSDx
 
 *allowance is assumed*
 
@@ -177,7 +245,7 @@ function zapIn(
 
 
 ```solidity
-function _zapIn(
+function _zapInUSDx(
     uint256 _amount,
     uint256 _minAmountOut
 )
@@ -232,11 +300,85 @@ function _zapOut(
     returns (uint256 zapped);
 ```
 
+### _zapOutUSDx
+
+*allowance is assumed*
+
+*following execution, this contract will hold the zapped USDC*
+
+
+```solidity
+function _zapOutUSDx(
+    uint256 _amount,
+    uint256 _minAmountOut
+)
+    internal
+    returns (uint256 zapped);
+```
+
+### _depositStata
+
+deposit STATA
+
+
+```solidity
+function _depositStata(
+    uint256 _amount,
+    address _receiver
+)
+    internal
+    returns (uint256 shares);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_amount`|`uint256`|amount of STATA to deposit|
+|`_receiver`|`address`|address to receive deposited STATA|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`shares`|`uint256`|received|
+
+
+### _redeemStata
+
+redeem STATA
+
+
+```solidity
+function _redeemStata(
+    uint256 _shares,
+    address _receiver
+)
+    internal
+    returns (uint256 assets);
+```
+**Parameters**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`_shares`|`uint256`|amount of STATA to redeem|
+|`_receiver`|`address`|address to receive redeemed STATA|
+
+**Returns**
+
+|Name|Type|Description|
+|----|----|-----------|
+|`assets`|`uint256`|received|
+
+
 ### wrap
 
 wrap collateral via synthetix spot market
 
 *caller must grant token allowance to this contract*
+
+**Note:**
+synth: -> synthetix token representation of an asset with an
+acceptable onchain price oracle
 
 
 ```solidity
@@ -290,6 +432,10 @@ function _wrap(
 unwrap collateral via synthetix spot market
 
 *caller must grant synth allowance to this contract*
+
+**Note:**
+synth: -> synthetix token representation of an asset with an
+acceptable onchain price oracle
 
 
 ```solidity
@@ -442,7 +588,8 @@ function _sell(
 
 unwind synthetix perp position collateral
 
-*caller must grant USDC allowance to this contract*
+**Note:**
+synthetix: RBAC permission required: "PERPS_MODIFY_COLLATERAL"
 
 
 ```solidity
@@ -466,13 +613,13 @@ function unwind(
 |Name|Type|Description|
 |----|----|-----------|
 |`_accountId`|`uint128`|synthetix perp market account id|
-|`_collateralId`|`uint128`|synthetix market id of collateral|
+|`_collateralId`|`uint128`|synthetix spot market id or synth id|
 |`_collateralAmount`|`uint256`|amount of collateral to unwind|
 |`_collateral`|`address`|address of collateral to unwind|
 |`_path`|`bytes`|odos path from the sor/assemble api endpoint|
 |`_zapMinAmountOut`|`uint256`|acceptable slippage for zapping|
 |`_unwrapMinAmountOut`|`uint256`|acceptable slippage for unwrapping|
-|`_swapAmountIn`|`uint256`|acceptable slippage for swapping|
+|`_swapAmountIn`|`uint256`|amount intended to be swapped by odos|
 |`_receiver`|`address`|address to receive unwound collateral|
 
 
@@ -481,6 +628,9 @@ function unwind(
 flashloan callback function
 
 *caller must be the Aave lending pool*
+
+**Note:**
+caution: calling this function directly is not recommended
 
 
 ```solidity
@@ -594,6 +744,13 @@ precision loss*
 
 *excess USDx will be returned to the caller*
 
+**Notes:**
+- synthetix: debt is denominated in USDx
+
+- aave: debt is denominated in USDC
+
+- caution: ALL USDx remaining post-burn will be sent to the caller
+
 
 ```solidity
 function burn(
@@ -632,6 +789,9 @@ function _burn(uint256 _amount, uint128 _accountId) internal;
 
 withdraw collateral from synthetix perp position
 
+**Note:**
+synthetix: RBAC permission required: "PERPS_MODIFY_COLLATERAL"
+
 
 ```solidity
 function withdraw(
@@ -658,6 +818,9 @@ function withdraw(
 *following execution, this contract will hold the withdrawn
 collateral*
 
+**Note:**
+synthetix: RBAC permission required: "PERPS_MODIFY_COLLATERAL"
+
 
 ```solidity
 function _withdraw(
@@ -670,10 +833,10 @@ function _withdraw(
 
 ### swapFrom
 
-swap an amount of tokens for the optimal amount of USDC
+swap the input amount of tokens for USDC using Odos
 
 *_path USDC is not enforced as the output token during the swap, but
-is the expected in the call to push*
+is expected in the call to push*
 
 *caller must grant token allowance to this contract*
 
