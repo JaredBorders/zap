@@ -228,8 +228,8 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         internal
         returns (uint256 zapped)
     {
-        zapped = _buy(SSTATA_SPOT_ID, _amount, _minAmountOut);
-        zapped = _unwrap(SSTATA_SPOT_ID, zapped, _minAmountOut);
+        zapped = _buy(SUSDC_SPOT_ID, _amount, _minAmountOut);
+        zapped = _unwrap(SUSDC_SPOT_ID, zapped, _minAmountOut);
     }
 
     /*//////////////////////////////////////////////////////////////
