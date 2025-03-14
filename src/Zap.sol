@@ -136,6 +136,25 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         zapped = _wrap(STATA, SSTATA_SPOT_ID, zapped, _minAmountOut);
     }
 
+    /// @notice zap USDC into USDx
+    /// @dev caller must grant USDC allowance to this contract
+    /// @param _amount amount of USDC to zap
+    /// @param _minAmountOut acceptable slippage for wrapping and selling
+    /// @param _receiver address to receive USDx
+    /// @return zapped amount of USDx received
+    function zapInUSDX(
+        uint256 _amount,
+        uint256 _minAmountOut,
+        address _receiver
+    )
+        external
+        returns (uint256 zapped)
+    {
+        _pull(USDC, msg.sender, _amount);
+        zapped = _zapInUSDx(_amount, _minAmountOut);
+        _push(USDX, _receiver, zapped);
+    }
+
     /// @dev allowance is assumed
     /// @dev following execution, this contract will hold the zapped USDx
     function _zapInUSDx(
@@ -181,6 +200,25 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         zapped = _redeemStata(zapped, address(this));
     }
 
+    /// @notice zap USDx into USDC
+    /// @dev caller must grant USDx allowance to this contract
+    /// @param _amount amount of USDx to zap
+    /// @param _minAmountOut acceptable slippage for buying and unwrapping
+    /// @param _receiver address to receive USDC
+    /// @return zapped amount of USDC received
+    function zapOutUSDX(
+        uint256 _amount,
+        uint256 _minAmountOut,
+        address _receiver
+    )
+        external
+        returns (uint256 zapped)
+    {
+        _pull(USDX, msg.sender, _amount);
+        zapped = _zapOutUSDx(_amount, _minAmountOut);
+        _push(USDC, _receiver, zapped);
+    }
+
     /// @dev allowance is assumed
     /// @dev following execution, this contract will hold the zapped USDC
     function _zapOutUSDx(
@@ -190,8 +228,8 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         internal
         returns (uint256 zapped)
     {
-        zapped = _buy(SSTATA_SPOT_ID, _amount, _minAmountOut);
-        zapped = _unwrap(SSTATA_SPOT_ID, zapped, _minAmountOut);
+        zapped = _buy(SUSDC_SPOT_ID, _amount, _minAmountOut);
+        zapped = _unwrap(SUSDC_SPOT_ID, zapped, _minAmountOut);
     }
 
     /*//////////////////////////////////////////////////////////////
