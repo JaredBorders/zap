@@ -131,14 +131,14 @@ contract EndToEndTest is Test, Base, Constants, OdosSwapData {
         zap = new Zap({
             _usdc: address(usdc),
             _usdx: address(usdx),
-            _sstata: address(0), // no stata on base
+            _sstata: address(0), // TODO
             _spotMarket: address(spotMarket),
             _perpsMarket: address(perpsMarket),
             _referrer: BASE_REFERRER,
             _susdcSpotId: synthMarketId,
-            _sstataSpotId: 0, // no stata on base
+            _sstataSpotId: 0, // TODO
             _aave: BASE_AAVE_POOL,
-            _stata: address(0), // no stata on base
+            _stata: address(0), // TODO
             _router: BASE_ROUTER
         });
 
