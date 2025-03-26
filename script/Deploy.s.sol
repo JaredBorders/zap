@@ -19,7 +19,7 @@ contract Deploy is Script {
 
     function deploySystem(
         address usdc,
-        address usdx,
+        address susd,
         address sstata,
         address spotMarket,
         address perpsMarket,
@@ -35,7 +35,7 @@ contract Deploy is Script {
     {
         zap = new Zap({
             _usdc: usdc,
-            _usdx: usdx,
+            _susd: susd,
             _sstata: sstata,
             _spotMarket: spotMarket,
             _perpsMarket: perpsMarket,
@@ -56,7 +56,7 @@ contract DeployBase is Deploy, Base {
     function run() public broadcast {
         Zap zap = deploySystem({
             usdc: BASE_USDC,
-            usdx: BASE_USDX,
+            susd: BASE_SUSD,
             sstata: BASE_SSTATA,
             spotMarket: BASE_SPOT_MARKET,
             perpsMarket: BASE_PERPS_MARKET,
@@ -79,7 +79,7 @@ contract DeployBaseSepolia is Deploy, BaseSepolia {
     function run() public broadcast {
         Zap zap = deploySystem({
             usdc: BASE_SEPOLIA_USDC,
-            usdx: BASE_SEPOLIA_USDX,
+            susd: BASE_SEPOLIA_SUSD,
             sstata: address(0), //todo we are not deploying this stata release
                 // to base
             spotMarket: BASE_SEPOLIA_SPOT_MARKET,

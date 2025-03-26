@@ -8,7 +8,7 @@ contract Base {
 
     /// @custom:synthetix
     address BASE_USDC = 0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913;
-    address BASE_USDX = 0x09d51516F38980035153a554c26Df3C6f51a23C3;
+    address BASE_SUSD = 0x09d51516F38980035153a554c26Df3C6f51a23C3;
     address BASE_SSTATA = 0x729Ef31D86d31440ecBF49f27F7cD7c16c6616d2;
     address BASE_SPOT_MARKET = 0x18141523403e2595D31b22604AcB8Fc06a4CaA61;
     address BASE_PERPS_MARKET = 0x0A2AF931eFFd34b81ebcc57E3d3c9B1E1dE1C9Ce;
@@ -33,7 +33,7 @@ contract BaseSepolia {
 
     /// @custom:synthetix
     address BASE_SEPOLIA_USDC = 0x5dEaC602762362FE5f135FA5904351916053cF70;
-    address BASE_SEPOLIA_USDX = address(0);
+    address BASE_SEPOLIA_SUSD = address(0);
     address BASE_SEPOLIA_SPOT_MARKET = address(0);
     address BASE_SEPOLIA_PERPS_MARKET = address(0);
     address BASE_SEPOLIA_REFERRER = address(0);
