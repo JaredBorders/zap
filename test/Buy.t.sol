@@ -15,8 +15,8 @@ import {
 contract BuyTest is Bootstrap {
 
     function test_buy_base(uint32 amount) public base {
-        _spin(ACTOR, usdx, amount, address(zap));
-        assertEq(usdx.balanceOf(ACTOR), amount);
+        _spin(ACTOR, susd, amount, address(zap));
+        assertEq(susd.balanceOf(ACTOR), amount);
         assertEq(susdc.balanceOf(ACTOR), 0);
         vm.startPrank(ACTOR);
         (uint256 received, address synth) = zap.buy({
@@ -28,7 +28,7 @@ contract BuyTest is Bootstrap {
         vm.stopPrank();
         assertEq(synth, address(susdc));
         assertGe(received, DEFAULT_MIN_AMOUNT_OUT);
-        assertEq(usdx.balanceOf(ACTOR), 0);
+        assertEq(susd.balanceOf(ACTOR), 0);
         assertGe(susdc.balanceOf(ACTOR), DEFAULT_MIN_AMOUNT_OUT);
     }
 

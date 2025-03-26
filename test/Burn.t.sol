@@ -18,7 +18,7 @@ contract BurnTest is Bootstrap {
 /// @custom:TODO
 // ///@notice passes at block 269_610_923
 // function test_burn_base(uint32 amount) public base {
-//     IERC20 A_USDX = IERC20(BASE_USDX);
+//     IERC20 A_SUSD = IERC20(BASE_SUSD);
 //     uint128 accountID =
 // 170_141_183_460_469_231_731_687_303_715_884_105_766;
 
@@ -28,14 +28,14 @@ contract BurnTest is Bootstrap {
 
 //     vm.assume(amount > 1e6 && amount <= debt);
 
-//     uint256 balBefore = A_USDX.balanceOf(accountOwner);
+//     uint256 balBefore = A_SUSD.balanceOf(accountOwner);
 
 //     vm.startPrank(accountOwner);
-//     A_USDX.approve(address(zap), type(uint256).max);
+//     A_SUSD.approve(address(zap), type(uint256).max);
 
 //     zap.burn(amount, accountID);
 
-//     uint256 balAfter = A_USDX.balanceOf(accountOwner);
+//     uint256 balAfter = A_SUSD.balanceOf(accountOwner);
 //     uint256 debtAfter = IPerpsMarket(zap.PERPS_MARKET()).debt(accountID);
 
 //     assertEq(balAfter, balBefore - amount);

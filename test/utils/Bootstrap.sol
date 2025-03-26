@@ -29,7 +29,7 @@ contract Bootstrap is Test, Deploy, Base, BaseSepolia, Constants {
     IPerpsMarket perpsMarket;
     IERC20 usdc;
     IERC20 susdc;
-    IERC20 usdx;
+    IERC20 susd;
     IERC20 sstata;
     IERC20 weth;
     IERC20 tbtc;
@@ -54,7 +54,7 @@ contract Bootstrap is Test, Deploy, Base, BaseSepolia, Constants {
         /// @custom:target
         zap = deploySystem({
             usdc: BASE_USDC,
-            usdx: BASE_USDX,
+            susd: BASE_SUSD,
             sstata: BASE_SSTATA,
             spotMarket: BASE_SPOT_MARKET,
             perpsMarket: BASE_PERPS_MARKET,
@@ -71,7 +71,7 @@ contract Bootstrap is Test, Deploy, Base, BaseSepolia, Constants {
         perpsMarket = IPerpsMarket(BASE_PERPS_MARKET);
         usdc = IERC20(BASE_USDC);
         susdc = IERC20(spotMarket.getSynth(zap.SUSDC_SPOT_ID()));
-        usdx = IERC20(BASE_USDX);
+        susd = IERC20(BASE_SUSD);
         sstata = IERC20(BASE_SSTATA);
         weth = IERC20(BASE_WETH);
         tbtc = IERC20(BASE_TBTC);
@@ -86,7 +86,7 @@ contract Bootstrap is Test, Deploy, Base, BaseSepolia, Constants {
         /// @custom:target
         zap = deploySystem({
             usdc: BASE_SEPOLIA_USDC,
-            usdx: BASE_SEPOLIA_USDX,
+            susd: BASE_SEPOLIA_SUSD,
             sstata: address(0), //todo we are not deploying this stata release
                 // to base
             spotMarket: BASE_SEPOLIA_SPOT_MARKET,
@@ -106,7 +106,7 @@ contract Bootstrap is Test, Deploy, Base, BaseSepolia, Constants {
         perpsMarket = IPerpsMarket(BASE_SEPOLIA_PERPS_MARKET);
         usdc = IERC20(BASE_SEPOLIA_USDC);
         susdc = IERC20(spotMarket.getSynth(zap.SSTATA_SPOT_ID()));
-        usdx = IERC20(BASE_SEPOLIA_USDX);
+        susd = IERC20(BASE_SEPOLIA_SUSD);
         weth = IERC20(BASE_SEPOLIA_WETH);
 
         _;

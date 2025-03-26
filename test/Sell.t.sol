@@ -15,7 +15,7 @@ import {
 contract SellTest is Bootstrap {
 
     function test_sell_base(uint32 amount) public base {
-        _spin(ACTOR, usdx, amount, address(zap));
+        _spin(ACTOR, susd, amount, address(zap));
         vm.startPrank(ACTOR);
         (uint256 received,) = zap.buy({
             _synthId: zap.SUSDC_SPOT_ID(),
@@ -23,7 +23,7 @@ contract SellTest is Bootstrap {
             _minAmountOut: DEFAULT_MIN_AMOUNT_OUT,
             _receiver: ACTOR
         });
-        assertEq(usdx.balanceOf(ACTOR), 0);
+        assertEq(susd.balanceOf(ACTOR), 0);
         assertGe(susdc.balanceOf(ACTOR), DEFAULT_MIN_AMOUNT_OUT);
         susdc.approve(address(zap), type(uint256).max);
         received = zap.sell({
@@ -34,7 +34,7 @@ contract SellTest is Bootstrap {
         });
         vm.stopPrank();
         assertGe(received, DEFAULT_MIN_AMOUNT_OUT);
-        assertGe(usdx.balanceOf(ACTOR), DEFAULT_MIN_AMOUNT_OUT);
+        assertGe(susd.balanceOf(ACTOR), DEFAULT_MIN_AMOUNT_OUT);
         assertEq(susdc.balanceOf(ACTOR), 0);
     }
 
