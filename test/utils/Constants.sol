@@ -16,24 +16,19 @@ contract Constants {
 
     /// @custom:forks
     string constant BASE_RPC_REF = "BASE_RPC";
-    string constant ARBITRUM_RPC_REF = "ARBITRUM_RPC";
-    string constant ARBITRUM_SEPOLIA_RPC_REF = "ARBITRUM_SEPOLIA_RPC";
+    string constant BASE_SEPOLIA_RPC_REF = "BASE_SEPOLIA_RPC";
 
-    uint256 constant BASE_FORK_BLOCK = 20_165_000;
-    uint256 constant ARBITRUM_FORK_BLOCK = 256_615_000;
-    uint256 constant ARBITRUM_SEPOLIA_FORK_BLOCK = 85_443_000;
+    uint256 constant BASE_FORK_BLOCK = 26_606_911;
+    // uint256 constant BASE_SEPOLIA_FORK_BLOCK = 0;
 
     uint256 constant BASE_CHAIN_ID = 8453;
-    uint256 constant ARBITRUM_CHAIN_ID = 42_161;
 
     /// @custom:values
     address constant ACTOR = 0x7777777777777777777777777777777777777777;
     uint256 constant DEFAULT_MIN_AMOUNT_OUT = 0;
 
     /// @custom:tokens
-    address constant ARBITRUM_WETH = 0x82aF49447D8a07e3bd95BD0d56f35241523fBab1;
-    address constant ARBITRUM_TBTC = 0x6c84a8f1c29108F47a79964b5Fe888D4f4D0dE40;
-    address constant ARBITRUM_SEPOLIA_WETH = address(0);
+    address constant BASE_SEPOLIA_WETH = address(0);
     address constant BASE_WETH = 0x4200000000000000000000000000000000000006;
     address constant BASE_TBTC = 0x236aa50979D5f3De3Bd1Eeb40E81137F22ab794b;
 

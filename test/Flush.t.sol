@@ -15,6 +15,6 @@ import {
 contract FlushTest is Bootstrap {
 
     /// @custom:todo
-    function test_flush(uint32 amount) public arbitrum_sepolia {}
+    function test_flush(uint32 amount) public base {}
 
 }

@@ -20,9 +20,7 @@ override_spacing = false
 wrap_comments = true
 
 [rpc_endpoints]
-arbitrum = "${ARBITRUM_RPC}"
 base = "${BASE_RPC}"
 
 [etherscan]
-arbitrum = { key = "${ARBISCAN_API_KEY}" }
 base = { key = "${BASESCAN_API_KEY}" }

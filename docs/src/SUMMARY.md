@@ -4,6 +4,7 @@
   - [❱ interfaces](src/interfaces/README.md)
     - [IPool](src/interfaces/IAave.sol/interface.IPool.md)
     - [IERC20](src/interfaces/IERC20.sol/interface.IERC20.md)
+    - [IERC4626](src/interfaces/IERC4626.sol/interface.IERC4626.md)
     - [ISpotMarket](src/interfaces/ISynthetix.sol/interface.ISpotMarket.md)
     - [IPerpsMarket](src/interfaces/ISynthetix.sol/interface.IPerpsMarket.md)
     - [IRouter](src/interfaces/IUniswap.sol/interface.IRouter.md)

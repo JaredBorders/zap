@@ -3,6 +3,7 @@ pragma solidity 0.8.27;
 
 import {IPool} from "./interfaces/IAave.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
+import {IERC4626} from "./interfaces/IERC4626.sol";
 import {IPerpsMarket, ISpotMarket} from "./interfaces/ISynthetix.sol";
 import {Errors} from "./utils/Errors.sol";
 
@@ -11,7 +12,7 @@ import {Reentrancy} from "./utils/Reentrancy.sol";
 import {SafeERC20} from "./utils/SafeTransferERC20.sol";
 
 /// @title zap
-/// @custom:synthetix zap USDC into and out of USDx
+/// @custom:synthetix zap USDC into and out of both sUSD and STATA
 /// @custom:aave flash loan USDC to unwind synthetix collateral
 /// @custom:odos swap unwound collateral for USDC to repay flashloan
 /// @dev idle token balances are not safe
@@ -20,6 +21,7 @@ import {SafeERC20} from "./utils/SafeTransferERC20.sol";
 /// @author @flocqst
 /// @author @barrasso
 /// @author @moss-eth
+/// @author @cmontecoding
 contract Zap is Reentrancy, Errors, Flush(msg.sender) {
 
     /// @custom:circle
@@ -28,42 +30,51 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
     /// @custom:synthetix
     bytes32 public constant MODIFY_PERMISSION = "PERPS_MODIFY_COLLATERAL";
     bytes32 public constant BURN_PERMISSION = "BURN";
-    uint128 public immutable USDX_ID;
-    address public immutable USDX;
+    uint128 public immutable SUSD_ID;
+    address public immutable SUSD;
     address public immutable SPOT_MARKET;
     address public immutable PERPS_MARKET;
     address public immutable REFERRER;
     uint128 public immutable SUSDC_SPOT_ID;
+    uint128 public immutable SSTATA_SPOT_ID;
+    address public immutable SSTATA;
 
     /// @custom:aave
     uint16 public constant REFERRAL_CODE = 0;
     address public immutable AAVE;
+    address public immutable STATA;
 
     /// @custom:odos
     address public immutable ROUTER;
 
     constructor(
         address _usdc,
-        address _usdx,
+        address _susd,
+        address _sstata,
         address _spotMarket,
         address _perpsMarket,
         address _referrer,
         uint128 _susdcSpotId,
+        uint128 _sstataSpotId,
         address _aave,
+        address _stata,
         address _router
     ) {
         /// @custom:circle
         USDC = _usdc;
 
         /// @custom:synthetix
-        USDX = _usdx;
+        SUSD = _susd;
+        SSTATA = _sstata;
         SPOT_MARKET = _spotMarket;
         PERPS_MARKET = _perpsMarket;
         REFERRER = _referrer;
         SUSDC_SPOT_ID = _susdcSpotId;
+        SSTATA_SPOT_ID = _sstataSpotId;
 
         /// @custom:aave
         AAVE = _aave;
+        STATA = _stata;
 
         /// @custom:odos
         ROUTER = _router;
@@ -93,12 +104,12 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
                                   ZAP
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice zap USDC into USDx
+    /// @notice zap USDC into STATA
     /// @dev caller must grant USDC allowance to this contract
     /// @param _amount amount of USDC to zap
     /// @param _minAmountOut acceptable slippage for wrapping and selling
-    /// @param _receiver address to receive USDx
-    /// @return zapped amount of USDx received
+    /// @param _receiver address to receive STATA
+    /// @return zapped amount of STATA received
     function zapIn(
         uint256 _amount,
         uint256 _minAmountOut,
@@ -109,12 +120,44 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
     {
         _pull(USDC, msg.sender, _amount);
         zapped = _zapIn(_amount, _minAmountOut);
-        _push(USDX, _receiver, zapped);
+        _push(SSTATA, _receiver, zapped);
     }
 
     /// @dev allowance is assumed
-    /// @dev following execution, this contract will hold the zapped USDx
+    /// @dev following execution, this contract will hold the zapped STATA
     function _zapIn(
+        uint256 _amount,
+        uint256 _minAmountOut
+    )
+        internal
+        returns (uint256 zapped)
+    {
+        zapped = _depositStata(_amount, address(this));
+        zapped = _wrap(STATA, SSTATA_SPOT_ID, zapped, _minAmountOut);
+    }
+
+    /// @notice zap USDC into sUSD
+    /// @dev caller must grant USDC allowance to this contract
+    /// @param _amount amount of USDC to zap
+    /// @param _minAmountOut acceptable slippage for wrapping and selling
+    /// @param _receiver address to receive sUSD
+    /// @return zapped amount of sUSD received
+    function zapInSUSD(
+        uint256 _amount,
+        uint256 _minAmountOut,
+        address _receiver
+    )
+        external
+        returns (uint256 zapped)
+    {
+        _pull(USDC, msg.sender, _amount);
+        zapped = _zapInSUSD(_amount, _minAmountOut);
+        _push(SUSD, _receiver, zapped);
+    }
+
+    /// @dev allowance is assumed
+    /// @dev following execution, this contract will hold the zapped sUSD
+    function _zapInSUSD(
         uint256 _amount,
         uint256 _minAmountOut
     )
@@ -125,9 +168,9 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         zapped = _sell(SUSDC_SPOT_ID, zapped, _minAmountOut);
     }
 
-    /// @notice zap USDx into USDC
-    /// @dev caller must grant USDx allowance to this contract
-    /// @param _amount amount of USDx to zap
+    /// @notice zap sStataUSDC into USDC
+    /// @dev caller must grant STATA allowance to this contract
+    /// @param _amount amount of STATA to zap
     /// @param _minAmountOut acceptable slippage for buying and unwrapping
     /// @param _receiver address to receive USDC
     /// @return zapped amount of USDC received
@@ -139,7 +182,7 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         external
         returns (uint256 zapped)
     {
-        _pull(USDX, msg.sender, _amount);
+        _pull(SSTATA, msg.sender, _amount);
         zapped = _zapOut(_amount, _minAmountOut);
         _push(USDC, _receiver, zapped);
     }
@@ -153,8 +196,73 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         internal
         returns (uint256 zapped)
     {
+        zapped = _unwrap(SSTATA_SPOT_ID, _amount, _minAmountOut);
+        zapped = _redeemStata(zapped, address(this));
+    }
+
+    /// @notice zap sUSD into USDC
+    /// @dev caller must grant sUSD allowance to this contract
+    /// @param _amount amount of sUSD to zap
+    /// @param _minAmountOut acceptable slippage for buying and unwrapping
+    /// @param _receiver address to receive USDC
+    /// @return zapped amount of USDC received
+    function zapOutSUSD(
+        uint256 _amount,
+        uint256 _minAmountOut,
+        address _receiver
+    )
+        external
+        returns (uint256 zapped)
+    {
+        _pull(SUSD, msg.sender, _amount);
+        zapped = _zapOutSUSD(_amount, _minAmountOut);
+        _push(USDC, _receiver, zapped);
+    }
+
+    /// @dev allowance is assumed
+    /// @dev following execution, this contract will hold the zapped USDC
+    function _zapOutSUSD(
+        uint256 _amount,
+        uint256 _minAmountOut
+    )
+        internal
+        returns (uint256 zapped)
+    {
         zapped = _buy(SUSDC_SPOT_ID, _amount, _minAmountOut);
         zapped = _unwrap(SUSDC_SPOT_ID, zapped, _minAmountOut);
+    }
+
+    /*//////////////////////////////////////////////////////////////
+                        STATA DEPOSIT AND WITHDRAW
+    //////////////////////////////////////////////////////////////*/
+
+    /// @notice deposit STATA
+    /// @param _amount amount of STATA to deposit
+    /// @param _receiver address to receive deposited STATA
+    /// @return shares received
+    function _depositStata(
+        uint256 _amount,
+        address _receiver
+    )
+        internal
+        returns (uint256 shares)
+    {
+        IERC20(USDC).approve(STATA, _amount);
+        shares = IERC4626(STATA).deposit(_amount, _receiver);
+    }
+
+    /// @notice redeem STATA
+    /// @param _shares amount of STATA to redeem
+    /// @param _receiver address to receive redeemed STATA
+    /// @return assets received
+    function _redeemStata(
+        uint256 _shares,
+        address _receiver
+    )
+        internal
+        returns (uint256 assets)
+    {
+        assets = IERC4626(STATA).redeem(_shares, _receiver, _receiver);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -255,9 +363,9 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice buy synth via synthetix spot market
-    /// @dev caller must grant USDX allowance to this contract
+    /// @dev caller must grant sUSD allowance to this contract
     /// @param _synthId synthetix market id of synth to buy
-    /// @param _amount amount of USDX to spend
+    /// @param _amount amount of sUSD to spend
     /// @param _minAmountOut acceptable slippage for buying
     /// @param _receiver address to receive synth
     /// @return received amount of synth
@@ -271,7 +379,7 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         returns (uint256 received, address synth)
     {
         synth = ISpotMarket(SPOT_MARKET).getSynth(_synthId);
-        _pull(USDX, msg.sender, _amount);
+        _pull(SUSD, msg.sender, _amount);
         received = _buy(_synthId, _amount, _minAmountOut);
         _push(synth, _receiver, received);
     }
@@ -286,7 +394,7 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         internal
         returns (uint256 received)
     {
-        IERC20(USDX).approve(SPOT_MARKET, _amount);
+        IERC20(SUSD).approve(SPOT_MARKET, _amount);
         (received,) = ISpotMarket(SPOT_MARKET).buy({
             marketId: _synthId,
             usdAmount: _amount,
@@ -300,8 +408,8 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
     /// @param _synthId synthetix market id of synth to sell
     /// @param _amount amount of synth to sell
     /// @param _minAmountOut acceptable slippage for selling
-    /// @param _receiver address to receive USDX
-    /// @return received amount of USDX
+    /// @param _receiver address to receive sUSD
+    /// @return received amount of sUSD
     function sell(
         uint128 _synthId,
         uint256 _amount,
@@ -314,11 +422,11 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         address synth = ISpotMarket(SPOT_MARKET).getSynth(_synthId);
         _pull(synth, msg.sender, _amount);
         received = _sell(_synthId, _amount, _minAmountOut);
-        _push(USDX, _receiver, received);
+        _push(SUSD, _receiver, received);
     }
 
     /// @dev allowance is assumed
-    /// @dev following execution, this contract will hold the sold USDX
+    /// @dev following execution, this contract will hold the sold sUSD
     function _sell(
         uint128 _synthId,
         uint256 _amount,
@@ -433,7 +541,11 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
 
         uint256 unwound = _unwind(_flashloan, _premium, _params);
 
-        if (unwound > 0) _push(_collateral, _receiver, unwound);
+        if (unwound > 0 && _collateral != STATA) {
+            _push(_collateral, _receiver, unwound);
+        } else if (unwound > 0 && _collateral == STATA) {
+            _push(USDC, _receiver, unwound);
+        }
 
         return IERC20(USDC).approve(AAVE, _flashloan + _premium);
     }
@@ -477,23 +589,25 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
             )
         );
 
-        // zap USDC from flashloan into USDx;
-        // ALL USDC flashloaned from Aave is zapped into USDx
-        uint256 usdxAmount = _zapIn(_flashloan, _zapMinAmountOut);
+        // zap USDC from flashloan into sUSD;
+        // ALL USDC flashloaned from Aave is zapped into sUSD
+        uint256 sUsdAmount = _zapInSUSD(_flashloan, _zapMinAmountOut);
 
-        // burn USDx to pay off synthetix perp position debt;
-        // debt is denominated in USD and thus repaid with USDx
-        _burn(usdxAmount, _accountId);
+        // burn sUSD to pay off synthetix perp position debt;
+        // debt is denominated in USD and thus repaid with sUSD
+        _burn(sUsdAmount, _accountId);
 
-        /// @dev given the USDC buffer, an amount of USDx
+        /// @dev given the USDC buffer, an amount of sUSD
         /// necessarily less than the buffer will remain (<$1);
         /// this amount is captured by the protocol
         // withdraw synthetix perp position collateral to this contract;
         // i.e., # of sETH, # of sUSDe, # of sUSDC (...)
         _withdraw(_collateralId, _collateralAmount, _accountId);
 
-        if (_collateral == USDC && _collateralId == USDX_ID) {
-            unwound = _zapOut(_collateralAmount, _collateralAmount / 1e12);
+        if (_collateral == USDC && _collateralId == SUSD_ID) {
+            unwound = _zapOutSUSD(_collateralAmount, _collateralAmount / 1e12);
+        } else if (_collateral == STATA && _collateralId == SSTATA_SPOT_ID) {
+            unwound = _zapOut(_collateralAmount, _unwrapMinAmountOut);
         } else {
             // unwrap withdrawn synthetix perp position collateral;
             // i.e., sETH -> WETH, sUSDe -> USDe, sUSDC -> USDC (...)
@@ -510,7 +624,7 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         // i.e., USDe -(swap)-> USDC -(repay)-> Aave
         // i.e., USDC -(repay)-> Aave
         // whatever collateral amount is remaining is returned to the caller
-        if (_collateral == USDC) {
+        if (_collateral == USDC || _collateral == STATA) {
             unwound -= _flashloan;
         } else {
             odosSwap(_collateral, _swapAmountIn, _path);
@@ -541,13 +655,13 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         // determine amount of debt associated with synthetix perp position
         amount = IPerpsMarket(PERPS_MARKET).debt(_accountId);
 
-        uint256 usdxDecimals = IERC20(USDX).decimals();
+        uint256 sUsdDecimals = IERC20(SUSD).decimals();
         uint256 usdcDecimals = IERC20(USDC).decimals();
 
-        /// @custom:synthetix debt is denominated in USDx
+        /// @custom:synthetix debt is denominated in sUSD
         /// @custom:aave debt is denominated in USDC
         /// @dev scale loan amount accordingly
-        amount /= 10 ** (usdxDecimals - usdcDecimals);
+        amount /= 10 ** (sUsdDecimals - usdcDecimals);
 
         /// @dev barring exceptional circumstances,
         /// a 1 USD buffer is sufficient to circumvent
@@ -559,13 +673,13 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
                                   BURN
     //////////////////////////////////////////////////////////////*/
 
-    /// @notice burn USDx to pay off synthetix perp position debt
-    /// @custom:caution ALL USDx remaining post-burn will be sent to the caller
-    /// @dev caller must grant USDX allowance to this contract
-    /// @dev excess USDx will be returned to the caller
-    /// @param _amount amount of USDx to burn
+    /// @notice burn sUSD to pay off synthetix perp position debt
+    /// @custom:caution ALL sUSD remaining post-burn will be sent to the caller
+    /// @dev caller must grant sUSD allowance to this contract
+    /// @dev excess sUSD will be returned to the caller
+    /// @param _amount amount of sUSD to burn
     /// @param _accountId synthetix perp market account id
-    /// @return excess amount of USDx returned to the caller
+    /// @return excess amount of sUSD returned to the caller
     function burn(
         uint256 _amount,
         uint128 _accountId
@@ -573,23 +687,23 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         external
         returns (uint256 excess)
     {
-        excess = IERC20(USDX).balanceOf(address(this));
+        excess = IERC20(SUSD).balanceOf(address(this));
 
         // pull and burn
-        _pull(USDX, msg.sender, _amount);
+        _pull(SUSD, msg.sender, _amount);
         _burn(_amount, _accountId);
 
-        excess = IERC20(USDX).balanceOf(address(this)) - excess;
+        excess = IERC20(SUSD).balanceOf(address(this)) - excess;
 
-        if (excess > 0) _push(USDX, msg.sender, excess);
+        if (excess > 0) _push(SUSD, msg.sender, excess);
     }
 
     /// @dev allowance is assumed
-    /// @dev following execution, this contract will hold any excess USDx
+    /// @dev following execution, this contract will hold any excess sUSD
     function _burn(uint256 _amount, uint128 _accountId) internal {
-        IERC20(USDX).approve(PERPS_MARKET, _amount);
+        IERC20(SUSD).approve(PERPS_MARKET, _amount);
         IPerpsMarket(PERPS_MARKET).payDebt(_accountId, _amount);
-        IERC20(USDX).approve(PERPS_MARKET, 0);
+        IERC20(SUSD).approve(PERPS_MARKET, 0);
     }
 
     /*//////////////////////////////////////////////////////////////
@@ -612,8 +726,8 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         isAuthorized(_accountId)
     {
         _withdraw(_synthId, _amount, _accountId);
-        address synth = _synthId == USDX_ID
-            ? USDX
+        address synth = _synthId == SUSD_ID
+            ? SUSD
             : ISpotMarket(SPOT_MARKET).getSynth(_synthId);
         _push(synth, _receiver, _amount);
     }

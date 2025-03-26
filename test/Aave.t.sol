@@ -23,7 +23,7 @@ contract AaveTest is Bootstrap, Errors {
         bytes calldata d
     )
         public
-        arbitrum
+        base
     {
         if (caller != zap.AAVE()) {
             vm.prank(caller);

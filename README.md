@@ -72,7 +72,7 @@ USDC <--(spot market)--> sUSDC <--(spot market)--> USDx
 
 ## How to Deploy
 
-- See the `deployments/` folder for Arbitrum and Base deployments.
+- See the `deployments/` folder for Base deployments.
 
 How to Deploy:
 
@@ -81,10 +81,6 @@ How to Deploy:
 2. Deploy to Base
    ```
    make deploy_base
-   ```
-3. Deploy to Arbitrum
-   ```
-   make deploy_arbitrum
    ```
 
 ## Audits

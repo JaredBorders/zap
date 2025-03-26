@@ -2,9 +2,7 @@
 pragma solidity 0.8.27;
 
 import {Deploy} from "../../script/Deploy.s.sol";
-import {
-    Arbitrum, ArbitrumSepolia, Base
-} from "../../script/utils/Parameters.sol";
+import {Base, BaseSepolia} from "../../script/utils/Parameters.sol";
 import {Errors, IERC20, IPool, Reentrancy, Zap} from "../../src/Zap.sol";
 import {IPerpsMarket, ISpotMarket} from "../interfaces/ISynthetix.sol";
 
@@ -14,22 +12,14 @@ import {stdJson} from "forge-std/StdJson.sol";
 import {Test} from "forge-std/Test.sol";
 import {Surl} from "surl/src/Surl.sol";
 
-contract Bootstrap is
-    Test,
-    Deploy,
-    Base,
-    Arbitrum,
-    ArbitrumSepolia,
-    Constants
-{
+contract Bootstrap is Test, Deploy, Base, BaseSepolia, Constants {
 
     using Surl for *;
     using stdJson for string;
 
     /// @custom:forks
     uint256 BASE;
-    uint256 ARBITRUM;
-    uint256 ARBITRUM_SEPOLIA;
+    uint256 BASE_SEPOLIA;
 
     /// @custom:target
     Zap zap;
@@ -39,7 +29,8 @@ contract Bootstrap is
     IPerpsMarket perpsMarket;
     IERC20 usdc;
     IERC20 susdc;
-    IERC20 usdx;
+    IERC20 susd;
+    IERC20 sstata;
     IERC20 weth;
     IERC20 tbtc;
 
@@ -47,14 +38,11 @@ contract Bootstrap is
 
     function setUp() public virtual {
         string memory BASE_RPC = vm.envString(BASE_RPC_REF);
-        string memory ARBITRUM_RPC = vm.envString(ARBITRUM_RPC_REF);
-        string memory ARBITRUM_SEPOLIA_RPC =
-            vm.envString(ARBITRUM_SEPOLIA_RPC_REF);
+        string memory BASE_SEPOLIA_RPC = vm.envString(BASE_SEPOLIA_RPC_REF);
 
         BASE = vm.createFork(BASE_RPC, BASE_FORK_BLOCK);
-        ARBITRUM = vm.createFork(ARBITRUM_RPC, ARBITRUM_FORK_BLOCK);
-        ARBITRUM_SEPOLIA =
-            vm.createFork(ARBITRUM_SEPOLIA_RPC, ARBITRUM_SEPOLIA_FORK_BLOCK);
+        BASE_SEPOLIA =
+            vm.createFork(BASE_SEPOLIA_RPC /* , BASE_SEPOLIA_FORK_BLOCK */ );
 
         headers.push("Content-Type: application/json");
     }
@@ -66,12 +54,15 @@ contract Bootstrap is
         /// @custom:target
         zap = deploySystem({
             usdc: BASE_USDC,
-            usdx: BASE_USDX,
+            susd: BASE_SUSD,
+            sstata: BASE_SSTATA,
             spotMarket: BASE_SPOT_MARKET,
             perpsMarket: BASE_PERPS_MARKET,
             referrer: BASE_REFERRER,
             susdcSpotId: BASE_SUSDC_SPOT_MARKET_ID,
+            sstataSpotId: BASE_SSTATA_SPOT_MARKET_ID,
             aave: BASE_AAVE_POOL,
+            stata: BASE_STATA,
             router: BASE_ROUTER
         });
 
@@ -80,63 +71,43 @@ contract Bootstrap is
         perpsMarket = IPerpsMarket(BASE_PERPS_MARKET);
         usdc = IERC20(BASE_USDC);
         susdc = IERC20(spotMarket.getSynth(zap.SUSDC_SPOT_ID()));
-        usdx = IERC20(BASE_USDX);
+        susd = IERC20(BASE_SUSD);
+        sstata = IERC20(BASE_SSTATA);
         weth = IERC20(BASE_WETH);
         tbtc = IERC20(BASE_TBTC);
 
         _;
     }
 
-    modifier arbitrum() {
+    modifier base_sepolia() {
         /// @custom:fork
-        vm.selectFork(ARBITRUM);
+        vm.selectFork(BASE_SEPOLIA);
 
         /// @custom:target
         zap = deploySystem({
-            usdc: ARBITRUM_USDC,
-            usdx: ARBITRUM_USDX,
-            spotMarket: ARBITRUM_SPOT_MARKET,
-            perpsMarket: ARBITRUM_PERPS_MARKET,
-            referrer: ARBITRUM_REFERRER,
-            susdcSpotId: ARBITRUM_SUSDC_SPOT_MARKET_ID,
-            aave: ARBITRUM_AAVE_POOL,
-            router: ARBITRUM_ROUTER
+            usdc: BASE_SEPOLIA_USDC,
+            susd: BASE_SEPOLIA_SUSD,
+            sstata: address(0), //todo we are not deploying this stata release
+                // to base
+            spotMarket: BASE_SEPOLIA_SPOT_MARKET,
+            perpsMarket: BASE_SEPOLIA_PERPS_MARKET,
+            referrer: BASE_SEPOLIA_REFERRER,
+            susdcSpotId: BASE_SEPOLIA_SUSDC_SPOT_MARKET_ID,
+            sstataSpotId: 0, //todo we are not deploying this stata release to
+                // base
+            aave: BASE_SEPOLIA_AAVE_POOL,
+            stata: address(0), //todo we are not deploying this stata release to
+                // base
+            router: BASE_SEPOLIA_ROUTER
         });
 
         /// @custom:auxiliary
-        spotMarket = ISpotMarket(ARBITRUM_SPOT_MARKET);
-        perpsMarket = IPerpsMarket(ARBITRUM_PERPS_MARKET);
-        usdc = IERC20(ARBITRUM_USDC);
-        susdc = IERC20(spotMarket.getSynth(zap.SUSDC_SPOT_ID()));
-        usdx = IERC20(ARBITRUM_USDX);
-        weth = IERC20(ARBITRUM_WETH);
-        tbtc = IERC20(ARBITRUM_TBTC);
-        _;
-    }
-
-    modifier arbitrum_sepolia() {
-        /// @custom:fork
-        vm.selectFork(ARBITRUM_SEPOLIA);
-
-        /// @custom:target
-        zap = deploySystem({
-            usdc: ARBITRUM_SEPOLIA_USDC,
-            usdx: ARBITRUM_SEPOLIA_USDX,
-            spotMarket: ARBITRUM_SEPOLIA_SPOT_MARKET,
-            perpsMarket: ARBITRUM_SEPOLIA_PERPS_MARKET,
-            referrer: ARBITRUM_SEPOLIA_REFERRER,
-            susdcSpotId: ARBITRUM_SEPOLIA_SUSDC_SPOT_MARKET_ID,
-            aave: ARBITRUM_SEPOLIA_AAVE_POOL,
-            router: ARBITRUM_SEPOLIA_ROUTER
-        });
-
-        /// @custom:auxiliary
-        spotMarket = ISpotMarket(ARBITRUM_SEPOLIA_SPOT_MARKET);
-        perpsMarket = IPerpsMarket(ARBITRUM_SEPOLIA_PERPS_MARKET);
-        usdc = IERC20(ARBITRUM_SEPOLIA_USDC);
-        susdc = IERC20(spotMarket.getSynth(zap.SUSDC_SPOT_ID()));
-        usdx = IERC20(ARBITRUM_SEPOLIA_USDX);
-        weth = IERC20(ARBITRUM_SEPOLIA_WETH);
+        spotMarket = ISpotMarket(BASE_SEPOLIA_SPOT_MARKET);
+        perpsMarket = IPerpsMarket(BASE_SEPOLIA_PERPS_MARKET);
+        usdc = IERC20(BASE_SEPOLIA_USDC);
+        susdc = IERC20(spotMarket.getSynth(zap.SSTATA_SPOT_ID()));
+        susd = IERC20(BASE_SEPOLIA_SUSD);
+        weth = IERC20(BASE_SEPOLIA_WETH);
 
         _;
     }
