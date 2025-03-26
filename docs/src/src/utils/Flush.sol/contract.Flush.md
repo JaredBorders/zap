@@ -1,5 +1,5 @@
 # Flush
-[Git Source](https://github.com/moss-eth/zap/blob/59cf0756a77f382e301eda36c7e1793c595fd9b7/src/utils/Flush.sol)
+[Git Source](https://github.com/moss-eth/zap/blob/7ecc5cc79642d99fe6248a4895ed17a8ea025990/src/utils/Flush.sol)
 
 **Author:**
 @jaredborders
@@ -7,9 +7,19 @@
 
 ## State Variables
 ### PLUMBER
+**Note:**
+plumber: 
+
 
 ```solidity
 address public PLUMBER;
+```
+
+
+### nominatedPlumber
+
+```solidity
+address public nominatedPlumber;
 ```
 
 
@@ -25,6 +35,9 @@ constructor(address _plumber);
 
 flush dust out of the contract
 
+**Note:**
+plumber: is the only authorized caller
+
 
 ```solidity
 function flush(address _token) external;
@@ -36,15 +49,18 @@ function flush(address _token) external;
 |`_token`|`address`|address of token to flush|
 
 
-### designatePlumber
+### nominatePlumber
 
-designate a new plumber
+nominate a new plumber
 
 *zero address can be used to remove flush capability*
 
+**Note:**
+plumber: is the only authorized caller
+
 
 ```solidity
-function designatePlumber(address _newPlumber) external;
+function nominatePlumber(address _newPlumber) external;
 ```
 **Parameters**
 
@@ -53,13 +69,28 @@ function designatePlumber(address _newPlumber) external;
 |`_newPlumber`|`address`|address of new plumber|
 
 
-## Events
-### PlumberDesignated
-emitted when a new plumber is designated
+### acceptPlumberNomination
 
 
 ```solidity
-event PlumberDesignated(address plumber);
+function acceptPlumberNomination() external;
+```
+
+## Events
+### PlumberNominated
+emitted when a new plumber is nominated
+
+
+```solidity
+event PlumberNominated(address plumber);
+```
+
+### PlumberNominationAccepted
+emitted when a new plumber accepts nomination
+
+
+```solidity
+event PlumberNominationAccepted(address plumber);
 ```
 
 ## Errors
@@ -69,5 +100,13 @@ thrown when caller is not the plumber
 
 ```solidity
 error OnlyPlumber();
+```
+
+### OnlyNominatedPlumber
+thrown when caller is not nominated to be plumber
+
+
+```solidity
+error OnlyNominatedPlumber();
 ```
 

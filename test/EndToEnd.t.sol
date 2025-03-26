@@ -1,7 +1,9 @@
+// / TODO add back this test
+
 // SPDX-License-Identifier: MIT
 pragma solidity 0.8.27;
 
-import {Arbitrum} from "../script/utils/Parameters.sol";
+import {Base} from "../script/utils/Parameters.sol";
 import {IERC20, Zap} from "../src/Zap.sol";
 import {Flush} from "../src/utils/Flush.sol";
 import "./interfaces/ISynthetix.sol";
@@ -47,16 +49,15 @@ contract Attacker {
 
     receive() external payable {
         // could call back into zap to do another swap but that just pays more
-        // fees, no real profit
-        // could transfer usdc into zap for zap to be able to pay back the
-        // original caller but that is also just shuffling your own assets
-        // around
-        // cant call reenter into executeOperation because of access controls
+        // fees, no real profit could transfer usdc into zap for zap to be able
+        // to pay back the original caller but that is also just shuffling your
+        // own assets around cant call reenter into executeOperation because of
+        // access controls
     }
 
 }
 
-contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
+contract EndToEndTest is Test, Base, Constants, OdosSwapData {
 
     Zap zap;
 
@@ -65,7 +66,7 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
     IERC20 usdc;
     IERC20 susdc;
-    IERC20 usdx;
+    IERC20 susd;
     IERC20 weth;
 
     uint128 smallAccountIdNoOi =
@@ -84,7 +85,7 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
         170_141_183_460_469_231_731_687_303_715_884_105_846;
     address largeAccountWithOiOwner = 0x1C1e747A6BE850549E9655addf59FD9e7cC2D4dC;
 
-    string RPC = vm.envString("ARBITRUM_RPC");
+    string RPC = vm.envString("BASE_RPC");
     mapping(string => uint256) FORK;
 
     modifier selectFork(uint256 fork) {
@@ -115,27 +116,30 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
     function initilizeFork(uint256 fork) public {
         vm.selectFork(fork);
 
-        spotMarket = ISpotMarket(ARBITRUM_SPOT_MARKET);
-        perpsMarket = IPerpsMarket(ARBITRUM_PERPS_MARKET);
+        spotMarket = ISpotMarket(BASE_SPOT_MARKET);
+        perpsMarket = IPerpsMarket(BASE_PERPS_MARKET);
 
-        usdc = IERC20(ARBITRUM_USDC);
-        usdx = IERC20(ARBITRUM_USDX);
-        weth = IERC20(ARBITRUM_WETH);
+        usdc = IERC20(BASE_USDC);
+        susd = IERC20(BASE_SUSD);
+        weth = IERC20(BASE_WETH);
 
-        uint128 synthMarketId = ARBITRUM_SUSDC_SPOT_MARKET_ID;
+        uint128 synthMarketId = BASE_SUSDC_SPOT_MARKET_ID;
 
         susdc = IERC20(spotMarket.getSynth(synthMarketId));
 
         // create Zap contract to use actual sUSDC synth
         zap = new Zap({
             _usdc: address(usdc),
-            _usdx: address(usdx),
+            _susd: address(susd),
+            _sstata: address(0), // TODO
             _spotMarket: address(spotMarket),
             _perpsMarket: address(perpsMarket),
-            _referrer: ARBITRUM_REFERRER,
+            _referrer: BASE_REFERRER,
             _susdcSpotId: synthMarketId,
-            _aave: ARBITRUM_AAVE_POOL,
-            _router: ARBITRUM_ROUTER
+            _sstataSpotId: 0, // TODO
+            _aave: BASE_AAVE_POOL,
+            _stata: address(0), // TODO
+            _router: BASE_ROUTER
         });
 
         IPyth pyth = IPyth(0xd74CdD8Eef0E97a5a7678F907991316f88E7965A);
@@ -219,7 +223,7 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testOdosSwapMedium_Success() public selectFork(FORK["1_zap"]) {
@@ -243,7 +247,7 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testOdosSwapLarge_Success() public selectFork(FORK["10_zap"]) {
@@ -267,7 +271,7 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     // this test fails because unspent input asset is not refunded
@@ -293,7 +297,7 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
 
         vm.startPrank(user);
         weth.approve(address(zap), amount);
@@ -308,7 +312,7 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testOdosSwapSendToWrongAddress_Fail()
@@ -335,7 +339,7 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testOdosSwapSendToContract_Reentrancy_Success()
@@ -431,7 +435,7 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertLt(usdx.balanceOf(address(zap)), 1 ether);
+        assertLt(susd.balanceOf(address(zap)), 1 ether);
     }
 
     function testUnwindSmallDebtWithOI_OverPay_AccountOwner_Success()
@@ -495,7 +499,7 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertLt(usdx.balanceOf(address(zap)), 1 ether);
+        assertLt(susd.balanceOf(address(zap)), 1 ether);
     }
 
     function testUnwindSmallDebtNoOI_Underpay_AccountOwner_Fail()
@@ -548,7 +552,7 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testUnwindSmallDebtNoOI_Overpay_AccountOwner_OdosToWrongAddress_Fail(
@@ -602,7 +606,7 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     error NotPermitted();
@@ -657,7 +661,7 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testUnwindSmallDebtNoOI_ZapNotPermitted_Fail()
@@ -713,7 +717,7 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     error OnlyAave(address);
@@ -734,7 +738,7 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
         public
         selectFork(FORK["0p01_zap"])
     {
-        vm.startPrank(ARBITRUM_AAVE_POOL);
+        vm.startPrank(BASE_AAVE_POOL);
         vm.expectRevert(
             abi.encodeWithSelector(ReentrancyDetected.selector, 0, 1)
         );
@@ -797,7 +801,7 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertLt(usdx.balanceOf(address(zap)), 1 ether);
+        assertLt(susd.balanceOf(address(zap)), 1 ether);
     }
 
     function testUnwindLargeDebtWithOI_OverPay_AccountOwner_Success()
@@ -860,7 +864,7 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertLt(usdx.balanceOf(address(zap)), 1 ether);
+        assertLt(susd.balanceOf(address(zap)), 1 ether);
     }
 
     function testBurnSmallDebtNoOI_Exact_AccountOwner_Success()
@@ -875,20 +879,20 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         uint256 amount = debt;
 
-        _spin(accountOwner, usdx, amount);
-        uint256 balanceBefore = usdx.balanceOf(accountOwner);
+        _spin(accountOwner, susd, amount);
+        uint256 balanceBefore = susd.balanceOf(accountOwner);
 
         vm.startPrank(accountOwner);
-        usdx.approve(address(zap), amount);
+        susd.approve(address(zap), amount);
         zap.burn(amount, accountId);
         vm.stopPrank();
 
         assertEq(perpsMarket.debt(accountId), 0);
-        assertEq(usdx.balanceOf(accountOwner), balanceBefore - debt);
+        assertEq(susd.balanceOf(accountOwner), balanceBefore - debt);
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testBurnSmallDebtNoOI_Exact_NotAccountOwner_Success()
@@ -903,20 +907,20 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         uint256 amount = debt;
 
-        _spin(user, usdx, amount);
-        uint256 balanceBefore = usdx.balanceOf(user);
+        _spin(user, susd, amount);
+        uint256 balanceBefore = susd.balanceOf(user);
 
         vm.startPrank(user);
-        usdx.approve(address(zap), amount);
+        susd.approve(address(zap), amount);
         zap.burn(amount, accountId);
         vm.stopPrank();
 
         assertEq(perpsMarket.debt(accountId), 0);
-        assertEq(usdx.balanceOf(user), balanceBefore - debt);
+        assertEq(susd.balanceOf(user), balanceBefore - debt);
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testBurnSmallDebtNoOI_Overpay_AccountOwner_Success()
@@ -931,21 +935,21 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         uint256 amount = 123_456_789 + debt;
 
-        _spin(accountOwner, usdx, amount);
-        uint256 balanceBefore = usdx.balanceOf(accountOwner);
+        _spin(accountOwner, susd, amount);
+        uint256 balanceBefore = susd.balanceOf(accountOwner);
 
         vm.startPrank(accountOwner);
-        usdx.approve(address(zap), amount);
+        susd.approve(address(zap), amount);
         zap.burn(amount, accountId);
         vm.stopPrank();
 
         assertEq(perpsMarket.debt(accountId), 0);
-        assertEq(usdx.balanceOf(accountOwner), balanceBefore - debt);
-        assertEq(usdx.balanceOf(accountOwner), 123_456_789);
+        assertEq(susd.balanceOf(accountOwner), balanceBefore - debt);
+        assertEq(susd.balanceOf(accountOwner), 123_456_789);
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testBurnSmallDebtNoOI_Overpay_NotAccountOwner_Success()
@@ -960,21 +964,21 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         uint256 amount = 123_456_789 + debt;
 
-        _spin(user, usdx, amount);
-        uint256 balanceBefore = usdx.balanceOf(user);
+        _spin(user, susd, amount);
+        uint256 balanceBefore = susd.balanceOf(user);
 
         vm.startPrank(user);
-        usdx.approve(address(zap), amount);
+        susd.approve(address(zap), amount);
         zap.burn(amount, accountId);
         vm.stopPrank();
 
         assertEq(perpsMarket.debt(accountId), 0);
-        assertEq(usdx.balanceOf(user), balanceBefore - debt);
-        assertEq(usdx.balanceOf(user), 123_456_789);
+        assertEq(susd.balanceOf(user), balanceBefore - debt);
+        assertEq(susd.balanceOf(user), 123_456_789);
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testBurnSmallDebtNoOI_Partial_AccountOwner_Success()
@@ -989,20 +993,20 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         uint256 amount = debt - 1e6;
 
-        _spin(accountOwner, usdx, amount);
-        uint256 balanceBefore = usdx.balanceOf(accountOwner);
+        _spin(accountOwner, susd, amount);
+        uint256 balanceBefore = susd.balanceOf(accountOwner);
 
         vm.startPrank(accountOwner);
-        usdx.approve(address(zap), amount);
+        susd.approve(address(zap), amount);
         zap.burn(amount, accountId);
         vm.stopPrank();
 
         assertEq(perpsMarket.debt(accountId), debt - balanceBefore);
-        assertEq(usdx.balanceOf(accountOwner), 0);
+        assertEq(susd.balanceOf(accountOwner), 0);
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testBurnSmallDebtNoOI_Partial_NotAccountOwner_Success()
@@ -1017,20 +1021,20 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         uint256 amount = debt - 1e6;
 
-        _spin(user, usdx, amount);
-        uint256 balanceBefore = usdx.balanceOf(user);
+        _spin(user, susd, amount);
+        uint256 balanceBefore = susd.balanceOf(user);
 
         vm.startPrank(user);
-        usdx.approve(address(zap), amount);
+        susd.approve(address(zap), amount);
         zap.burn(amount, accountId);
         vm.stopPrank();
 
         assertEq(perpsMarket.debt(accountId), debt - balanceBefore);
-        assertEq(usdx.balanceOf(user), 0);
+        assertEq(susd.balanceOf(user), 0);
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testBurnSmallDebtWithOI_Exact_AccountOwner_Success()
@@ -1045,20 +1049,20 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         uint256 amount = debt;
 
-        _spin(accountOwner, usdx, amount);
-        uint256 balanceBefore = usdx.balanceOf(accountOwner);
+        _spin(accountOwner, susd, amount);
+        uint256 balanceBefore = susd.balanceOf(accountOwner);
 
         vm.startPrank(accountOwner);
-        usdx.approve(address(zap), amount);
+        susd.approve(address(zap), amount);
         zap.burn(amount, accountId);
         vm.stopPrank();
 
         assertEq(perpsMarket.debt(accountId), 0);
-        assertEq(usdx.balanceOf(accountOwner), balanceBefore - debt);
+        assertEq(susd.balanceOf(accountOwner), balanceBefore - debt);
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testBurnSmallDebtWithOI_Exact_NotAccountOwner_Success()
@@ -1073,20 +1077,20 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         uint256 amount = debt;
 
-        _spin(user, usdx, amount);
-        uint256 balanceBefore = usdx.balanceOf(user);
+        _spin(user, susd, amount);
+        uint256 balanceBefore = susd.balanceOf(user);
 
         vm.startPrank(user);
-        usdx.approve(address(zap), amount);
+        susd.approve(address(zap), amount);
         zap.burn(amount, accountId);
         vm.stopPrank();
 
         assertEq(perpsMarket.debt(accountId), 0);
-        assertEq(usdx.balanceOf(user), balanceBefore - debt);
+        assertEq(susd.balanceOf(user), balanceBefore - debt);
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testBurnSmallDebtWithOI_Overpay_AccountOwner_Success()
@@ -1101,21 +1105,21 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         uint256 amount = 123_456_789 + debt;
 
-        _spin(accountOwner, usdx, amount);
-        uint256 balanceBefore = usdx.balanceOf(accountOwner);
+        _spin(accountOwner, susd, amount);
+        uint256 balanceBefore = susd.balanceOf(accountOwner);
 
         vm.startPrank(accountOwner);
-        usdx.approve(address(zap), amount);
+        susd.approve(address(zap), amount);
         zap.burn(amount, accountId);
         vm.stopPrank();
 
         assertEq(perpsMarket.debt(accountId), 0);
-        assertEq(usdx.balanceOf(accountOwner), balanceBefore - debt);
-        assertEq(usdx.balanceOf(accountOwner), 123_456_789);
+        assertEq(susd.balanceOf(accountOwner), balanceBefore - debt);
+        assertEq(susd.balanceOf(accountOwner), 123_456_789);
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testBurnSmallDebtWithOI_Overpay_NotAccountOwner_Success()
@@ -1130,21 +1134,21 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         uint256 amount = 123_456_789 + debt;
 
-        _spin(user, usdx, amount);
-        uint256 balanceBefore = usdx.balanceOf(user);
+        _spin(user, susd, amount);
+        uint256 balanceBefore = susd.balanceOf(user);
 
         vm.startPrank(user);
-        usdx.approve(address(zap), amount);
+        susd.approve(address(zap), amount);
         zap.burn(amount, accountId);
         vm.stopPrank();
 
         assertEq(perpsMarket.debt(accountId), 0);
-        assertEq(usdx.balanceOf(user), balanceBefore - debt);
-        assertEq(usdx.balanceOf(user), 123_456_789);
+        assertEq(susd.balanceOf(user), balanceBefore - debt);
+        assertEq(susd.balanceOf(user), 123_456_789);
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testBurnSmallDebtWithOI_Partial_AccountOwner_Success()
@@ -1159,20 +1163,20 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         uint256 amount = debt - 1e6;
 
-        _spin(accountOwner, usdx, amount);
-        uint256 balanceBefore = usdx.balanceOf(accountOwner);
+        _spin(accountOwner, susd, amount);
+        uint256 balanceBefore = susd.balanceOf(accountOwner);
 
         vm.startPrank(accountOwner);
-        usdx.approve(address(zap), amount);
+        susd.approve(address(zap), amount);
         zap.burn(amount, accountId);
         vm.stopPrank();
 
         assertEq(perpsMarket.debt(accountId), debt - balanceBefore);
-        assertEq(usdx.balanceOf(accountOwner), 0);
+        assertEq(susd.balanceOf(accountOwner), 0);
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testBurnSmallDebtWithOI_Partial_NotAccountOwner_Success()
@@ -1187,20 +1191,20 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         uint256 amount = debt - 1e6;
 
-        _spin(user, usdx, amount);
-        uint256 balanceBefore = usdx.balanceOf(user);
+        _spin(user, susd, amount);
+        uint256 balanceBefore = susd.balanceOf(user);
 
         vm.startPrank(user);
-        usdx.approve(address(zap), amount);
+        susd.approve(address(zap), amount);
         zap.burn(amount, accountId);
         vm.stopPrank();
 
         assertEq(perpsMarket.debt(accountId), debt - balanceBefore);
-        assertEq(usdx.balanceOf(user), 0);
+        assertEq(susd.balanceOf(user), 0);
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testBurnLargeDebtNoOI_Exact_AccountOwner_Success()
@@ -1215,20 +1219,20 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         uint256 amount = debt;
 
-        _spin(accountOwner, usdx, amount);
-        uint256 balanceBefore = usdx.balanceOf(accountOwner);
+        _spin(accountOwner, susd, amount);
+        uint256 balanceBefore = susd.balanceOf(accountOwner);
 
         vm.startPrank(accountOwner);
-        usdx.approve(address(zap), amount);
+        susd.approve(address(zap), amount);
         zap.burn(amount, accountId);
         vm.stopPrank();
 
         assertEq(perpsMarket.debt(accountId), 0);
-        assertEq(usdx.balanceOf(accountOwner), balanceBefore - debt);
+        assertEq(susd.balanceOf(accountOwner), balanceBefore - debt);
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testBurnLargeDebtNoOI_Exact_NotAccountOwner_Success()
@@ -1243,20 +1247,20 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         uint256 amount = debt;
 
-        _spin(user, usdx, amount);
-        uint256 balanceBefore = usdx.balanceOf(user);
+        _spin(user, susd, amount);
+        uint256 balanceBefore = susd.balanceOf(user);
 
         vm.startPrank(user);
-        usdx.approve(address(zap), amount);
+        susd.approve(address(zap), amount);
         zap.burn(amount, accountId);
         vm.stopPrank();
 
         assertEq(perpsMarket.debt(accountId), 0);
-        assertEq(usdx.balanceOf(user), balanceBefore - debt);
+        assertEq(susd.balanceOf(user), balanceBefore - debt);
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testBurnLargeDebtNoOI_Overpay_AccountOwner_Success()
@@ -1271,21 +1275,21 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         uint256 amount = 123_456_789 + debt;
 
-        _spin(accountOwner, usdx, amount);
-        uint256 balanceBefore = usdx.balanceOf(accountOwner);
+        _spin(accountOwner, susd, amount);
+        uint256 balanceBefore = susd.balanceOf(accountOwner);
 
         vm.startPrank(accountOwner);
-        usdx.approve(address(zap), amount);
+        susd.approve(address(zap), amount);
         zap.burn(amount, accountId);
         vm.stopPrank();
 
         assertEq(perpsMarket.debt(accountId), 0);
-        assertEq(usdx.balanceOf(accountOwner), balanceBefore - debt);
-        assertEq(usdx.balanceOf(accountOwner), 123_456_789);
+        assertEq(susd.balanceOf(accountOwner), balanceBefore - debt);
+        assertEq(susd.balanceOf(accountOwner), 123_456_789);
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testBurnLargeDebtNoOI_Overpay_NotAccountOwner_Success()
@@ -1300,21 +1304,21 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         uint256 amount = 123_456_789 + debt;
 
-        _spin(user, usdx, amount);
-        uint256 balanceBefore = usdx.balanceOf(user);
+        _spin(user, susd, amount);
+        uint256 balanceBefore = susd.balanceOf(user);
 
         vm.startPrank(user);
-        usdx.approve(address(zap), amount);
+        susd.approve(address(zap), amount);
         zap.burn(amount, accountId);
         vm.stopPrank();
 
         assertEq(perpsMarket.debt(accountId), 0);
-        assertEq(usdx.balanceOf(user), balanceBefore - debt);
-        assertEq(usdx.balanceOf(user), 123_456_789);
+        assertEq(susd.balanceOf(user), balanceBefore - debt);
+        assertEq(susd.balanceOf(user), 123_456_789);
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testBurnLargeDebtNoOI_Partial_AccountOwner_Success()
@@ -1329,20 +1333,20 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         uint256 amount = debt - 1e6;
 
-        _spin(accountOwner, usdx, amount);
-        uint256 balanceBefore = usdx.balanceOf(accountOwner);
+        _spin(accountOwner, susd, amount);
+        uint256 balanceBefore = susd.balanceOf(accountOwner);
 
         vm.startPrank(accountOwner);
-        usdx.approve(address(zap), amount);
+        susd.approve(address(zap), amount);
         zap.burn(amount, accountId);
         vm.stopPrank();
 
         assertEq(perpsMarket.debt(accountId), debt - balanceBefore);
-        assertEq(usdx.balanceOf(accountOwner), 0);
+        assertEq(susd.balanceOf(accountOwner), 0);
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testBurnLargeDebtNoOI_Partial_NotAccountOwner_Success()
@@ -1357,20 +1361,20 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         uint256 amount = debt - 1e6;
 
-        _spin(user, usdx, amount);
-        uint256 balanceBefore = usdx.balanceOf(user);
+        _spin(user, susd, amount);
+        uint256 balanceBefore = susd.balanceOf(user);
 
         vm.startPrank(user);
-        usdx.approve(address(zap), amount);
+        susd.approve(address(zap), amount);
         zap.burn(amount, accountId);
         vm.stopPrank();
 
         assertEq(perpsMarket.debt(accountId), debt - balanceBefore);
-        assertEq(usdx.balanceOf(user), 0);
+        assertEq(susd.balanceOf(user), 0);
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testBurnLargeDebtWithOI_Exact_AccountOwner_Success()
@@ -1385,20 +1389,20 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         uint256 amount = debt;
 
-        _spin(accountOwner, usdx, amount);
-        uint256 balanceBefore = usdx.balanceOf(accountOwner);
+        _spin(accountOwner, susd, amount);
+        uint256 balanceBefore = susd.balanceOf(accountOwner);
 
         vm.startPrank(accountOwner);
-        usdx.approve(address(zap), amount);
+        susd.approve(address(zap), amount);
         zap.burn(amount, accountId);
         vm.stopPrank();
 
         assertEq(perpsMarket.debt(accountId), 0);
-        assertEq(usdx.balanceOf(accountOwner), balanceBefore - debt);
+        assertEq(susd.balanceOf(accountOwner), balanceBefore - debt);
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testBurnLargeDebtWithOI_Exact_NotAccountOwner_Success()
@@ -1413,20 +1417,20 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         uint256 amount = debt;
 
-        _spin(user, usdx, amount);
-        uint256 balanceBefore = usdx.balanceOf(user);
+        _spin(user, susd, amount);
+        uint256 balanceBefore = susd.balanceOf(user);
 
         vm.startPrank(user);
-        usdx.approve(address(zap), amount);
+        susd.approve(address(zap), amount);
         zap.burn(amount, accountId);
         vm.stopPrank();
 
         assertEq(perpsMarket.debt(accountId), 0);
-        assertEq(usdx.balanceOf(user), balanceBefore - debt);
+        assertEq(susd.balanceOf(user), balanceBefore - debt);
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testBurnLargeDebtWithOI_Overpay_AccountOwner_Success()
@@ -1441,21 +1445,21 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         uint256 amount = 123_456_789 + debt;
 
-        _spin(accountOwner, usdx, amount);
-        uint256 balanceBefore = usdx.balanceOf(accountOwner);
+        _spin(accountOwner, susd, amount);
+        uint256 balanceBefore = susd.balanceOf(accountOwner);
 
         vm.startPrank(accountOwner);
-        usdx.approve(address(zap), amount);
+        susd.approve(address(zap), amount);
         zap.burn(amount, accountId);
         vm.stopPrank();
 
         assertEq(perpsMarket.debt(accountId), 0);
-        assertEq(usdx.balanceOf(accountOwner), balanceBefore - debt);
-        assertEq(usdx.balanceOf(accountOwner), 123_456_789);
+        assertEq(susd.balanceOf(accountOwner), balanceBefore - debt);
+        assertEq(susd.balanceOf(accountOwner), 123_456_789);
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testBurnLargeDebtWithOI_Overpay_NotAccountOwner_Success()
@@ -1470,21 +1474,21 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         uint256 amount = 123_456_789 + debt;
 
-        _spin(user, usdx, amount);
-        uint256 balanceBefore = usdx.balanceOf(user);
+        _spin(user, susd, amount);
+        uint256 balanceBefore = susd.balanceOf(user);
 
         vm.startPrank(user);
-        usdx.approve(address(zap), amount);
+        susd.approve(address(zap), amount);
         zap.burn(amount, accountId);
         vm.stopPrank();
 
         assertEq(perpsMarket.debt(accountId), 0);
-        assertEq(usdx.balanceOf(user), balanceBefore - debt);
-        assertEq(usdx.balanceOf(user), 123_456_789);
+        assertEq(susd.balanceOf(user), balanceBefore - debt);
+        assertEq(susd.balanceOf(user), 123_456_789);
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testBurnLargeDebtWithOI_Partial_AccountOwner_Success()
@@ -1499,20 +1503,20 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         uint256 amount = debt - 1e6;
 
-        _spin(accountOwner, usdx, amount);
-        uint256 balanceBefore = usdx.balanceOf(accountOwner);
+        _spin(accountOwner, susd, amount);
+        uint256 balanceBefore = susd.balanceOf(accountOwner);
 
         vm.startPrank(accountOwner);
-        usdx.approve(address(zap), amount);
+        susd.approve(address(zap), amount);
         zap.burn(amount, accountId);
         vm.stopPrank();
 
         assertEq(perpsMarket.debt(accountId), debt - balanceBefore);
-        assertEq(usdx.balanceOf(accountOwner), 0);
+        assertEq(susd.balanceOf(accountOwner), 0);
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testBurnLargeDebtWithOI_Partial_NotAccountOwner_Success()
@@ -1527,54 +1531,54 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         uint256 amount = debt - 1e6;
 
-        _spin(user, usdx, amount);
-        uint256 balanceBefore = usdx.balanceOf(user);
+        _spin(user, susd, amount);
+        uint256 balanceBefore = susd.balanceOf(user);
 
         vm.startPrank(user);
-        usdx.approve(address(zap), amount);
+        susd.approve(address(zap), amount);
         zap.burn(amount, accountId);
         vm.stopPrank();
 
         assertEq(perpsMarket.debt(accountId), debt - balanceBefore);
-        assertEq(usdx.balanceOf(user), 0);
+        assertEq(susd.balanceOf(user), 0);
 
         assertEq(weth.balanceOf(address(zap)), 0);
         assertEq(usdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     // TODO fix plumber tests
 
     function testFlush_Plumber_Success() public selectFork(FORK["1_zap"]) {
         uint256 amountWeth = 1234 ether;
-        uint256 amountUsdx = 56_789 ether;
+        uint256 amountSusd = 56_789 ether;
         _spin(address(zap), weth, amountWeth);
-        _spin(address(zap), usdx, amountUsdx);
+        _spin(address(zap), susd, amountSusd);
 
         uint256 zapWethBefore = weth.balanceOf(address(zap));
-        uint256 zapUsdxBefore = usdx.balanceOf(address(zap));
+        uint256 zapSusdBefore = susd.balanceOf(address(zap));
 
         uint256 plumberWethBefore = weth.balanceOf(address(this));
-        uint256 plumberUsdxBefore = usdx.balanceOf(address(this));
+        uint256 plumberSusdBefore = susd.balanceOf(address(this));
 
         // this test contract created the Zap contract and should be the owner
-        zap.flush(address(usdx));
+        zap.flush(address(susd));
 
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
         assertEq(weth.balanceOf(address(zap)), zapWethBefore);
 
         assertEq(
-            usdx.balanceOf(address(this)), plumberUsdxBefore + zapUsdxBefore
+            susd.balanceOf(address(this)), plumberSusdBefore + zapSusdBefore
         );
         assertEq(weth.balanceOf(address(this)), plumberWethBefore);
 
         zap.flush(address(weth));
 
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
         assertEq(weth.balanceOf(address(zap)), 0);
 
         assertEq(
-            usdx.balanceOf(address(this)), plumberUsdxBefore + zapUsdxBefore
+            susd.balanceOf(address(this)), plumberSusdBefore + zapSusdBefore
         );
         assertEq(
             weth.balanceOf(address(this)), plumberWethBefore + zapWethBefore
@@ -1585,25 +1589,25 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
     function testFlush_NotPlumberer_Fail() public selectFork(FORK["1_zap"]) {
         uint256 amountWeth = 1234 ether;
-        uint256 amountUsdx = 56_789 ether;
+        uint256 amountSusd = 56_789 ether;
         _spin(address(zap), weth, amountWeth);
-        _spin(address(zap), usdx, amountUsdx);
+        _spin(address(zap), susd, amountSusd);
 
         uint256 zapWethBefore = weth.balanceOf(address(zap));
-        uint256 zapUsdxBefore = usdx.balanceOf(address(zap));
+        uint256 zapSusdBefore = susd.balanceOf(address(zap));
 
         uint256 plumberWethBefore = weth.balanceOf(address(this));
-        uint256 plumberUsdxBefore = usdx.balanceOf(address(this));
+        uint256 plumberSusdBefore = susd.balanceOf(address(this));
 
         // this test contract created the Zap contract and should be the owner
         vm.prank(vm.addr(987_654_321));
         vm.expectRevert(abi.encodeWithSelector(OnlyPlumber.selector));
-        zap.flush(address(usdx));
+        zap.flush(address(susd));
 
-        assertEq(usdx.balanceOf(address(zap)), zapUsdxBefore);
+        assertEq(susd.balanceOf(address(zap)), zapSusdBefore);
         assertEq(weth.balanceOf(address(zap)), zapWethBefore);
 
-        assertEq(usdx.balanceOf(address(this)), plumberUsdxBefore);
+        assertEq(susd.balanceOf(address(this)), plumberSusdBefore);
         assertEq(weth.balanceOf(address(this)), plumberWethBefore);
     }
 
@@ -1652,16 +1656,16 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
     {
         address user = vm.addr(5);
         uint32 amount = 1_000_000_000;
-        _spin(user, usdx, amount);
+        _spin(user, susd, amount);
 
         vm.startPrank(user);
         uint128 accountId = perpsMarket.createAccount();
         int128 margin = int128(int32(amount));
 
-        usdx.approve(address(perpsMarket), amount);
+        susd.approve(address(perpsMarket), amount);
         perpsMarket.modifyCollateral(accountId, 0, margin);
 
-        assertEq(usdx.balanceOf(user), 0);
+        assertEq(susd.balanceOf(user), 0);
         assertEq(perpsMarket.totalCollateralValue(accountId), amount);
 
         perpsMarket.grantPermission(
@@ -1675,12 +1679,12 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
         });
         vm.stopPrank();
 
-        assertEq(usdx.balanceOf(user), amount);
+        assertEq(susd.balanceOf(user), amount);
         assertEq(perpsMarket.totalCollateralValue(accountId), 0);
 
         assertEq(usdc.balanceOf(address(zap)), 0);
         assertEq(susdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
         assertFalse(
             perpsMarket.isAuthorized(
                 accountId, _PERPS_MODIFY_COLLATERAL_PERMISSION, address(zap)
@@ -1694,16 +1698,16 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
     {
         address user = vm.addr(5);
         uint32 amount = 1_000_000_000;
-        _spin(user, usdx, amount);
+        _spin(user, susd, amount);
 
         vm.startPrank(user);
         uint128 accountId = perpsMarket.createAccount();
         int128 margin = int128(int32(amount));
 
-        usdx.approve(address(perpsMarket), amount);
+        susd.approve(address(perpsMarket), amount);
         perpsMarket.modifyCollateral(accountId, 0, margin);
 
-        assertEq(usdx.balanceOf(user), 0);
+        assertEq(susd.balanceOf(user), 0);
 
         perpsMarket.grantPermission(
             accountId, _PERPS_MODIFY_COLLATERAL_PERMISSION, address(zap)
@@ -1718,12 +1722,12 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
             _receiver: user
         });
 
-        assertEq(usdx.balanceOf(user), 0);
+        assertEq(susd.balanceOf(user), 0);
         assertEq(perpsMarket.totalCollateralValue(accountId), amount);
 
         assertEq(usdc.balanceOf(address(zap)), 0);
         assertEq(susdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
         assertTrue(
             perpsMarket.isAuthorized(
                 accountId, _PERPS_MODIFY_COLLATERAL_PERMISSION, address(zap)
@@ -1737,16 +1741,16 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
     {
         address user = vm.addr(5);
         uint32 amount = 1_000_000_000;
-        _spin(user, usdx, amount);
+        _spin(user, susd, amount);
 
         vm.startPrank(user);
         uint128 accountId = perpsMarket.createAccount();
         int128 margin = int128(int32(amount));
 
-        usdx.approve(address(perpsMarket), amount);
+        susd.approve(address(perpsMarket), amount);
         perpsMarket.modifyCollateral(accountId, 0, margin);
 
-        assertEq(usdx.balanceOf(user), 0);
+        assertEq(susd.balanceOf(user), 0);
         assertEq(perpsMarket.totalCollateralValue(accountId), amount);
 
         vm.expectRevert(
@@ -1766,12 +1770,12 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         vm.stopPrank();
 
-        assertEq(usdx.balanceOf(user), 0);
+        assertEq(susd.balanceOf(user), 0);
         assertEq(perpsMarket.totalCollateralValue(accountId), amount);
 
         assertEq(usdc.balanceOf(address(zap)), 0);
         assertEq(susdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
         assertFalse(
             perpsMarket.isAuthorized(
                 accountId, _PERPS_MODIFY_COLLATERAL_PERMISSION, address(zap)
@@ -1789,16 +1793,16 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
         address user = vm.addr(1);
         // uint256 amount = 1000e6;
 
-        _spin(user, usdx, amount);
+        _spin(user, susd, amount);
 
-        assertEq(usdx.balanceOf(user), amount);
+        assertEq(susd.balanceOf(user), amount);
         assertEq(susdc.balanceOf(user), 0);
 
         vm.startPrank(user);
-        usdx.approve(address(zap), amount);
+        susd.approve(address(zap), amount);
 
         (uint256 received, address synth) = zap.buy({
-            _synthId: zap.SUSDC_SPOT_ID(),
+            _synthId: zap.SSTATA_SPOT_ID(),
             _amount: amount,
             _minAmountOut: 0,
             _receiver: user
@@ -1807,12 +1811,12 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         assertEq(synth, address(susdc));
         assertGe(received, amount * 9 / 10);
-        assertEq(usdx.balanceOf(user), 0);
+        assertEq(susd.balanceOf(user), 0);
         assertGe(susdc.balanceOf(user), amount * 9 / 10);
 
         assertEq(usdc.balanceOf(address(zap)), 0);
         assertEq(susdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testSellSuccess( /*uint128 amount*/ )
@@ -1824,19 +1828,19 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
         // vm.assume(amount < 1e20);
         uint256 amount = 1000e18;
         uint256 minAmountOut = amount * 99 / 100;
-        _spin(user, usdx, amount);
+        _spin(user, susd, amount);
 
         vm.startPrank(user);
-        usdx.approve(address(zap), amount);
+        susd.approve(address(zap), amount);
 
         (uint256 received,) = zap.buy({
-            _synthId: zap.SUSDC_SPOT_ID(),
+            _synthId: zap.SSTATA_SPOT_ID(),
             _amount: amount,
             _minAmountOut: minAmountOut,
             _receiver: user
         });
 
-        assertEq(usdx.balanceOf(user), 0);
+        assertEq(susd.balanceOf(user), 0);
         assertEq(usdc.balanceOf(user), 0);
         assertEq(susdc.balanceOf(user), received);
         assertGe(received, minAmountOut);
@@ -1846,21 +1850,21 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
         minAmountOut = received * 99 / 100;
 
         received = zap.sell({
-            _synthId: zap.SUSDC_SPOT_ID(),
+            _synthId: zap.SSTATA_SPOT_ID(),
             _amount: received,
             _minAmountOut: minAmountOut,
             _receiver: user
         });
         vm.stopPrank();
 
-        assertGe(usdx.balanceOf(user), minAmountOut);
+        assertGe(susd.balanceOf(user), minAmountOut);
         assertGe(received, minAmountOut);
-        assertEq(usdx.balanceOf(user), received);
+        assertEq(susd.balanceOf(user), received);
         assertEq(susdc.balanceOf(user), 0);
 
         assertEq(usdc.balanceOf(address(zap)), 0);
         assertEq(susdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testUnwrap( /* uint32 amount */ )
@@ -1876,7 +1880,7 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         uint256 wrapped = zap.wrap({
             _token: address(usdc),
-            _synthId: zap.SUSDC_SPOT_ID(),
+            _synthId: zap.SSTATA_SPOT_ID(),
             _amount: amount,
             _minAmountOut: amount,
             _receiver: user
@@ -1890,7 +1894,7 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         uint256 unwrapped = zap.unwrap({
             _token: address(usdc),
-            _synthId: zap.SUSDC_SPOT_ID(),
+            _synthId: zap.SSTATA_SPOT_ID(),
             _amount: wrapped,
             _minAmountOut: amount,
             _receiver: user
@@ -1903,7 +1907,7 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         assertEq(usdc.balanceOf(address(zap)), 0);
         assertEq(susdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testWrap( /*uint64 amount*/ ) public selectFork(FORK["1_zap"]) {
@@ -1919,7 +1923,7 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         uint256 wrapped = zap.wrap({
             _token: address(usdc),
-            _synthId: zap.SUSDC_SPOT_ID(),
+            _synthId: zap.SSTATA_SPOT_ID(),
             _amount: amount,
             _minAmountOut: amount,
             _receiver: user
@@ -1932,7 +1936,7 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         assertEq(usdc.balanceOf(address(zap)), 0);
         assertEq(susdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testZapInSuccess( /*uint64 amount*/ )
@@ -1944,7 +1948,7 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
         _spin(user, usdc, amount);
 
         assertEq(usdc.balanceOf(user), amount);
-        assertEq(usdx.balanceOf(user), 0);
+        assertEq(susd.balanceOf(user), 0);
 
         vm.startPrank(user);
         usdc.approve(address(zap), amount);
@@ -1955,11 +1959,11 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         assertGe(zapped, uint256(amount) * 99e10); // amount * 1e12 * 0.99
         assertEq(usdc.balanceOf(user), 0);
-        assertEq(usdx.balanceOf(user), zapped);
+        assertEq(susd.balanceOf(user), zapped);
 
         assertEq(usdc.balanceOf(address(zap)), 0);
         assertEq(susdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
     function testZapOutSuccess( /*uint64 amount*/ )
@@ -1973,7 +1977,7 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
         usdc.approve(address(zap), amount / 1e12);
         zap.wrap({
             _token: address(usdc),
-            _synthId: zap.SUSDC_SPOT_ID(),
+            _synthId: zap.SSTATA_SPOT_ID(),
             _amount: amount / 1e12,
             _minAmountOut: amount / 1e12,
             _receiver: address(this)
@@ -1981,13 +1985,13 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
         assertEq(usdc.balanceOf(address(this)), 0);
         assertEq(susdc.balanceOf(address(this)), amount);
 
-        _spin(user, usdx, amount);
+        _spin(user, susd, amount);
 
         assertEq(usdc.balanceOf(user), 0);
-        assertEq(usdx.balanceOf(user), amount);
+        assertEq(susd.balanceOf(user), amount);
 
         vm.startPrank(user);
-        usdx.approve(address(zap), amount);
+        susd.approve(address(zap), amount);
 
         uint256 zapped = zap.zapOut({
             _amount: amount,
@@ -1998,11 +2002,11 @@ contract EndToEndTest is Test, Arbitrum, Constants, OdosSwapData {
 
         assertGe(zapped * 1e12, amount * 9 / 10);
         assertEq(usdc.balanceOf(user), zapped);
-        assertEq(usdx.balanceOf(user), 0);
+        assertEq(susd.balanceOf(user), 0);
 
         assertEq(usdc.balanceOf(address(zap)), 0);
         assertEq(susdc.balanceOf(address(zap)), 0);
-        assertEq(usdx.balanceOf(address(zap)), 0);
+        assertEq(susd.balanceOf(address(zap)), 0);
     }
 
 }

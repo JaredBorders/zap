@@ -1,5 +1,5 @@
 # Reentrancy
-[Git Source](https://github.com/moss-eth/zap/blob/59cf0756a77f382e301eda36c7e1793c595fd9b7/src/utils/Reentrancy.sol)
+[Git Source](https://github.com/moss-eth/zap/blob/7ecc5cc79642d99fe6248a4895ed17a8ea025990/src/utils/Reentrancy.sol)
 
 **Authors:**
 @moss-eth, @jaredborders
