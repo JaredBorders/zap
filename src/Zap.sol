@@ -608,7 +608,10 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         // i.e., # of sETH, # of sUSDe, # of sUSDC (...)
         _withdraw(_collateralId, _collateralAmount, _accountId);
 
-        if (_collateral == STATA && _collateralId == SSTATA_SPOT_ID) {
+        if (
+            (_collateral == STATA || _collateral == USDC)
+                && _collateralId == SSTATA_SPOT_ID
+        ) {
             unwound = _zapOut(_collateralAmount, _unwrapMinAmountOut);
         } else {
             // unwrap withdrawn synthetix perp position collateral;
