@@ -42,4 +42,7 @@ contract Errors {
     /// @param caller address of the msg.sender
     error OnlyAave(address caller);
 
+    /// @notice thrown when caller has zero perps market debt
+    error ZeroDebt();
+
 }

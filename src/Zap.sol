@@ -492,6 +492,10 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         // determine amount of synthetix perp position debt to unwind
         uint256 debt = _approximateLoanNeeded(_accountId);
 
+        if (debt == 0) {
+            revert ZeroDebt();
+        }
+
         IPool(AAVE).flashLoanSimple({
             receiverAddress: address(this),
             asset: USDC,
@@ -604,9 +608,7 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
         // i.e., # of sETH, # of sUSDe, # of sUSDC (...)
         _withdraw(_collateralId, _collateralAmount, _accountId);
 
-        if (_collateral == USDC && _collateralId == SUSD_ID) {
-            unwound = _zapOutSUSD(_collateralAmount, _collateralAmount / 1e12);
-        } else if (_collateral == STATA && _collateralId == SSTATA_SPOT_ID) {
+        if (_collateral == STATA && _collateralId == SSTATA_SPOT_ID) {
             unwound = _zapOut(_collateralAmount, _unwrapMinAmountOut);
         } else {
             // unwrap withdrawn synthetix perp position collateral;
