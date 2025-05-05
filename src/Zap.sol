@@ -237,8 +237,8 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
     //////////////////////////////////////////////////////////////*/
 
     /// @notice deposit STATA
-    /// @param _amount amount of STATA to deposit
-    /// @param _receiver address to receive deposited STATA
+    /// @param _amount amount of USDC to deposit
+    /// @param _receiver address to receive STATA shares
     /// @return shares received
     function _depositStata(
         uint256 _amount,
@@ -253,7 +253,7 @@ contract Zap is Reentrancy, Errors, Flush(msg.sender) {
 
     /// @notice redeem STATA
     /// @param _shares amount of STATA to redeem
-    /// @param _receiver address to receive redeemed STATA
+    /// @param _receiver address to receive redeemed USDC
     /// @return assets received
     function _redeemStata(
         uint256 _shares,
